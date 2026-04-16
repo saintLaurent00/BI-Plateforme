@@ -11,8 +11,13 @@ import {
   Zap,
   Activity,
   Users,
-  LayoutDashboard
+  LayoutDashboard,
+  Plus
 } from 'lucide-react';
+import { DashboardCard } from '../components/cards/DashboardCard';
+import { supersetService } from '../services/supersetService';
+import { getDashboards as getLocalDashboards } from '../lib/db';
+import { useNavigate } from 'react-router-dom';
 
 const StatCard = ({ label, value, trend, icon: Icon }: any) => (
   <div className="minimal-card p-6 flex flex-col gap-4 group">
@@ -27,35 +32,6 @@ const StatCard = ({ label, value, trend, icon: Icon }: any) => (
     <div>
       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">{label}</p>
       <h3 className="text-2xl font-semibold tracking-tight">{value}</h3>
-    </div>
-  </div>
-);
-
-const DashboardCard = ({ title, owner, lastModified }: any) => (
-  <div className="minimal-card group cursor-pointer overflow-hidden">
-    <div className="h-32 bg-muted/30 relative overflow-hidden">
-      <img 
-        src={`https://picsum.photos/seed/${title}/400/200`} 
-        alt={title} 
-        className="w-full h-full object-cover opacity-40 group-hover:scale-105 group-hover:opacity-60 transition-all duration-500"
-        referrerPolicy="no-referrer"
-      />
-      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-background/10 backdrop-blur-[1px]">
-        <button className="btn-primary py-1.5 px-4 text-xs scale-90 group-hover:scale-100 transition-transform">
-          Open
-        </button>
-      </div>
-    </div>
-    <div className="p-4">
-      <div className="flex items-start justify-between mb-3">
-        <h4 className="font-medium text-sm truncate flex-1 group-hover:text-accent transition-colors">{title}</h4>
-        <Star className="w-3.5 h-3.5 text-muted-foreground group-hover:text-accent transition-colors" />
-      </div>
-      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-        <span className="font-medium">Local User</span>
-        <span>•</span>
-        <span>{lastModified}</span>
-      </div>
     </div>
   </div>
 );
@@ -76,6 +52,33 @@ const ActivityItem = ({ user, action, target, time }: any) => (
 );
 
 export const Home = () => {
+  const navigate = useNavigate();
+  const [dashboards, setDashboards] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadDashboards = async () => {
+      try {
+        const { result } = await supersetService.getDashboards();
+        if (result && result.length > 0) {
+          setDashboards(result.slice(0, 4));
+        } else {
+          const local = await getLocalDashboards();
+          setDashboards(local.slice(0, 4));
+        }
+      } catch (err) {
+        console.error('Failed to load dashboards:', err);
+        try {
+          const local = await getLocalDashboards();
+          setDashboards(local.slice(0, 4));
+        } catch (lerr) {}
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadDashboards();
+  }, []);
+
   return (
     <div className="p-6 lg:p-12 space-y-12">
       {/* AI Briefing */}
@@ -125,10 +128,23 @@ export const Home = () => {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <DashboardCard title="Executive Sales Overview" owner="Sarah Chen" lastModified="2h ago" />
-            <DashboardCard title="Marketing Performance" owner="Mike Ross" lastModified="5h ago" />
-            <DashboardCard title="Customer Retention Q1" owner="Alex Kim" lastModified="1d ago" />
-            <DashboardCard title="Infrastructure Monitoring" owner="System" lastModified="12m ago" />
+            {isLoading ? (
+              [1, 2, 3, 4].map(i => (
+                <div key={i} className="h-48 bg-muted animate-pulse rounded-lg"></div>
+              ))
+            ) : dashboards.length > 0 ? (
+              dashboards.map((dashboard) => (
+                <DashboardCard 
+                  key={dashboard.id} 
+                  dashboard={dashboard} 
+                  onClick={() => navigate(`/dashboards/${dashboard.id}`)}
+                />
+              ))
+            ) : (
+              <div className="col-span-full py-12 text-center border border-dashed border-border rounded-lg">
+                <p className="text-muted-foreground">No dashboards found.</p>
+              </div>
+            )}
           </div>
         </div>
 

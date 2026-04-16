@@ -14,7 +14,7 @@ export type ChartType =
   | 'DotPlot' | 'Rose' | 'PolarArea' | 'Pyramid' | 'Calendar'
   | 'MultiLine' | 'PercentStackedBar' | 'PercentStackedArea'
   | 'WaterfallHorizontal' | 'BulletVertical'
-  | 'Table' | 'PivotTable';
+  | 'Table' | 'PivotTable' | 'CustomD3';
 
 interface D3ChartProps {
   data: any[];
@@ -1313,6 +1313,23 @@ export const D3Chart: React.FC<D3ChartProps> = ({ data, type, xAxis, yAxis, conf
         .enter().append('xhtml:td')
         .attr('class', 'px-4 py-3 text-sm text-slate-600 border-b border-slate-50')
         .text(d => typeof d === 'number' ? d.toLocaleString() : String(d));
+    } else if (type === 'CustomD3') {
+      try {
+        const customScript = config.customScript || '';
+        if (customScript) {
+          // Create a safe execution environment
+          const renderFunc = new Function('d3', 'svg', 'data', 'width', 'height', 'margin', 'xAxis', 'yAxis', 'config', 'showTooltip', 'moveTooltip', 'hideTooltip', customScript);
+          renderFunc(d3, svg, data, width, height, margin, xAxis, yAxis, config, showTooltip, moveTooltip, hideTooltip);
+        }
+      } catch (err) {
+        console.error('Failed to execute custom D3 script:', err);
+        g.append('text')
+          .attr('x', innerWidth / 2)
+          .attr('y', innerHeight / 2)
+          .attr('text-anchor', 'middle')
+          .attr('fill', '#ef4444')
+          .text('Error in custom D3 script. Check console.');
+      }
     } else {
       // Fallback for types not yet implemented with specific logic
       g.append('text')

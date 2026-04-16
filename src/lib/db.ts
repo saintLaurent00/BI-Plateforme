@@ -53,35 +53,40 @@ export const initDatabase = async () => {
     dbInstance = new SQL.Database(savedData);
   } else {
     dbInstance = new SQL.Database();
-    // Initialize system tables
-    dbInstance.run(`
-      CREATE TABLE IF NOT EXISTS charts (
-        id TEXT PRIMARY KEY,
-        name TEXT,
-        table_name TEXT,
-        chart_type TEXT,
-        x_axis TEXT,
-        y_axis TEXT,
-        config TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS dashboards (
-        id TEXT PRIMARY KEY,
-        name TEXT,
-        description TEXT,
-        layout TEXT,
-        background_color TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-      CREATE TABLE IF NOT EXISTS saved_queries (
-        id TEXT PRIMARY KEY,
-        name TEXT,
-        description TEXT,
-        sql TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
+  }
 
-      -- Seed sample charts if empty
+  // Always ensure system tables exist
+  dbInstance.run(`
+    CREATE TABLE IF NOT EXISTS charts (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      table_name TEXT,
+      chart_type TEXT,
+      x_axis TEXT,
+      y_axis TEXT,
+      config TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS dashboards (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      description TEXT,
+      layout TEXT,
+      background_color TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS saved_queries (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      description TEXT,
+      sql TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  if (!savedData) {
+    // Seed sample charts if empty
+    dbInstance.run(`
       INSERT OR IGNORE INTO charts (id, name, table_name, chart_type, x_axis, y_axis, config)
       VALUES 
       ('sample-1', 'Sales by Region', 'sales_data', 'Bar', '["region"]', '["sales"]', '{"showLegend":true}'),
@@ -205,6 +210,14 @@ export const getDashboard = async (id: string) => {
     }
   });
   return obj;
+};
+
+export const deleteDashboard = async (id: string) => {
+  const { db } = await initDatabase();
+  db.run(`DELETE FROM dashboards WHERE id = '${id}'`);
+  
+  const binaryData = db.export();
+  await saveToIndexedDB(binaryData);
 };
 
 export const saveQuery = async (query: any) => {

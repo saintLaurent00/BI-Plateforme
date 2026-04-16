@@ -32,7 +32,6 @@ import { executeQuery, getTables, getTableSchema, saveChart } from '../lib/db';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Modal } from '../components/Modal';
 import { D3Chart } from '../components/D3Chart';
-import { HighchartsChart } from '../components/HighchartsChart';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
@@ -138,6 +137,52 @@ function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
 
+const CollapsibleSection = ({ title, icon: Icon, children, defaultOpen = false }: any) => {
+  const [isOpen, setIsOpen] = React.useState(defaultOpen);
+  return (
+    <div className="border-b border-slate-100 last:border-none">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between py-4 px-1 hover:bg-slate-50/50 transition-colors group"
+      >
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+            isOpen ? "bg-prism-100 text-prism-600" : "bg-slate-50 text-slate-400 group-hover:text-slate-600"
+          )}>
+            <Icon className="w-4 h-4" />
+          </div>
+          <span className={cn(
+            "text-sm font-bold transition-colors",
+            isOpen ? "text-slate-900" : "text-slate-500 group-hover:text-slate-700"
+          )}>
+            {title}
+          </span>
+        </div>
+        <ChevronDown className={cn(
+          "w-4 h-4 text-slate-300 transition-transform duration-300",
+          isOpen && "rotate-180 text-prism-500"
+        )} />
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div className="pb-6 pt-2 px-1 space-y-4">
+              {children}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 export const ChartEditor = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -157,7 +202,6 @@ export const ChartEditor = () => {
   const [isSaveModalOpen, setIsSaveModalOpen] = React.useState(false);
   const [isCalcModalOpen, setIsCalcModalOpen] = React.useState(false);
   const [chartName, setChartName] = React.useState('');
-  const [engine, setEngine] = React.useState<'d3' | 'highcharts'>('d3');
   
   const [calcColName, setCalcColName] = React.useState('');
   const [calcColSql, setCalcColSql] = React.useState('');
@@ -171,7 +215,41 @@ export const ChartEditor = () => {
     numberFormat: 'Adaptive formatting',
     showCellBars: true,
     pageLength: 10,
-    searchBox: true
+    searchBox: true,
+    customScript: `// D3 Custom Script
+// Available variables: d3, svg, data, width, height, margin, xAxis, yAxis, config, showTooltip, moveTooltip, hideTooltip
+
+const g = svg.append('g').attr('transform', \`translate(\${margin.left},\${margin.top})\`);
+const innerWidth = width - margin.left - margin.right;
+const innerHeight = height - margin.top - margin.bottom;
+
+// Example: Simple Bar Chart
+const x = d3.scaleBand()
+  .domain(data.map(d => String(d[xAxis])))
+  .range([0, innerWidth])
+  .padding(0.1);
+
+const y = d3.scaleLinear()
+  .domain([0, d3.max(data, d => d[yAxis[0]])])
+  .range([innerHeight, 0]);
+
+g.append('g')
+  .attr('transform', \`translate(0,\${innerHeight})\`)
+  .call(d3.axisBottom(x));
+
+g.append('g').call(d3.axisLeft(y));
+
+g.selectAll('rect')
+  .data(data)
+  .enter().append('rect')
+  .attr('x', d => x(String(d[xAxis])))
+  .attr('y', d => y(d[yAxis[0]]))
+  .attr('width', x.bandwidth())
+  .attr('height', d => innerHeight - y(d[yAxis[0]]))
+  .attr('fill', '#6366f1')
+  .on('mouseover', (e, d) => showTooltip(e, String(d[xAxis]), d[yAxis[0]]))
+  .on('mousemove', moveTooltip)
+  .on('mouseout', hideTooltip);`
   });
 
   React.useEffect(() => {
@@ -500,68 +578,104 @@ export const ChartEditor = () => {
                 </div>
               </>
             ) : (
-              <>
-                {/* Customize Tab Content */}
-                <div className="space-y-8">
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <Settings2 className="w-4 h-4 text-prism-600" />
-                      Chart Options
-                    </h3>
-                    
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-600">Show Legend</span>
-                        <input 
-                          type="checkbox" 
-                          checked={customConfig.showLegend}
-                          onChange={(e) => setCustomConfig({ ...customConfig, showLegend: e.target.checked })}
-                          className="w-4 h-4 rounded border-slate-300 text-prism-600 focus:ring-prism-500"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-600">Show Grid</span>
-                        <input 
-                          type="checkbox" 
-                          checked={customConfig.showGrid}
-                          onChange={(e) => setCustomConfig({ ...customConfig, showGrid: e.target.checked })}
-                          className="w-4 h-4 rounded border-slate-300 text-prism-600 focus:ring-prism-500"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Color Scheme</label>
-                        <select 
-                          value={customConfig.colorScheme}
-                          onChange={(e) => setCustomConfig({ ...customConfig, colorScheme: e.target.value })}
-                          className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none"
-                        >
-                          <option>Superset Colors</option>
-                          <option>Prism Theme</option>
-                          <option>Vibrant</option>
-                        </select>
-                      </div>
-                    </div>
+              <div className="flex-1 overflow-y-auto p-4">
+                <CollapsibleSection title="General" icon={Settings2} defaultOpen={true}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-600">Show Legend</span>
+                    <input 
+                      type="checkbox" 
+                      checked={customConfig.showLegend}
+                      onChange={(e) => setCustomConfig({ ...customConfig, showLegend: e.target.checked })}
+                      className="w-4 h-4 rounded border-slate-300 text-prism-600 focus:ring-prism-500"
+                    />
                   </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-600">Show Grid</span>
+                    <input 
+                      type="checkbox" 
+                      checked={customConfig.showGrid}
+                      onChange={(e) => setCustomConfig({ ...customConfig, showGrid: e.target.checked })}
+                      className="w-4 h-4 rounded border-slate-300 text-prism-600 focus:ring-prism-500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-600">Show cell bars</span>
+                    <input 
+                      type="checkbox" 
+                      checked={customConfig.showCellBars}
+                      onChange={(e) => setCustomConfig({ ...customConfig, showCellBars: e.target.checked })}
+                      className="w-4 h-4 rounded border-slate-300 text-prism-600 focus:ring-prism-500"
+                    />
+                  </div>
+                </CollapsibleSection>
 
-                  <div className="space-y-4 pt-8 border-t border-slate-100">
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <Palette className="w-4 h-4 text-prism-600" />
-                      Visual Formatting
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-600">Show cell bars</span>
-                        <input 
-                          type="checkbox" 
-                          checked={customConfig.showCellBars}
-                          onChange={(e) => setCustomConfig({ ...customConfig, showCellBars: e.target.checked })}
-                          className="w-4 h-4 rounded border-slate-300 text-prism-600 focus:ring-prism-500"
-                        />
-                      </div>
+                <CollapsibleSection title="Axes" icon={Activity}>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">X-Axis Label</label>
+                      <input type="text" placeholder="Auto" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Y-Axis Label</label>
+                      <input type="text" placeholder="Auto" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none" />
                     </div>
                   </div>
-                </div>
-              </>
+                </CollapsibleSection>
+
+                <CollapsibleSection title="Tooltips" icon={Info}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-600">Enable Tooltips</span>
+                    <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-slate-300 text-prism-600 focus:ring-prism-500" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Value Format</label>
+                    <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
+                      <option>Default</option>
+                      <option>Currency</option>
+                      <option>Percentage</option>
+                    </select>
+                  </div>
+                </CollapsibleSection>
+
+                <CollapsibleSection title="Colors" icon={Palette}>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Color Scheme</label>
+                    <select 
+                      value={customConfig.colorScheme}
+                      onChange={(e) => setCustomConfig({ ...customConfig, colorScheme: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none"
+                    >
+                      <option>Superset Colors</option>
+                      <option>Prism Theme</option>
+                      <option>Vibrant</option>
+                    </select>
+                  </div>
+                </CollapsibleSection>
+
+                {chartType === 'Custom D3' && (
+                  <CollapsibleSection title="Custom Configuration" icon={Settings2} defaultOpen={true}>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          D3.js Script
+                        </label>
+                        <textarea 
+                          value={customConfig.customScript}
+                          onChange={(e) => setCustomConfig({ 
+                            ...customConfig, 
+                            customScript: e.target.value 
+                          })}
+                          className="w-full h-64 px-3 py-2 bg-slate-900 text-emerald-400 font-mono text-[10px] rounded-lg outline-none border border-slate-800 focus:border-prism-500"
+                          spellCheck={false}
+                        />
+                        <p className="text-[9px] text-slate-400 italic">
+                          Use d3, svg, data, width, height, margin, xAxis, yAxis to render.
+                        </p>
+                      </div>
+                    </div>
+                  </CollapsibleSection>
+                )}
+              </div>
             )}
           </div>
 
@@ -669,7 +783,7 @@ export const ChartEditor = () => {
                       ) : (
                         <D3Chart 
                           data={results}
-                          type={chartType}
+                          type={chartType === 'Custom D3' ? 'CustomD3' : chartType}
                           xAxis={xAxis[0]}
                           yAxis={yAxis.map(m => m.alias)}
                           config={customConfig}

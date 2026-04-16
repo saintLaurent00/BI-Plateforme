@@ -17,13 +17,16 @@ import { ChartSelector } from './pages/ChartSelector';
 import { DashboardDetail } from './pages/DashboardDetail';
 import { DashboardEditor } from './pages/DashboardEditor';
 import { Admin } from './pages/Admin';
+import { Documentation } from './pages/Documentation';
 import { Login } from './pages/Login';
+import { Toaster } from 'sonner';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
 
   // Simple login handler for demo purposes
   const handleLogin = () => setIsAuthenticated(true);
+  const handleLogout = () => setIsAuthenticated(false);
 
   if (!isAuthenticated) {
     return (
@@ -38,7 +41,8 @@ export default function App() {
 
   return (
     <Router>
-      <Layout>
+      <Toaster position="top-right" richColors />
+      <Layout onLogout={handleLogout}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/dashboards" element={<Dashboards />} />
@@ -52,6 +56,7 @@ export default function App() {
           <Route path="/chart/add" element={<ChartSelector />} />
           <Route path="/chart-editor" element={<ChartEditor />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/documentation" element={<Documentation />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>

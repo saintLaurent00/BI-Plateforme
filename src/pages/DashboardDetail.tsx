@@ -39,9 +39,11 @@ const BACKGROUNDS = [
   { name: 'Dark Slate', value: 'bg-slate-900' },
 ];
 
-import { getDashboard, executeQuery } from '../lib/db';
+import { getDashboard as getLocalDashboard, executeQuery } from '../lib/db';
+import { supersetService } from '../services/supersetService';
 import { DashboardChart } from '../components/DashboardChart';
 import ReactMarkdown from 'react-markdown';
+import { mapSupersetLayoutToPrism, denormalizeLayout } from '../lib/dashboardLayout';
 
 // ... (rest of imports)
 
@@ -66,11 +68,14 @@ const RecursiveElement = ({ element, theme, parentType }: { element: any; theme:
   return (
     <div 
       className={cn(
-        "transition-all duration-300 rounded-2xl",
+        "transition-all duration-500",
         element.type === 'chart' ? (
-          theme.cardStyle === 'elevated' ? 'p-6 shadow-lg shadow-slate-200/50 bg-white' : 
-          theme.cardStyle === 'bordered' ? 'p-6 border border-slate-200 bg-white' : 'p-6 bg-white'
-        ) : element.type === 'row' || element.type === 'column' || element.type === 'tabs' ? '' : 'p-6',
+          cn(
+            "group relative overflow-hidden rounded-[32px] transition-all duration-500",
+            theme.cardStyle === 'elevated' ? 'p-8 shadow-2xl shadow-slate-200/50 bg-white hover:-translate-y-1' : 
+            theme.cardStyle === 'bordered' ? 'p-8 border border-slate-100 bg-white hover:border-accent/20' : 'p-8 bg-white'
+          )
+        ) : element.type === 'row' || element.type === 'column' || element.type === 'tabs' ? '' : 'p-8',
         parentType === 'row' ? gridClass : "w-full"
       )}
       style={{ 
@@ -79,28 +84,37 @@ const RecursiveElement = ({ element, theme, parentType }: { element: any; theme:
       }}
     >
       {element.type === 'header' && (
-        <h2 className="text-3xl font-bold text-slate-900">{element.content}</h2>
+        <div className="relative group/header py-4">
+          <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">{element.content}</h2>
+          <div className="h-1.5 w-16 bg-accent rounded-full mt-4 transition-all group-hover/header:w-32" />
+        </div>
       )}
 
       {element.type === 'markdown' && (
-        <div className="prose prose-slate prose-sm max-w-none">
+        <div className="prose prose-slate prose-lg max-w-none bg-white/50 backdrop-blur-sm p-8 rounded-[32px] border border-white/20">
           <ReactMarkdown>{element.content}</ReactMarkdown>
         </div>
       )}
 
       {element.type === 'divider' && (
-        <div className="py-4">
-          <div className="h-px bg-slate-200 w-full" />
+        <div className="py-8">
+          <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent w-full" />
         </div>
       )}
 
       {element.type === 'chart' && element.content && (
-        <div className="space-y-4">
+        <div className="space-y-8">
           <div className="flex items-center justify-between">
-            <h4 className="font-bold text-slate-900">{element.content.name}</h4>
-            <Badge variant="info">{element.content.chart_type}</Badge>
+            <div className="flex flex-col">
+              <h4 className="font-black text-slate-900 text-xl tracking-tight">{element.content.name}</h4>
+              <span className="text-[10px] text-slate-400 font-serif italic tracking-wide mt-1">Enterprise Intelligence Unit</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <Badge variant="info" className="bg-slate-50 border-slate-100 text-slate-500 font-black uppercase tracking-widest text-[9px] px-3 py-1">{element.content.chart_type}</Badge>
+            </div>
           </div>
-          <div className="h-96 overflow-hidden">
+          <div className="h-full min-h-[300px] overflow-hidden rounded-2xl">
             <DashboardChart chart={element.content} />
           </div>
         </div>
@@ -171,10 +185,29 @@ export const DashboardDetail = () => {
   const loadDashboard = async (dashboardId: string) => {
     setIsLoading(true);
     try {
-      const d = await getDashboard(dashboardId);
-      setDashboard(d);
+      // Try Superset first
+      const d = await supersetService.getDashboard(dashboardId);
+      
+      // If Superset returns a dashboard, we need to handle its layout
+      // Superset layout is in position_json (stringified)
+      if (d.position_json) {
+        const position = typeof d.position_json === 'string' ? JSON.parse(d.position_json) : d.position_json;
+        const normalized = mapSupersetLayoutToPrism(position);
+        setDashboard({
+          ...d,
+          layout: denormalizeLayout(normalized)
+        });
+      } else {
+        setDashboard(d);
+      }
     } catch (err) {
-      console.error('Failed to load dashboard:', err);
+      console.error('Failed to load dashboard from Superset, falling back to local:', err);
+      try {
+        const local = await getLocalDashboard(dashboardId);
+        setDashboard(local);
+      } catch (localErr) {
+        console.error('Failed to load local dashboard:', localErr);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -201,45 +234,68 @@ export const DashboardDetail = () => {
     setIsCustomizing(false);
   };
 
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
   return (
     <div className={`min-h-full transition-colors duration-500`} style={{ backgroundColor: dashboard.backgroundColor || '#f8fafc' }}>
       {/* Dashboard Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <header className="bg-white/40 backdrop-blur-xl border-b border-white/20 sticky top-0 z-30 px-8 py-5 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-6">
           <button 
             onClick={() => navigate('/dashboards')}
-            className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+            className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-white/50 rounded-2xl transition-all active:scale-90"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
+          <div className="h-10 w-px bg-slate-200/50" />
           <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">{dashboard.name}</h1>
-              <Badge variant="success">Published</Badge>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">{dashboard.name}</h1>
+              <Badge variant="success" className="bg-emerald-50 text-emerald-600 border-emerald-100 font-black uppercase tracking-widest text-[9px]">Live Asset</Badge>
             </div>
-            <p className="text-xs text-slate-500 font-medium">
-              Owned by <span className="text-slate-900">Local User</span> • Last modified {new Date(dashboard.created_at).toLocaleDateString()}
-            </p>
+            <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+              <span>Enterprise Intelligence</span>
+              <div className="w-1 h-1 rounded-full bg-slate-200" />
+              <span>Modified {new Date(dashboard.created_at).toLocaleDateString()}</span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setIsCustomizing(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm"
-          >
-            <Palette className="w-4 h-4" />
-            Customize Theme
-          </button>
-          <div className="h-6 w-px bg-slate-200 mx-1"></div>
-          <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50">
+            <button 
+              onClick={() => setIsCustomizing(true)}
+              className="p-2 text-slate-500 hover:text-accent hover:bg-white rounded-xl transition-all"
+              title="Customize Theme"
+            >
+              <Palette className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={toggleFullScreen}
+              className="p-2 text-slate-500 hover:text-accent hover:bg-white rounded-xl transition-all"
+              title="Full Screen"
+            >
+              <Maximize2 className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="h-8 w-px bg-slate-200/50 mx-1" />
+          <button className="p-2.5 text-slate-500 hover:text-accent hover:bg-white rounded-2xl transition-all">
             <Share2 className="w-5 h-5" />
           </button>
           <button 
             onClick={() => navigate(`/dashboard-editor/${id}`)}
-            className="px-4 py-2 bg-prism-600 text-white rounded-xl text-sm font-bold hover:bg-prism-700 transition-all shadow-lg shadow-prism-200 active:scale-95"
+            className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 active:scale-95"
           >
-            Edit Dashboard
+            <LayoutIcon className="w-4 h-4" />
+            Edit Mode
           </button>
         </div>
       </header>

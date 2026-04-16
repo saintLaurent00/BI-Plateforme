@@ -6,105 +6,19 @@ import {
   Search, 
   LayoutGrid, 
   List, 
-  MoreVertical,
-  Star,
-  Tag,
   Plus,
-  Layout as LayoutIcon
+  Layout as LayoutIcon,
+  Tag
 } from 'lucide-react';
 import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
-import { getDashboards } from '../lib/db';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
-const DashboardCard = ({ dashboard, view }: any) => {
-  const navigate = useNavigate();
-  const id = dashboard.id;
-
-  if (view === 'list') {
-    return (
-      <div 
-        onClick={() => navigate(`/dashboards/${id}`)}
-        className="glass-panel p-5 flex items-center gap-8 group cursor-pointer hover:border-accent/30 transition-all duration-500"
-      >
-        <div className="w-14 h-14 rounded-2xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100 group-hover:ring-8 group-hover:ring-accent/5 transition-all">
-          <img 
-            src={`https://picsum.photos/seed/${dashboard.name}/200/150`} 
-            alt={dashboard.name} 
-            className="w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-100 transition-all duration-700"
-            referrerPolicy="no-referrer"
-          />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-base text-slate-900 tracking-tight group-hover:text-accent transition-colors">{dashboard.name}</h4>
-          <div className="flex items-center gap-3 mt-1.5">
-            <span className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">Intelligence Asset</span>
-            <div className="w-1 h-1 rounded-full bg-slate-200" />
-            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{new Date(dashboard.created_at).toLocaleDateString()}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-10">
-          <div className="flex flex-col items-end">
-            <Badge variant="success" className="bg-emerald-50 text-emerald-600 border-emerald-100 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">Published</Badge>
-            <span className="text-[8px] text-slate-300 mt-1 font-serif italic">Verified Source</span>
-          </div>
-          <button className="p-2.5 text-slate-300 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all">
-            <MoreVertical className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <motion.div 
-      layout
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      onClick={() => navigate(`/dashboards/${id}`)}
-      className="glass-panel group cursor-pointer overflow-hidden hover:border-accent/30 transition-all duration-500"
-    >
-      <div className="h-44 bg-slate-50 relative overflow-hidden">
-        <img 
-          src={`https://picsum.photos/seed/${dashboard.name}/600/400`} 
-          alt={dashboard.name} 
-          className="w-full h-full object-cover opacity-80 group-hover:scale-110 group-hover:opacity-100 transition-all duration-1000"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-500">
-          <button 
-            onClick={(e) => { e.stopPropagation(); }}
-            className="p-2.5 bg-white/90 backdrop-blur-xl rounded-xl border border-white/20 hover:bg-white transition-all shadow-xl"
-          >
-            <Star className="w-3.5 h-3.5 text-slate-400 hover:text-amber-500" />
-          </button>
-        </div>
-        <div className="absolute bottom-4 left-4">
-          <Badge variant="success" className="bg-emerald-500 text-white border-none px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20">Published</Badge>
-        </div>
-      </div>
-      <div className="p-6">
-        <h3 className="font-bold text-lg text-slate-900 tracking-tight mb-1 truncate group-hover:text-accent transition-colors">{dashboard.name}</h3>
-        <p className="text-[10px] text-slate-400 font-serif italic mb-6">Strategic intelligence overview</p>
-        <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
-              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${dashboard.name}`} alt="Owner" />
-            </div>
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Laurent O.</span>
-          </div>
-          <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest">{new Date(dashboard.created_at).toLocaleDateString()}</span>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
+import { getDashboards as getLocalDashboards, saveDashboard, deleteDashboard } from '../lib/db';
+import { DASHBOARD_TEMPLATES, DashboardTemplate } from '../constants/templates';
+import { supersetService } from '../services/supersetService';
+import { DashboardCard } from '../components/cards/DashboardCard';
+import { cn } from '../lib/utils';
+import { Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 const FilterSection = ({ title, options }: any) => (
   <div className="space-y-4">
@@ -127,7 +41,16 @@ export const Dashboards = () => {
   const [dashboards, setDashboards] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [step, setStep] = React.useState(1);
+  const [selectedTemplate, setSelectedTemplate] = React.useState<string>('blank');
   const [newDashboard, setNewDashboard] = React.useState({ title: '', description: '', tags: '' });
+  const [isCreating, setIsCreating] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+
+  const filteredDashboards = dashboards.filter(d => {
+    const title = d.dashboard_title || d.name || d.title || '';
+    return title.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   React.useEffect(() => {
     loadDashboards();
@@ -135,19 +58,76 @@ export const Dashboards = () => {
 
   const loadDashboards = async () => {
     try {
-      const d = await getDashboards();
-      setDashboards(d);
+      const { result } = await supersetService.getDashboards();
+      if (result.length > 0) {
+        setDashboards(result);
+      } else {
+        // Fallback to local if Superset returns empty
+        const local = await getLocalDashboards();
+        setDashboards(local);
+      }
     } catch (err) {
-      console.error('Failed to load dashboards:', err);
+      console.error('Failed to load dashboards from Superset, falling back to local:', err);
+      try {
+        const local = await getLocalDashboards();
+        setDashboards(local);
+      } catch (localErr) {
+        console.error('Failed to load local dashboards:', localErr);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this dashboard? This action cannot be undone.')) return;
+    
+    try {
+      await deleteDashboard(id);
+      toast.success('Dashboard deleted successfully');
+      loadDashboards();
+    } catch (err) {
+      console.error('Failed to delete dashboard:', err);
+      toast.error('Failed to delete dashboard');
+    }
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsModalOpen(false);
-    setNewDashboard({ title: '', description: '', tags: '' });
+    if (step === 1) {
+      setStep(2);
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const template = DASHBOARD_TEMPLATES.find(t => t.id === selectedTemplate);
+      const dashboardId = crypto.randomUUID();
+      
+      await saveDashboard({
+        id: dashboardId,
+        name: newDashboard.title,
+        description: newDashboard.description,
+        layout: template?.layout || [],
+        backgroundColor: '#f8fafc'
+      });
+
+      setIsModalOpen(false);
+      setNewDashboard({ title: '', description: '', tags: '' });
+      setStep(1);
+      setSelectedTemplate('blank');
+      navigate(`/dashboard-editor/${dashboardId}`);
+    } catch (err) {
+      console.error('Failed to create dashboard:', err);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const openCreateModal = () => {
+    setStep(1);
+    setSelectedTemplate('blank');
+    setIsModalOpen(true);
   };
 
   return (
@@ -189,6 +169,16 @@ export const Dashboards = () => {
             <p className="text-muted-foreground text-sm mt-1">Organize and share your data stories.</p>
           </div>
           <div className="flex items-center gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input 
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search dashboards..."
+                className="pl-10 pr-4 py-2 bg-muted border-none rounded-xl text-sm focus:ring-2 ring-accent/20 w-64 transition-all"
+              />
+            </div>
             <div className="flex items-center bg-muted rounded-md p-1">
               <button 
                 onClick={() => setView('grid')}
@@ -210,7 +200,7 @@ export const Dashboards = () => {
               </button>
             </div>
             <button 
-              onClick={() => navigate('/dashboard-editor')}
+              onClick={openCreateModal}
               className="btn-primary flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
@@ -226,17 +216,23 @@ export const Dashboards = () => {
               <div key={i} className="h-48 bg-muted animate-pulse rounded-lg"></div>
             ))}
           </div>
-        ) : dashboards.length === 0 ? (
-          <div className="text-center py-24 border border-dashed border-border rounded-lg">
-            <LayoutIcon className="w-12 h-12 text-muted/40 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No dashboards yet</h3>
-            <p className="text-muted-foreground text-sm mb-8">Create your first dashboard to organize your charts.</p>
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="btn-primary px-8"
-            >
-              Get Started
-            </button>
+        ) : filteredDashboards.length === 0 ? (
+          <div className="text-center py-24 border border-dashed border-border rounded-[32px] bg-muted/20">
+            <div className="w-20 h-20 bg-muted rounded-[24px] flex items-center justify-center mx-auto mb-6">
+              <Search className="w-8 h-8 text-muted-foreground/40" />
+            </div>
+            <h3 className="text-xl font-bold mb-2">No dashboards found</h3>
+            <p className="text-muted-foreground text-sm mb-8 max-w-xs mx-auto">
+              {searchQuery ? `We couldn't find any dashboards matching "${searchQuery}"` : "Create your first dashboard to organize your charts."}
+            </p>
+            {!searchQuery && (
+              <button 
+                onClick={openCreateModal}
+                className="btn-primary px-8"
+              >
+                Get Started
+              </button>
+            )}
           </div>
         ) : (
           <div className={cn(
@@ -245,8 +241,14 @@ export const Dashboards = () => {
               ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4" 
               : "grid-cols-1"
           )}>
-            {dashboards.map((dashboard) => (
-              <DashboardCard key={dashboard.id} dashboard={dashboard} view={view} />
+            {filteredDashboards.map((dashboard) => (
+              <DashboardCard 
+                key={dashboard.id} 
+                dashboard={dashboard} 
+                view={view} 
+                onClick={() => navigate(`/dashboards/${dashboard.id}`)}
+                onDelete={() => handleDelete(dashboard.id)}
+              />
             ))}
           </div>
         )}
@@ -256,58 +258,110 @@ export const Dashboards = () => {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title="Create New Dashboard"
+        title={step === 1 ? "Create New Dashboard" : "Select a Template"}
       >
         <form onSubmit={handleCreate} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Title</label>
-            <input 
-              type="text" 
-              value={newDashboard.title}
-              onChange={(e) => setNewDashboard({ ...newDashboard, title: e.target.value })}
-              placeholder="e.g. Q2 Revenue Analysis" 
-              className="input-minimal"
-              required
-            />
-          </div>
+          {step === 1 ? (
+            <>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Title</label>
+                <input 
+                  type="text" 
+                  value={newDashboard.title}
+                  onChange={(e) => setNewDashboard({ ...newDashboard, title: e.target.value })}
+                  placeholder="e.g. Q2 Revenue Analysis" 
+                  className="input-minimal"
+                  required
+                  autoFocus
+                />
+              </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Description</label>
-            <textarea 
-              value={newDashboard.description}
-              onChange={(e) => setNewDashboard({ ...newDashboard, description: e.target.value })}
-              placeholder="Briefly describe the purpose..." 
-              className="input-minimal min-h-[100px] resize-none"
-            />
-          </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Description</label>
+                <textarea 
+                  value={newDashboard.description}
+                  onChange={(e) => setNewDashboard({ ...newDashboard, description: e.target.value })}
+                  placeholder="Briefly describe the purpose..." 
+                  className="input-minimal min-h-[100px] resize-none"
+                />
+              </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Tags</label>
-            <div className="relative group">
-              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-foreground transition-colors" />
-              <input 
-                type="text" 
-                value={newDashboard.tags}
-                onChange={(e) => setNewDashboard({ ...newDashboard, tags: e.target.value })}
-                placeholder="Sales, Q2, Revenue" 
-                className="input-minimal pl-10"
-              />
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Tags</label>
+                <div className="relative group">
+                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-foreground transition-colors" />
+                  <input 
+                    type="text" 
+                    value={newDashboard.tags}
+                    onChange={(e) => setNewDashboard({ ...newDashboard, tags: e.target.value })}
+                    placeholder="Sales, Q2, Revenue" 
+                    className="input-minimal pl-10"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              {DASHBOARD_TEMPLATES.map((template) => {
+                const Icon = template.icon;
+                return (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => setSelectedTemplate(template.id)}
+                    className={cn(
+                      "flex items-start gap-4 p-4 rounded-2xl border transition-all text-left group",
+                      selectedTemplate === template.id 
+                        ? "bg-accent/5 border-accent shadow-sm" 
+                        : "bg-background border-border hover:border-accent/40 hover:bg-muted/50"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                      selectedTemplate === template.id ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground group-hover:bg-accent/10 group-hover:text-accent"
+                    )}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className={cn(
+                          "text-sm font-bold transition-colors",
+                          selectedTemplate === template.id ? "text-accent" : "text-foreground"
+                        )}>
+                          {template.name}
+                        </h4>
+                        {selectedTemplate === template.id && (
+                          <Check className="w-4 h-4 text-accent" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                        {template.description}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          )}
 
           <div className="pt-4 flex gap-3">
             <button 
               type="button"
-              onClick={() => setIsModalOpen(false)}
+              onClick={() => step === 1 ? setIsModalOpen(false) : setStep(1)}
               className="btn-secondary flex-1"
             >
-              Cancel
+              {step === 1 ? "Cancel" : "Back"}
             </button>
             <button 
               type="submit"
+              disabled={isCreating}
               className="btn-primary flex-1"
             >
-              Create
+              {isCreating ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+              ) : (
+                step === 1 ? "Next" : "Create Dashboard"
+              )}
             </button>
           </div>
         </form>

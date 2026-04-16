@@ -58,7 +58,40 @@ const CHART_TYPES = [
   { label: 'Treemap', icon: LayoutIcon, category: 'Part of a Whole', description: 'Treemaps show hierarchical data using nested rectangles.' },
   { label: 'Waterfall Chart', icon: BarChart, category: 'Evolution', description: 'Waterfall charts show how an initial value is affected by intermediate changes.' },
   { label: 'World Map', icon: LayoutIcon, category: 'Map', description: 'World maps visualize data across geographical regions.' },
+  { label: 'Custom D3', icon: Activity, category: 'Other', description: 'Create a custom visualization using D3.js code.' },
 ];
+
+const CHART_SEEDS: Record<string, string> = {
+  'Area Chart': 'graph,analytics',
+  'Bar Chart': 'chart,data',
+  'Big Number': 'dashboard,metric',
+  'Big Number with Trendline': 'stock,market',
+  'Box Plot': 'science,distribution',
+  'Bubble Chart': 'circles,data',
+  'Funnel Chart': 'sales,funnel',
+  'Gauge Chart': 'speedometer,performance',
+  'Graph Chart': 'network,nodes',
+  'Heatmap': 'matrix,thermal',
+  'Line Chart': 'finance,growth',
+  'Mixed Chart': 'infographic,data',
+  'Pie Chart': 'business,pie',
+  'Pivot Table': 'spreadsheet,table',
+  'Radar Chart': 'performance,radar',
+  'Scatter Plot': 'research,points',
+  'Sunburst Chart': 'hierarchy,radial',
+  'Table': 'database,grid',
+  'Tree Chart': 'organization,tree',
+  'Treemap': 'storage,rectangles',
+  'Waterfall Chart': 'finance,waterfall',
+  'World Map': 'global,map',
+  'Custom D3': 'visualization,code'
+};
+
+const getChartImageUrl = (label: string, width: number, height: number, suffix: string = '') => {
+  const seed = CHART_SEEDS[label] || label;
+  // Using a more reliable contextual image source
+  return `https://loremflickr.com/${width}/${height}/${seed.replace(/,/g, '-')}${suffix}?lock=${label.length}`;
+};
 
 const cn = (...inputs: any[]) => inputs.filter(Boolean).join(' ');
 
@@ -192,7 +225,7 @@ export const ChartSelector = () => {
                     selectedType === type.label ? 'bg-white' : 'bg-slate-50'
                   )}>
                     <img 
-                      src={`https://picsum.photos/seed/${type.label}/400/225`} 
+                      src={getChartImageUrl(type.label, 400, 225)} 
                       alt={type.label}
                       className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-500"
                       referrerPolicy="no-referrer"
@@ -236,10 +269,10 @@ export const ChartSelector = () => {
                       <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Examples</h4>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="aspect-video bg-white rounded-lg border border-slate-200 overflow-hidden">
-                          <img src={`https://picsum.photos/seed/${selectedChartInfo.label}1/200/112`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          <img src={getChartImageUrl(selectedChartInfo.label, 200, 112, '1')} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         </div>
                         <div className="aspect-video bg-white rounded-lg border border-slate-200 overflow-hidden">
-                          <img src={`https://picsum.photos/seed/${selectedChartInfo.label}2/200/112`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          <img src={getChartImageUrl(selectedChartInfo.label, 200, 112, '2')} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                         </div>
                       </div>
                     </div>

@@ -1,5 +1,7 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { toast } from 'sonner';
 import { 
   Users, 
   ShieldCheck, 
@@ -17,38 +19,46 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
-  Mail,
+  Bell,
   Filter,
   Users2,
   ShieldAlert,
-  Download
+  Download,
+  Calendar,
+  FileText,
+  Mail,
+  UserPlus,
+  Trash2,
+  Chrome,
+  Github
 } from 'lucide-react';
 import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
+import { supersetService } from '../services/supersetService';
 
 const AdminSidebarItem = ({ label, icon: Icon, active, onClick }: any) => (
   <button 
     onClick={onClick}
     className={cn(
     "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group",
-    active ? "bg-prism-50 text-prism-600 font-bold" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+    active ? "bg-prism-50 dark:bg-prism-900/20 text-prism-600 dark:text-prism-400 font-bold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
   )}>
-    <Icon className={cn("w-4 h-4", active ? "text-prism-600" : "text-slate-400 group-hover:text-slate-900")} />
+    <Icon className={cn("w-4 h-4", active ? "text-prism-600 dark:text-prism-400" : "text-muted-foreground group-hover:text-foreground")} />
     <span className="text-sm">{label}</span>
     {active && <ChevronRight className="w-4 h-4 ml-auto opacity-60" />}
   </button>
 );
 
 const UserRow = ({ name, email, role, status, lastActive, onEdit, onDelete }: any) => (
-  <tr className="hover:bg-slate-50 transition-colors group">
+  <tr className="hover:bg-muted/50 transition-colors group">
     <td className="px-6 py-4">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden shadow-sm">
+        <div className="w-10 h-10 rounded-full bg-muted border border-border overflow-hidden shadow-sm">
           <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`} alt={name} />
         </div>
         <div>
-          <h5 className="font-bold text-slate-900 text-sm">{name}</h5>
-          <div className="flex items-center gap-1 text-slate-400">
+          <h5 className="font-bold text-foreground text-sm">{name}</h5>
+          <div className="flex items-center gap-1 text-muted-foreground">
             <Mail className="w-3 h-3" />
             <span className="text-xs">{email}</span>
           </div>
@@ -91,7 +101,64 @@ function cn(...inputs: any[]) {
 }
 
 export const Admin = () => {
-  const [activeSection, setActiveSection] = React.useState<'users' | 'groups' | 'roles' | 'rls' | 'sessions' | 'audit' | 'sources' | 'security' | 'settings'>('users');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sectionFromUrl = searchParams.get('section') as any;
+  
+  const [activeSection, setActiveSection] = React.useState<'users' | 'groups' | 'roles' | 'rls' | 'sessions' | 'audit' | 'sources' | 'security' | 'settings' | 'reports' | 'screening' | 'auth'>(sectionFromUrl || 'users');
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [supersetUsers, setSupersetUsers] = React.useState<any[]>([]);
+  const [supersetRoles, setSupersetRoles] = React.useState<any[]>([]);
+  const [supersetDatabases, setSupersetDatabases] = React.useState<any[]>([]);
+  const [supersetReports, setSupersetReports] = React.useState<any[]>([]);
+  const [supersetLogs, setSupersetLogs] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (sectionFromUrl && sectionFromUrl !== activeSection) {
+      setActiveSection(sectionFromUrl);
+    }
+  }, [sectionFromUrl]);
+
+  React.useEffect(() => {
+    loadSectionData();
+  }, [activeSection]);
+
+  const loadSectionData = async () => {
+    setIsLoading(true);
+    try {
+      if (activeSection === 'users') {
+        const { result } = await supersetService.getUsers();
+        setSupersetUsers(result || []);
+      } else if (activeSection === 'roles') {
+        const { result } = await supersetService.getRoles();
+        setSupersetRoles(result || []);
+      } else if (activeSection === 'sources') {
+        const { result } = await supersetService.getDatabases();
+        setSupersetDatabases(result || []);
+      } else if (activeSection === 'reports') {
+        const { result } = await supersetService.getReports();
+        setSupersetReports(result || []);
+      } else if (activeSection === 'audit') {
+        const { result } = await supersetService.getLogs();
+        setSupersetLogs(result || []);
+      }
+    } catch (err) {
+      console.error(`Failed to load data for section ${activeSection}:`, err);
+      // Ensure we don't leave them as undefined on error
+      if (activeSection === 'users') setSupersetUsers([]);
+      if (activeSection === 'roles') setSupersetRoles([]);
+      if (activeSection === 'sources') setSupersetDatabases([]);
+      if (activeSection === 'reports') setSupersetReports([]);
+      if (activeSection === 'audit') setSupersetLogs([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section as any);
+    setSearchParams({ section });
+  };
+
   const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
@@ -100,24 +167,102 @@ export const Admin = () => {
   const [selectedUser, setSelectedUser] = React.useState<any>(null);
   const [selectedRole, setSelectedRole] = React.useState<any>(null);
   const [selectedGroup, setSelectedGroup] = React.useState<any>(null);
+  const [selectedDatabase, setSelectedDatabase] = React.useState<any>(null);
   const [isDatabaseModalOpen, setIsDatabaseModalOpen] = React.useState(false);
   const [newDatabase, setNewDatabase] = React.useState({ name: '', engine: 'PostgreSQL', host: '', port: '', database: '', username: '', password: '' });
   const [newUser, setNewUser] = React.useState({ name: '', email: '', role: 'Viewer' });
   const [newRole, setNewRole] = React.useState({ name: '', description: '', permissions: [] });
   const [newGroup, setNewGroup] = React.useState({ name: '', description: '', members: 0 });
 
-  const handleConnectDatabase = (e: React.FormEvent) => {
+  const handleConnectDatabase = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Connecting database:', newDatabase);
-    setIsDatabaseModalOpen(false);
-    setNewDatabase({ name: '', engine: 'PostgreSQL', host: '', port: '', database: '', username: '', password: '' });
+    try {
+      const dbPayload = {
+        database_name: newDatabase.name,
+        engine: newDatabase.engine.toLowerCase(),
+        sqlalchemy_uri: `${newDatabase.engine.toLowerCase()}://${newDatabase.username}:${newDatabase.password}@${newDatabase.host}:${newDatabase.port}/${newDatabase.database}`,
+      };
+
+      if (selectedDatabase) {
+        await supersetService.updateDatabase(selectedDatabase.id, dbPayload);
+        toast.success('Database updated successfully');
+      } else {
+        await supersetService.createDatabase(dbPayload);
+        toast.success('Database connected successfully');
+      }
+      
+      setIsDatabaseModalOpen(false);
+      setSelectedDatabase(null);
+      setNewDatabase({ name: '', engine: 'PostgreSQL', host: '', port: '', database: '', username: '', password: '' });
+      loadSectionData();
+    } catch (err) {
+      console.error('Failed to save database:', err);
+      toast.error('Failed to save database');
+    }
   };
 
-  const handleInvite = (e: React.FormEvent) => {
+  const handleDeleteDatabase = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this database connection? This will affect all datasets using it.')) return;
+    try {
+      await supersetService.deleteDatabase(id);
+      toast.success('Database deleted successfully');
+      loadSectionData();
+    } catch (err) {
+      console.error('Failed to delete database:', err);
+      toast.error('Failed to delete database');
+    }
+  };
+
+  const handleEditDatabase = (db: any) => {
+    setSelectedDatabase(db);
+    // Try to parse SQLAlchemy URI to fill the form
+    // This is a bit complex as URIs vary, but we can try a basic regex or just leave it blank for security
+    setNewDatabase({
+      name: db.database_name,
+      engine: db.backend || 'PostgreSQL',
+      host: '', // Security: don't pre-fill sensitive info if not easily available
+      port: '',
+      database: '',
+      username: '',
+      password: ''
+    });
+    setIsDatabaseModalOpen(true);
+  };
+
+  const handleTestConnection = async () => {
+    try {
+      await supersetService.testConnection({
+        database_name: newDatabase.name,
+        engine: newDatabase.engine.toLowerCase(),
+        sqlalchemy_uri: `${newDatabase.engine.toLowerCase()}://${newDatabase.username}:${newDatabase.password}@${newDatabase.host}:${newDatabase.port}/${newDatabase.database}`,
+      });
+      toast.success('Connection test successful');
+    } catch (err) {
+      console.error('Connection test failed:', err);
+      toast.error('Connection test failed');
+    }
+  };
+
+  const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Inviting user:', newUser);
-    setIsInviteModalOpen(false);
-    setNewUser({ name: '', email: '', role: 'Viewer' });
+    try {
+      const [firstName, ...lastNameParts] = newUser.name.split(' ');
+      const lastName = lastNameParts.join(' ') || '.';
+      await supersetService.createUser({
+        first_name: firstName,
+        last_name: lastName,
+        username: newUser.email,
+        email: newUser.email,
+        active: true,
+        roles: [newUser.role === 'Admin' ? 1 : 2], // Simplified role mapping
+      });
+      toast.success('User invited successfully');
+      setIsInviteModalOpen(false);
+      setNewUser({ name: '', email: '', role: 'Viewer' });
+      loadSectionData();
+    } catch (err) {
+      console.error('Failed to invite user:', err);
+    }
   };
 
   const handleEdit = (user: any) => {
@@ -128,6 +273,62 @@ export const Admin = () => {
   const handleDelete = (user: any) => {
     setSelectedUser(user);
     setIsDeleteModalOpen(true);
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const [firstName, ...lastNameParts] = selectedUser.name.split(' ');
+      const lastName = lastNameParts.join(' ') || '.';
+      await supersetService.updateUser(selectedUser.id, {
+        first_name: firstName,
+        last_name: lastName,
+        active: selectedUser.status === 'Active',
+      });
+      toast.success('User updated successfully');
+      setIsEditModalOpen(false);
+      loadSectionData();
+    } catch (err) {
+      console.error('Failed to update user:', err);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    try {
+      await supersetService.deleteUser(selectedUser.id);
+      toast.success('User deleted successfully');
+      setIsDeleteModalOpen(false);
+      loadSectionData();
+    } catch (err) {
+      toast.error('Failed to delete user');
+      console.error('Failed to delete user:', err);
+    }
+  };
+
+  const handleCreateRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await supersetService.createRole(newRole.name);
+      toast.success('Role created successfully');
+      setIsRoleModalOpen(false);
+      setNewRole({ name: '', description: '', permissions: [] });
+      loadSectionData();
+    } catch (err) {
+      toast.error('Failed to create role');
+      console.error('Failed to create role:', err);
+    }
+  };
+
+  const handleDeleteRole = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this role?')) return;
+    try {
+      await supersetService.deleteRole(id);
+      toast.success('Role deleted successfully');
+      loadSectionData();
+    } catch (err) {
+      toast.error('Failed to delete role');
+      console.error('Failed to delete role:', err);
+    }
   };
 
   const users = [
@@ -153,45 +354,25 @@ export const Admin = () => {
 
   return (
     <div className="flex h-full">
-      {/* Admin Sub-Sidebar */}
-      <aside className="w-64 border-r border-slate-200 bg-white p-6 space-y-8 hidden xl:block overflow-y-auto">
-        <div className="space-y-1">
-          <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Governance</p>
-          <AdminSidebarItem label="Users" icon={Users} active={activeSection === 'users'} onClick={() => setActiveSection('users')} />
-          <AdminSidebarItem label="Groups" icon={Users2} active={activeSection === 'groups'} onClick={() => setActiveSection('groups')} />
-          <AdminSidebarItem label="Roles & Permissions" icon={ShieldCheck} active={activeSection === 'roles'} onClick={() => setActiveSection('roles')} />
-          <AdminSidebarItem label="Row Level Security" icon={Lock} active={activeSection === 'rls'} onClick={() => setActiveSection('rls')} />
-          <AdminSidebarItem label="Active Sessions" icon={Activity} active={activeSection === 'sessions'} onClick={() => setActiveSection('sessions')} />
-          <AdminSidebarItem label="Audit Logs" icon={Terminal} active={activeSection === 'audit'} onClick={() => setActiveSection('audit')} />
-        </div>
-
-        <div className="space-y-1">
-          <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">System</p>
-          <AdminSidebarItem label="Data Sources" icon={Database} active={activeSection === 'sources'} onClick={() => setActiveSection('sources')} />
-          <AdminSidebarItem label="Security" icon={Lock} active={activeSection === 'security'} onClick={() => setActiveSection('security')} />
-          <AdminSidebarItem label="General Settings" icon={Settings} active={activeSection === 'settings'} onClick={() => setActiveSection('settings')} />
-        </div>
-      </aside>
-
       {/* Admin Content Area */}
       <div className="flex-1 p-6 lg:p-10 space-y-8 overflow-y-auto">
         {activeSection === 'users' && (
           <>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">User Management</h2>
-                <p className="text-slate-500 text-sm">Manage users, roles, and their access permissions</p>
+                <h2 className="text-3xl font-bold text-foreground tracking-tight">User Management</h2>
+                <p className="text-muted-foreground text-sm">Manage users, roles, and their access permissions</p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input 
                     type="text" 
                     placeholder="Search users..." 
-                    className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-prism-500/10 focus:border-prism-500 transition-all shadow-sm"
+                    className="pl-10 pr-4 py-2 bg-background border border-border rounded-xl text-sm outline-none focus:ring-4 focus:ring-prism-500/10 focus:border-prism-500 transition-all shadow-sm"
                   />
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
+                <button className="flex items-center gap-2 px-4 py-2 bg-background border border-border rounded-xl text-sm font-bold text-foreground hover:bg-muted transition-all shadow-sm">
                   <Filter className="w-4 h-4" />
                   Filter
                 </button>
@@ -208,30 +389,30 @@ export const Admin = () => {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="prism-card p-6 flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
                   <Users className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Users</p>
-                  <h4 className="text-2xl font-bold text-slate-900">1,284</h4>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Total Users</p>
+                  <h4 className="text-2xl font-bold text-foreground">1,284</h4>
                 </div>
               </div>
               <div className="prism-card p-6 flex items-center gap-4">
-                <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Active Now</p>
-                  <h4 className="text-2xl font-bold text-slate-900">42</h4>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Active Now</p>
+                  <h4 className="text-2xl font-bold text-foreground">42</h4>
                 </div>
               </div>
               <div className="prism-card p-6 flex items-center gap-4">
-                <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600">
+                <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center text-rose-600 dark:text-rose-400">
                   <XCircle className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Pending Invites</p>
-                  <h4 className="text-2xl font-bold text-slate-900">18</h4>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Pending Invites</p>
+                  <h4 className="text-2xl font-bold text-foreground">18</h4>
                 </div>
               </div>
             </div>
@@ -240,23 +421,47 @@ export const Admin = () => {
             <div className="prism-card overflow-hidden">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/50">
-                    <th className="px-6 py-4 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">User</th>
-                    <th className="px-6 py-4 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Role</th>
-                    <th className="px-6 py-4 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
-                    <th className="px-6 py-4 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Last Active</th>
-                    <th className="px-6 py-4 border-b border-slate-200 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                  <tr className="bg-muted/30">
+                    <th className="px-6 py-4 border-b border-border text-[10px] font-bold text-muted-foreground uppercase tracking-widest">User</th>
+                    <th className="px-6 py-4 border-b border-border text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Role</th>
+                    <th className="px-6 py-4 border-b border-border text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-4 border-b border-border text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Last Active</th>
+                    <th className="px-6 py-4 border-b border-border text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {users.map((user, i) => (
-                    <UserRow 
-                      key={i} 
-                      {...user} 
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                    />
-                  ))}
+                <tbody className="divide-y divide-border">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <Activity className="w-8 h-8 text-prism-600 animate-spin" />
+                          <p className="text-sm text-muted-foreground font-medium">Synchronizing with Superset...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : supersetUsers.length > 0 ? (
+                    supersetUsers.map((user, i) => (
+                      <UserRow 
+                        key={i} 
+                        name={`${user.first_name} ${user.last_name}`}
+                        email={user.email}
+                        role={user.roles?.[0]?.name || 'User'}
+                        status={user.active ? 'Active' : 'Inactive'}
+                        lastActive={user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))
+                  ) : (
+                    users.map((user, i) => (
+                      <UserRow 
+                        key={i} 
+                        {...user} 
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))
+                  )}
                 </tbody>
               </table>
               <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-200 flex items-center justify-between">
@@ -287,31 +492,65 @@ export const Admin = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {roles.map((role, i) => (
-                <div key={i} className="prism-card p-6 space-y-4 group hover:border-prism-200 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 bg-prism-50 rounded-xl flex items-center justify-center text-prism-600">
-                      <ShieldCheck className="w-5 h-5" />
+              {isLoading ? (
+                [1, 2, 3].map(i => (
+                  <div key={i} className="prism-card p-6 h-48 animate-pulse bg-slate-50/50"></div>
+                ))
+              ) : supersetRoles.length > 0 ? (
+                supersetRoles.map((role, i) => (
+                  <div key={i} className="prism-card p-6 space-y-4 group hover:border-prism-200 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 bg-prism-50 dark:bg-prism-900/20 rounded-xl flex items-center justify-center text-prism-600 dark:text-prism-400">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => handleDeleteRole(role.id)}
+                          className="p-2 text-rose-400 hover:text-rose-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button className="p-2 text-muted-foreground hover:text-foreground rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <button className="p-2 text-slate-400 hover:text-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
+                    <div>
+                      <h4 className="font-bold text-foreground">{role.name}</h4>
+                      <p className="text-xs text-muted-foreground mt-1">Superset Security Role</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="neutral" className="text-[10px]">{role.permissions?.length || 0} Permissions</Badge>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900">{role.name}</h4>
-                    <p className="text-xs text-slate-500 mt-1">{role.description}</p>
+                ))
+              ) : (
+                roles.map((role, i) => (
+                  <div key={i} className="prism-card p-6 space-y-4 group hover:border-prism-200 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 bg-prism-50 rounded-xl flex items-center justify-center text-prism-600">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <button className="p-2 text-slate-400 hover:text-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900">{role.name}</h4>
+                      <p className="text-xs text-slate-500 mt-1">{role.description}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {role.permissions.map((p, j) => (
+                        <span key={j} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase">{p}</span>
+                      ))}
+                    </div>
+                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-xs text-slate-400 font-medium">{role.users} Users assigned</span>
+                      <button className="text-xs font-bold text-prism-600 hover:text-prism-700">Edit Permissions</button>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {role.permissions.map((p, j) => (
-                      <span key={j} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-bold uppercase">{p}</span>
-                    ))}
-                  </div>
-                  <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                    <span className="text-xs text-slate-400 font-medium">{role.users} Users assigned</span>
-                    <button className="text-xs font-bold text-prism-600 hover:text-prism-700">Edit Permissions</button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </>
         )}
@@ -324,8 +563,8 @@ export const Admin = () => {
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Strategic Groups</h2>
-                <p className="text-slate-500 text-sm">Organize users into high-performance teams and departments</p>
+                <h2 className="text-3xl font-bold text-foreground tracking-tight">Strategic Groups</h2>
+                <p className="text-muted-foreground text-sm">Organize users into high-performance teams and departments</p>
               </div>
               <button 
                 onClick={() => setIsGroupModalOpen(true)}
@@ -339,37 +578,37 @@ export const Admin = () => {
             <div className="prism-card overflow-hidden">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/50">
-                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Group Identity</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Strategic Focus</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Force Size</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Established</th>
+                  <tr className="bg-muted/30">
+                    <th className="px-8 py-5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Group Identity</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Strategic Focus</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Force Size</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Established</th>
                     <th className="px-8 py-5"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border">
                   {groups.map((group, i) => (
-                    <tr key={i} className="hover:bg-slate-50/30 transition-colors group">
+                    <tr key={i} className="hover:bg-muted/30 transition-colors group">
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-accent group-hover:text-accent-foreground transition-all">
+                          <div className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all">
                             <Users2 className="w-5 h-5" />
                           </div>
-                          <span className="font-bold text-slate-900 text-sm tracking-tight">{group.name}</span>
+                          <span className="font-bold text-foreground text-sm tracking-tight">{group.name}</span>
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <span className="text-xs text-slate-500 font-medium">{group.description}</span>
+                        <span className="text-xs text-muted-foreground font-medium">{group.description}</span>
                       </td>
                       <td className="px-8 py-6">
-                        <Badge variant="neutral" className="bg-slate-100 text-slate-600 border-slate-200 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">{group.members} Members</Badge>
+                        <Badge variant="neutral" className="bg-muted text-foreground border-border px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">{group.members} Members</Badge>
                       </td>
                       <td className="px-8 py-6">
-                        <span className="text-xs text-slate-400 font-medium">{group.created}</span>
+                        <span className="text-xs text-muted-foreground font-medium">{group.created}</span>
                       </td>
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-slate-100 transition-all">
+                          <button className="p-2 text-muted-foreground hover:text-foreground hover:bg-background rounded-xl shadow-sm border border-transparent hover:border-border transition-all">
                             <Settings className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -390,8 +629,8 @@ export const Admin = () => {
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Row Level Security</h2>
-                <p className="text-slate-500 text-sm">Define granular data access policies based on user attributes</p>
+                <h2 className="text-3xl font-bold text-foreground tracking-tight">Row Level Security</h2>
+                <p className="text-muted-foreground text-sm">Define granular data access policies based on user attributes</p>
               </div>
               <button className="flex items-center gap-2 px-6 py-2 bg-prism-600 text-white rounded-xl text-sm font-bold hover:bg-prism-700 transition-all shadow-lg shadow-prism-200 active:scale-95">
                 <Plus className="w-4 h-4" />
@@ -412,10 +651,10 @@ export const Admin = () => {
                     </div>
                     <div>
                       <div className="flex items-center gap-3">
-                        <h4 className="font-bold text-lg text-slate-900 tracking-tight">{rls.policy}</h4>
+                        <h4 className="font-bold text-lg text-foreground tracking-tight">{rls.policy}</h4>
                         <Badge variant={rls.status === 'Active' ? 'success' : 'neutral'} className="px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">{rls.status}</Badge>
                       </div>
-                      <p className="text-xs text-slate-400 mt-1 mb-4">{rls.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1 mb-4">{rls.description}</p>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                           <Database className="w-3.5 h-3.5 text-slate-300" />
@@ -424,7 +663,7 @@ export const Admin = () => {
                         <div className="w-1 h-1 rounded-full bg-slate-200" />
                         <div className="flex items-center gap-2">
                           <Terminal className="w-3.5 h-3.5 text-slate-300" />
-                          <code className="text-[10px] bg-slate-50 px-2 py-0.5 rounded text-prism-600 font-mono font-bold">{rls.clause}</code>
+                          <code className="text-[10px] bg-muted px-2 py-0.5 rounded text-prism-600 dark:text-prism-400 font-mono font-bold">{rls.clause}</code>
                         </div>
                       </div>
                     </div>
@@ -521,8 +760,8 @@ export const Admin = () => {
           >
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div>
-                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Audit Logs</h2>
-                <p className="text-slate-500 text-sm">Immutable record of all strategic platform operations</p>
+                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Governance & Screening</h2>
+                <p className="text-slate-500 text-sm">Immutable record of all strategic platform operations and security screening</p>
               </div>
               <div className="flex items-center gap-3">
                 <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
@@ -536,7 +775,7 @@ export const Admin = () => {
               <div className="p-4 border-b border-slate-100 bg-slate-50/30 flex items-center gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input type="text" placeholder="Search audit logs..." className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-prism-500 transition-all" />
+                  <input type="text" placeholder="Search logs..." className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-prism-500 transition-all" />
                 </div>
                 <select className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none">
                   <option>All Actions</option>
@@ -556,36 +795,72 @@ export const Admin = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {[
-                    { time: '2026-04-09 15:42:12', user: 'Laurent O.', action: 'LOGIN_SUCCESS', target: 'System', status: 'Success' },
-                    { time: '2026-04-09 14:15:05', user: 'Sarah Chen', action: 'RLS_POLICY_UPDATE', target: 'SALES_DATA', status: 'Success' },
-                    { time: '2026-04-09 13:02:44', user: 'Mike Ross', action: 'QUERY_EXECUTION', target: 'FINANCIALS', status: 'Success' },
-                    { time: '2026-04-09 12:55:10', user: 'Unknown', action: 'LOGIN_FAILURE', target: 'System', status: 'Failed' },
-                    { time: '2026-04-09 11:30:22', user: 'Laurent O.', action: 'USER_INVITE', target: 'alex.kim@prism.io', status: 'Success' },
-                  ].map((log, i) => (
-                    <tr key={i} className="hover:bg-slate-50/30 transition-colors group">
-                      <td className="px-8 py-6">
-                        <span className="text-[10px] font-mono text-slate-500">{log.time}</span>
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-400">
-                            {log.user.substring(0, 1)}
-                          </div>
-                          <span className="text-xs font-bold text-slate-700">{log.user}</span>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={5} className="px-8 py-12 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <Activity className="w-8 h-8 text-prism-600 animate-spin" />
+                          <p className="text-sm text-slate-500 font-medium">Fetching screening data...</p>
                         </div>
                       </td>
-                      <td className="px-8 py-6">
-                        <code className="text-[10px] font-black text-prism-600 bg-prism-50 px-2 py-0.5 rounded uppercase tracking-wider">{log.action}</code>
-                      </td>
-                      <td className="px-8 py-6">
-                        <span className="text-xs text-slate-500 font-medium">{log.target}</span>
-                      </td>
-                      <td className="px-8 py-6">
-                        <Badge variant={log.status === 'Success' ? 'success' : 'error'} className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">{log.status}</Badge>
-                      </td>
                     </tr>
-                  ))}
+                  ) : supersetLogs.length > 0 ? (
+                    supersetLogs.map((log, i) => (
+                      <tr key={i} className="hover:bg-slate-50/30 transition-colors group">
+                        <td className="px-8 py-6">
+                          <span className="text-[10px] font-mono text-slate-500">{new Date(log.dttm).toLocaleString()}</span>
+                        </td>
+                        <td className="px-8 py-6">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-400">
+                              {log.user?.username?.substring(0, 1) || 'U'}
+                            </div>
+                            <span className="text-xs font-bold text-slate-700">{log.user?.username || 'System'}</span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6">
+                          <code className="text-[10px] font-black text-prism-600 bg-prism-50 px-2 py-0.5 rounded uppercase tracking-wider">{log.action}</code>
+                        </td>
+                        <td className="px-8 py-6">
+                          <span className="text-xs text-slate-500 font-medium">{log.path || 'N/A'}</span>
+                        </td>
+                        <td className="px-8 py-6">
+                          <Badge variant="success" className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">Success</Badge>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    [
+                      { time: '2026-04-09 15:42:12', user: 'Laurent O.', action: 'LOGIN_SUCCESS', target: 'System', status: 'Success' },
+                      { time: '2026-04-09 14:15:05', user: 'Sarah Chen', action: 'RLS_POLICY_UPDATE', target: 'SALES_DATA', status: 'Success' },
+                      { time: '2026-04-09 13:02:44', user: 'Mike Ross', action: 'QUERY_EXECUTION', target: 'FINANCIALS', status: 'Success' },
+                      { time: '2026-04-09 12:55:10', user: 'Unknown', action: 'LOGIN_FAILURE', target: 'System', status: 'Failed' },
+                      { time: '2026-04-09 11:30:22', user: 'Laurent O.', action: 'USER_INVITE', target: 'alex.kim@prism.io', status: 'Success' },
+                    ].map((log, i) => (
+                      <tr key={i} className="hover:bg-slate-50/30 transition-colors group">
+                        <td className="px-8 py-6">
+                          <span className="text-[10px] font-mono text-slate-500">{log.time}</span>
+                        </td>
+                        <td className="px-8 py-6">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-400">
+                              {log.user.substring(0, 1)}
+                            </div>
+                            <span className="text-xs font-bold text-slate-700">{log.user}</span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6">
+                          <code className="text-[10px] font-black text-prism-600 bg-prism-50 px-2 py-0.5 rounded uppercase tracking-wider">{log.action}</code>
+                        </td>
+                        <td className="px-8 py-6">
+                          <span className="text-xs text-slate-500 font-medium">{log.target}</span>
+                        </td>
+                        <td className="px-8 py-6">
+                          <Badge variant={log.status === 'Success' ? 'success' : 'error'} className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">{log.status}</Badge>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
               <div className="px-8 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
@@ -599,6 +874,306 @@ export const Admin = () => {
           </motion.div>
         )}
 
+        {activeSection === 'screening' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-8"
+          >
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <h2 className="text-3xl font-bold text-foreground tracking-tight">Intelligence Screening</h2>
+                <p className="text-muted-foreground text-sm">Real-time platform health and security screening</p>
+              </div>
+              <button className="flex items-center gap-2 px-6 py-2 bg-prism-600 text-white rounded-xl text-sm font-bold hover:bg-prism-700 transition-all shadow-lg shadow-prism-200 active:scale-95">
+                <ShieldCheck className="w-4 h-4" />
+                Run Full Scan
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="prism-card p-8 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <Badge variant="success">Secure</Badge>
+                </div>
+                <div>
+                  <h4 className="font-bold text-foreground">Security Posture</h4>
+                  <p className="text-xs text-muted-foreground mt-1">94% compliance with corporate standards</p>
+                </div>
+                <div className="pt-4">
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: '94%' }}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="prism-card p-8 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+                    <Database className="w-5 h-5" />
+                  </div>
+                  <Badge variant="info">Healthy</Badge>
+                </div>
+                <div>
+                  <h4 className="font-bold text-foreground">Data Integrity</h4>
+                  <p className="text-xs text-muted-foreground mt-1">98.2% of datasets are synchronized and valid</p>
+                </div>
+                <div className="pt-4">
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: '98%' }}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="prism-card p-8 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <Badge variant="warning">Review</Badge>
+                </div>
+                <div>
+                  <h4 className="font-bold text-foreground">User Compliance</h4>
+                  <p className="text-xs text-muted-foreground mt-1">12 users require 2FA activation</p>
+                </div>
+                <div className="pt-4">
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 rounded-full" style={{ width: '75%' }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="prism-card p-8">
+              <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-8">Screening Checklist</h4>
+              <div className="space-y-6">
+                {[
+                  { title: 'Authentication Protocol', status: 'Passed', desc: 'All administrative logins are verified via MFA.' },
+                  { title: 'Data Encryption', status: 'Passed', desc: 'Strategic datasets are encrypted at rest and in transit.' },
+                  { title: 'Access Control', status: 'Warning', desc: '3 roles have over-permissive access to financial data.' },
+                  { title: 'Audit Trail', status: 'Passed', desc: 'Immutable logs are being captured for all operations.' },
+                  { title: 'Network Security', status: 'Passed', desc: 'Platform is isolated within the corporate VPC.' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors">
+                    <div className={cn(
+                      "w-5 h-5 rounded-full flex items-center justify-center mt-0.5",
+                      item.status === 'Passed' ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
+                    )}>
+                      {item.status === 'Passed' ? <CheckCircle2 className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-bold text-slate-900">{item.title}</p>
+                        <span className={cn(
+                          "text-[10px] font-black uppercase tracking-widest",
+                          item.status === 'Passed' ? "text-emerald-600" : "text-amber-600"
+                        )}>{item.status}</span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeSection === 'auth' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-8"
+          >
+            <div>
+              <h2 className="text-3xl font-bold text-foreground tracking-tight">Authentication & SSO</h2>
+              <p className="text-muted-foreground text-sm">Configure Single Sign-On and Directory Services</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Google SSO */}
+              <div className="prism-card p-8 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+                      <Chrome className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-foreground">Google SSO</h4>
+                      <p className="text-xs text-muted-foreground">OAuth 2.0 Authentication</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Active</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Client ID</label>
+                    <input 
+                      type="text" 
+                      value="710132596290-abc123.apps.googleusercontent.com"
+                      readOnly
+                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-600"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Client Secret</label>
+                    <input 
+                      type="password" 
+                      value="••••••••••••••••"
+                      readOnly
+                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-600"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Redirect URI</label>
+                    <input 
+                      type="text" 
+                      value={`${window.location.origin}/auth/callback`}
+                      readOnly
+                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-600"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 flex justify-end">
+                  <button className="px-4 py-2 text-xs font-bold text-prism-600 hover:bg-prism-50 rounded-lg transition-colors">Configure</button>
+                </div>
+              </div>
+
+              {/* GitHub SSO */}
+              <div className="prism-card p-8 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center text-foreground">
+                      <Github className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-foreground">GitHub SSO</h4>
+                      <p className="text-xs text-muted-foreground">OAuth 2.0 Authentication</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Disabled</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4 opacity-50 grayscale pointer-events-none">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Client ID</label>
+                    <input 
+                      type="text" 
+                      placeholder="Enter Client ID"
+                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-600"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Client Secret</label>
+                    <input 
+                      type="password" 
+                      placeholder="Enter Client Secret"
+                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-600"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4 flex justify-end">
+                  <button className="px-4 py-2 text-xs font-bold text-prism-600 hover:bg-prism-50 rounded-lg transition-colors">Enable</button>
+                </div>
+              </div>
+
+              {/* LDAP Configuration */}
+              <div className="prism-card p-8 space-y-6 lg:col-span-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400">
+                      <Database className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-foreground">LDAP / Active Directory</h4>
+                      <p className="text-xs text-muted-foreground">Enterprise Directory Integration</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Not Configured</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">LDAP Server</label>
+                      <input 
+                        type="text" 
+                        placeholder="ldap://corp-ad.company.com"
+                        className="w-full px-4 py-2 bg-background border border-border rounded-xl text-xs outline-none focus:ring-4 focus:ring-prism-500/10 focus:border-prism-500 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Port</label>
+                      <input 
+                        type="number" 
+                        placeholder="389"
+                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-4 focus:ring-prism-500/10 focus:border-prism-500 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Base DN</label>
+                      <input 
+                        type="text" 
+                        placeholder="dc=company,dc=com"
+                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-4 focus:ring-prism-500/10 focus:border-prism-500 transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bind DN</label>
+                      <input 
+                        type="text" 
+                        placeholder="cn=admin,dc=company,dc=com"
+                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-4 focus:ring-prism-500/10 focus:border-prism-500 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bind Password</label>
+                      <input 
+                        type="password" 
+                        placeholder="••••••••"
+                        className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-4 focus:ring-prism-500/10 focus:border-prism-500 transition-all"
+                      />
+                    </div>
+                    <div className="flex items-end h-full pb-1">
+                      <button 
+                        onClick={() => toast.success('LDAP Connection Test Successful')}
+                        className="w-full py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all"
+                      >
+                        Test Connection
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex justify-end gap-3">
+                  <button className="px-6 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all">Discard</button>
+                  <button 
+                    onClick={() => toast.success('LDAP Configuration Saved')}
+                    className="px-6 py-2 bg-prism-600 text-white rounded-xl text-sm font-bold hover:bg-prism-700 transition-all shadow-lg shadow-prism-200"
+                  >
+                    Save & Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
         {activeSection === 'sources' && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -620,49 +1195,122 @@ export const Admin = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                { name: 'Production Analytics', engine: 'PostgreSQL', host: 'db.prod.prism.io', status: 'Connected', health: 100 },
-                { name: 'Customer Data Lake', engine: 'BigQuery', host: 'google-cloud-project-id', status: 'Connected', health: 98 },
-                { name: 'Legacy CRM', engine: 'MySQL', host: '10.0.4.12', status: 'Disconnected', health: 0 },
-                { name: 'Local SQLite', engine: 'SQLite (WASM)', host: 'In-browser', status: 'Connected', health: 100 },
-              ].map((db, i) => (
-                <div key={i} className="prism-card p-8 group hover:border-prism-200 transition-all duration-500">
-                  <div className="flex items-start justify-between mb-8">
-                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-prism-600 group-hover:text-white transition-all duration-500">
-                      <Database className="w-6 h-6" />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={db.status === 'Connected' ? 'success' : 'error'} className="px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">{db.status}</Badge>
-                      <button className="p-2 text-slate-300 hover:text-slate-900 transition-colors">
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="font-bold text-lg text-slate-900 tracking-tight">{db.name}</h4>
-                      <p className="text-xs text-slate-400 mt-1 font-mono">{db.host}</p>
-                    </div>
-                    <div className="flex items-center justify-between py-4 border-y border-slate-50">
-                      <div className="space-y-1">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Engine</p>
-                        <p className="text-xs font-bold text-slate-700">{db.engine}</p>
+              {isLoading ? (
+                [1, 2].map(i => (
+                  <div key={i} className="prism-card p-8 h-64 animate-pulse bg-slate-50/50"></div>
+                ))
+              ) : supersetDatabases.length > 0 ? (
+                supersetDatabases.map((db, i) => (
+                  <div key={i} className="prism-card p-8 group hover:border-prism-200 transition-all duration-500">
+                    <div className="flex items-start justify-between mb-8">
+                      <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-prism-600 group-hover:text-white transition-all duration-500">
+                        <Database className="w-6 h-6" />
                       </div>
-                      <div className="space-y-1 text-right">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Latency</p>
-                        <p className="text-xs font-bold text-slate-700">{db.status === 'Connected' ? '24ms' : '--'}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Activity className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Health: {db.health}%</span>
+                        <Badge variant="success" className="px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">Connected</Badge>
+                        <button className="p-2 text-slate-300 hover:text-slate-900 transition-colors">
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button className="text-[10px] font-black text-prism-600 uppercase tracking-widest hover:text-prism-700 transition-colors">Test Connection</button>
+                    </div>
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="font-bold text-lg text-slate-900 tracking-tight">{db.database_name}</h4>
+                        <p className="text-xs text-slate-400 mt-1 font-mono">Superset Backend Connection</p>
+                      </div>
+                      <div className="flex items-center justify-between py-4 border-y border-slate-50">
+                        <div className="space-y-1">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Engine</p>
+                          <p className="text-xs font-bold text-slate-700">{db.backend}</p>
+                        </div>
+                        <div className="space-y-1 text-right">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">ID</p>
+                          <p className="text-xs font-bold text-slate-700">#{db.id}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Activity className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Operational</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button 
+                            onClick={() => handleEditDatabase(db)}
+                            className="text-[10px] font-black text-prism-600 uppercase tracking-widest hover:text-prism-700 transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteDatabase(db.id)}
+                            className="text-[10px] font-black text-rose-600 uppercase tracking-widest hover:text-rose-700 transition-colors"
+                          >
+                            Delete
+                          </button>
+                          <button 
+                            onClick={() => {
+                              // For existing DBs, we might need a different test endpoint or use the same with stored URI
+                              toast.info('Testing existing connection...');
+                              supersetService.testConnection({
+                                database_name: db.database_name,
+                                engine: db.backend,
+                                sqlalchemy_uri: db.sqlalchemy_uri // This might be masked in API
+                              }).then(() => toast.success('Connection healthy'))
+                                .catch(() => toast.error('Connection failed'));
+                            }}
+                            className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-slate-700 transition-colors"
+                          >
+                            Test
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                [
+                  { name: 'Production Analytics', engine: 'PostgreSQL', host: 'db.prod.prism.io', status: 'Connected', health: 100 },
+                  { name: 'Customer Data Lake', engine: 'BigQuery', host: 'google-cloud-project-id', status: 'Connected', health: 98 },
+                  { name: 'Legacy CRM', engine: 'MySQL', host: '10.0.4.12', status: 'Disconnected', health: 0 },
+                  { name: 'Local SQLite', engine: 'SQLite (WASM)', host: 'In-browser', status: 'Connected', health: 100 },
+                ].map((db, i) => (
+                  <div key={i} className="prism-card p-8 group hover:border-prism-200 transition-all duration-500">
+                    <div className="flex items-start justify-between mb-8">
+                      <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-prism-600 group-hover:text-white transition-all duration-500">
+                        <Database className="w-6 h-6" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={db.status === 'Connected' ? 'success' : 'error'} className="px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">{db.status}</Badge>
+                        <button className="p-2 text-slate-300 hover:text-slate-900 transition-colors">
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="font-bold text-lg text-slate-900 tracking-tight">{db.name}</h4>
+                        <p className="text-xs text-slate-400 mt-1 font-mono">{db.host}</p>
+                      </div>
+                      <div className="flex items-center justify-between py-4 border-y border-slate-50">
+                        <div className="space-y-1">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Engine</p>
+                          <p className="text-xs font-bold text-slate-700">{db.engine}</p>
+                        </div>
+                        <div className="space-y-1 text-right">
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Latency</p>
+                          <p className="text-xs font-bold text-slate-700">{db.status === 'Connected' ? '24ms' : '--'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Activity className="w-3.5 h-3.5 text-emerald-500" />
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Health: {db.health}%</span>
+                        </div>
+                        <button className="text-[10px] font-black text-prism-600 uppercase tracking-widest hover:text-prism-700 transition-colors">Test Connection</button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </motion.div>
         )}
@@ -837,6 +1485,137 @@ export const Admin = () => {
             </div>
           </motion.div>
         )}
+
+        {activeSection === 'reports' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-8"
+          >
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Alerts & Reports</h2>
+                <p className="text-slate-500 text-sm">Schedule automated reports and configure data alerts</p>
+              </div>
+              <button className="flex items-center gap-2 px-6 py-3 bg-prism-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-prism-700 transition-all shadow-xl shadow-prism-200 active:scale-95">
+                <Plus className="w-4 h-4" />
+                Create Schedule
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="prism-card p-8 flex items-center gap-6">
+                <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+                  <Bell className="w-7 h-7" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Active Alerts</p>
+                  <h4 className="text-3xl font-black text-slate-900">12</h4>
+                </div>
+              </div>
+              <div className="prism-card p-8 flex items-center gap-6">
+                <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
+                  <Calendar className="w-7 h-7" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Scheduled Reports</p>
+                  <h4 className="text-3xl font-black text-slate-900">24</h4>
+                </div>
+              </div>
+              <div className="prism-card p-8 flex items-center gap-6">
+                <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                  <FileText className="w-7 h-7" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Sent Today</p>
+                  <h4 className="text-3xl font-black text-slate-900">156</h4>
+                </div>
+              </div>
+            </div>
+
+            <div className="prism-card overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 border-b border-slate-100">
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Name</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Type</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Schedule</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Recipients</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Last Run</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={7} className="px-8 py-12 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <Activity className="w-8 h-8 text-prism-600 animate-spin" />
+                          <p className="text-sm text-slate-500 font-medium">Loading reports...</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : supersetReports.length > 0 ? (
+                    supersetReports.map((report, i) => (
+                      <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                        <td className="px-8 py-6">
+                          <span className="font-bold text-slate-900 text-sm">{report.name}</span>
+                        </td>
+                        <td className="px-8 py-6">
+                          <Badge variant={report.type === 'Report' ? 'info' : 'warning'}>{report.type}</Badge>
+                        </td>
+                        <td className="px-8 py-6 text-xs text-slate-500 font-mono">{report.crontab}</td>
+                        <td className="px-8 py-6 text-sm text-slate-600 font-bold">{report.recipients?.length || 0} users</td>
+                        <td className="px-8 py-6">
+                          <div className="flex items-center gap-2">
+                            <div className={cn("w-2 h-2 rounded-full", report.active ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-slate-300")} />
+                            <span className="text-xs font-bold text-slate-600">{report.active ? 'Active' : 'Inactive'}</span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6 text-xs text-slate-500 font-medium">{report.last_eval_status || 'Never'}</td>
+                        <td className="px-8 py-6 text-right">
+                          <button className="p-2.5 text-slate-400 hover:text-prism-600 hover:bg-prism-50 rounded-xl transition-all">
+                            <Settings className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    [
+                      { name: "Weekly Sales Summary", type: "Report", schedule: "Every Monday 8:00 AM", recipients: 12, status: "Active", lastRun: "2 days ago" },
+                      { name: "Inventory Alert - Low Stock", type: "Alert", schedule: "Real-time", recipients: 3, status: "Active", lastRun: "1 hour ago" },
+                      { name: "Monthly Financial Review", type: "Report", schedule: "1st of every month", recipients: 5, status: "Paused", lastRun: "8 days ago" },
+                    ].map((report, i) => (
+                      <tr key={i} className="hover:bg-slate-50 transition-colors group">
+                        <td className="px-8 py-6">
+                          <span className="font-bold text-slate-900 text-sm">{report.name}</span>
+                        </td>
+                        <td className="px-8 py-6">
+                          <Badge variant={report.type === 'Report' ? 'info' : 'warning'}>{report.type}</Badge>
+                        </td>
+                        <td className="px-8 py-6 text-xs text-slate-500 font-mono">{report.schedule}</td>
+                        <td className="px-8 py-6 text-sm text-slate-600 font-bold">{report.recipients} users</td>
+                        <td className="px-8 py-6">
+                          <div className="flex items-center gap-2">
+                            <div className={cn("w-2 h-2 rounded-full", report.status === 'Active' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-slate-300")} />
+                            <span className="text-xs font-bold text-slate-600">{report.status}</span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6 text-xs text-slate-500 font-medium">{report.lastRun}</td>
+                        <td className="px-8 py-6 text-right">
+                          <button className="p-2.5 text-slate-400 hover:text-prism-600 hover:bg-prism-50 rounded-xl transition-all">
+                            <Settings className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Invite User Modal */}
@@ -916,7 +1695,7 @@ export const Admin = () => {
         title="Edit User Details"
       >
         {selectedUser && (
-          <form onSubmit={(e) => { e.preventDefault(); setIsEditModalOpen(false); }} className="space-y-6">
+          <form onSubmit={handleUpdateUser} className="space-y-6">
             <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl mb-6">
               <div className="w-12 h-12 rounded-full bg-white border border-slate-200 overflow-hidden shadow-sm">
                 <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedUser.name}`} alt={selectedUser.name} />
@@ -1014,7 +1793,7 @@ export const Admin = () => {
                 Keep User
               </button>
               <button 
-                onClick={() => { console.log('Deleting user:', selectedUser.email); setIsDeleteModalOpen(false); }}
+                onClick={handleDeleteUser}
                 className="flex-1 py-3 bg-rose-600 text-white rounded-xl font-bold text-sm hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 active:scale-95"
               >
                 Delete Permanently
@@ -1030,11 +1809,13 @@ export const Admin = () => {
         onClose={() => setIsRoleModalOpen(false)} 
         title="Create New Role"
       >
-        <form onSubmit={(e) => { e.preventDefault(); setIsRoleModalOpen(false); }} className="space-y-6">
+        <form onSubmit={handleCreateRole} className="space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Role Name</label>
             <input 
               type="text" 
+              value={newRole.name}
+              onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
               placeholder="e.g. Data Analyst" 
               className="w-full px-4 py-3 bg-slate-100 border-transparent focus:bg-white focus:border-prism-500 focus:ring-4 focus:ring-prism-500/10 rounded-xl text-sm transition-all outline-none"
               required
@@ -1043,6 +1824,8 @@ export const Admin = () => {
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Description</label>
             <textarea 
+              value={newRole.description}
+              onChange={(e) => setNewRole({ ...newRole, description: e.target.value })}
               placeholder="Describe the responsibilities of this role..." 
               className="w-full px-4 py-3 bg-slate-100 border-transparent focus:bg-white focus:border-prism-500 focus:ring-4 focus:ring-prism-500/10 rounded-xl text-sm transition-all outline-none min-h-[100px]"
               required
@@ -1110,8 +1893,12 @@ export const Admin = () => {
       {/* Connect Database Modal */}
       <Modal 
         isOpen={isDatabaseModalOpen} 
-        onClose={() => setIsDatabaseModalOpen(false)} 
-        title="Connect New Database"
+        onClose={() => {
+          setIsDatabaseModalOpen(false);
+          setSelectedDatabase(null);
+          setNewDatabase({ name: '', engine: 'PostgreSQL', host: '', port: '', database: '', username: '', password: '' });
+        }} 
+        title={selectedDatabase ? "Edit Database Connection" : "Connect New Database"}
       >
         <form onSubmit={handleConnectDatabase} className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
@@ -1138,6 +1925,21 @@ export const Admin = () => {
                 <option>BigQuery</option>
                 <option>Snowflake</option>
                 <option>Redshift</option>
+                <option>Oracle</option>
+                <option>Microsoft SQL Server</option>
+                <option>SQLite</option>
+                <option>ClickHouse</option>
+                <option>Trino</option>
+                <option>Presto</option>
+                <option>Druid</option>
+                <option>Elasticsearch</option>
+                <option>MongoDB (via Connector)</option>
+                <option>Databricks</option>
+                <option>MariaDB</option>
+                <option>CockroachDB</option>
+                <option>Firebolt</option>
+                <option>Teradata</option>
+                <option>Dremio</option>
               </select>
             </div>
             <div className="space-y-2 col-span-2 md:col-span-1">
@@ -1173,21 +1975,52 @@ export const Admin = () => {
                 required
               />
             </div>
+            <div className="space-y-2 col-span-2 md:col-span-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Username</label>
+              <input 
+                type="text" 
+                value={newDatabase.username}
+                onChange={(e) => setNewDatabase({ ...newDatabase, username: e.target.value })}
+                placeholder="admin" 
+                className="w-full px-4 py-3 bg-slate-100 border-transparent focus:bg-white focus:border-prism-500 rounded-xl text-sm outline-none"
+                required
+              />
+            </div>
+            <div className="space-y-2 col-span-2 md:col-span-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Password</label>
+              <input 
+                type="password" 
+                value={newDatabase.password}
+                onChange={(e) => setNewDatabase({ ...newDatabase, password: e.target.value })}
+                placeholder="••••••••" 
+                className="w-full px-4 py-3 bg-slate-100 border-transparent focus:bg-white focus:border-prism-500 rounded-xl text-sm outline-none"
+                required
+              />
+            </div>
           </div>
 
-          <div className="pt-4 flex gap-3">
+          <div className="pt-6 flex flex-col gap-3">
+            <div className="flex gap-3">
+              <button 
+                type="button"
+                onClick={handleTestConnection}
+                className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
+              >
+                Test Connection
+              </button>
+              <button 
+                type="submit"
+                className="flex-1 py-3 bg-prism-600 text-white rounded-xl font-bold text-sm hover:bg-prism-700 transition-all shadow-lg shadow-prism-200 active:scale-95"
+              >
+                {selectedDatabase ? 'Save Changes' : 'Connect'}
+              </button>
+            </div>
             <button 
               type="button"
               onClick={() => setIsDatabaseModalOpen(false)}
-              className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
+              className="w-full py-2 text-slate-400 hover:text-slate-600 font-bold text-xs uppercase tracking-widest transition-all"
             >
               Cancel
-            </button>
-            <button 
-              type="submit"
-              className="flex-1 py-3 bg-prism-600 text-white rounded-xl font-bold text-sm hover:bg-prism-700 transition-all shadow-lg shadow-prism-200 active:scale-95"
-            >
-              Connect
             </button>
           </div>
         </form>

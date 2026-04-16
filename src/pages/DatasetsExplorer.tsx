@@ -10,13 +10,17 @@ import {
   Upload,
   CheckCircle2,
   AlertCircle,
-  ShieldCheck
+  ShieldCheck,
+  Filter,
+  ChevronDown
 } from 'lucide-react';
 import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
 import { Link } from 'react-router-dom';
 import Papa from 'papaparse';
 import { importCSV, getTables } from '../lib/db';
+import { supersetService } from '../services/supersetService';
+import { cn } from '../lib/utils';
 
 const DatasetCard = ({ name, type, owner, lastModified, health }: any) => (
   <motion.div 
@@ -81,20 +85,47 @@ const DatasetCard = ({ name, type, owner, lastModified, health }: any) => (
 
 export const DatasetsExplorer = () => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [isNewDatasetModalOpen, setIsNewDatasetModalOpen] = React.useState(false);
   const [importStatus, setImportStatus] = React.useState<'idle' | 'parsing' | 'importing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = React.useState('');
   const [localTables, setLocalTables] = React.useState<string[]>([]);
+  const [supersetDatasets, setSupersetDatasets] = React.useState<any[]>([]);
+  const [databases, setDatabases] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  
+  // New Dataset State
+  const [newDataset, setNewDataset] = React.useState({
+    name: '',
+    database_id: '',
+    sql: '',
+  });
+  const [isCreating, setIsCreating] = React.useState(false);
+  
+  // Search and Filter State
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [typeFilter, setTypeFilter] = React.useState<'All' | 'Physical' | 'Virtual'>('All');
+  const [minHealth, setMinHealth] = React.useState(0);
+  const [isFilterOpen, setIsFilterOpen] = React.useState(false);
 
   React.useEffect(() => {
-    loadTables();
+    loadData();
   }, []);
 
-  const loadTables = async () => {
+  const loadData = async () => {
+    setIsLoading(true);
     try {
-      const tables = await getTables();
+      const [tables, { result: dsResult }, { result: dbResult }] = await Promise.all([
+        getTables(),
+        supersetService.getDatasets().catch(() => ({ result: [] })),
+        supersetService.getDatabases().catch(() => ({ result: [] }))
+      ]);
       setLocalTables(tables);
+      setSupersetDatasets(dsResult);
+      setDatabases(dbResult);
     } catch (err) {
-      console.error('Failed to load tables:', err);
+      console.error('Failed to load datasets:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -113,7 +144,7 @@ export const DatasetsExplorer = () => {
         try {
           await importCSV(tableName, results.data);
           setImportStatus('success');
-          loadTables();
+          loadData();
           setTimeout(() => {
             setIsModalOpen(false);
             setImportStatus('idle');
@@ -130,6 +161,24 @@ export const DatasetsExplorer = () => {
     });
   };
 
+  const handleCreateVirtualDataset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreating(true);
+    try {
+      await supersetService.createDataset({
+        table_name: newDataset.name,
+        database: parseInt(newDataset.database_id),
+        sql: newDataset.sql,
+      });
+      setIsNewDatasetModalOpen(false);
+      setNewDataset({ name: '', database_id: '', sql: '' });
+      loadData();
+    } catch (err) {
+      console.error('Failed to create virtual dataset:', err);
+    } finally {
+      setIsCreating(false);
+    }
+  };
   const datasets = [
     ...localTables.map(table => ({
       name: table,
@@ -139,40 +188,156 @@ export const DatasetsExplorer = () => {
       lastModified: "Just now",
       health: 100
     })),
-    { name: "Sales_Data_v2", type: "Physical", owner: "Sarah Chen", status: "Healthy", lastModified: "2h ago", health: 98 },
-    { name: "User_Profiles", type: "Virtual", owner: "Mike Ross", status: "Healthy", lastModified: "5h ago", health: 100 },
-  ];
+    ...supersetDatasets.map(ds => ({
+      name: ds.table_name || ds.name,
+      type: ds.kind === 'physical' ? 'Physical' : 'Virtual',
+      owner: ds.owner || 'Superset',
+      status: "Healthy",
+      lastModified: ds.changed_on_delta_humanized || 'Recently',
+      health: ds.healthScore || 95
+    }))
+  ].filter(ds => {
+    const matchesSearch = ds.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         ds.owner.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = typeFilter === 'All' || ds.type === typeFilter;
+    const matchesHealth = ds.health >= minHealth;
+    return matchesSearch && matchesType && matchesHealth;
+  });
 
   return (
     <div className="p-8 lg:p-12 space-y-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-semibold tracking-tight">Datasets</h2>
-          <p className="text-muted-foreground text-sm mt-1">Manage your local data sources.</p>
+          <p className="text-muted-foreground text-sm mt-1">Manage your local and remote data sources.</p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="relative group max-w-xs">
+          <div className="relative group w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-foreground transition-colors" />
             <input 
               type="text" 
-              placeholder="Search..." 
+              placeholder="Search by name or owner..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="input-minimal pl-10"
             />
           </div>
+          
+          <div className="relative">
+            <button 
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className={cn(
+                "btn-secondary flex items-center gap-2 px-4 py-2",
+                (typeFilter !== 'All' || minHealth > 0) && "border-accent text-accent"
+              )}
+            >
+              <Filter className="w-4 h-4" />
+              Filters
+              {(typeFilter !== 'All' || minHealth > 0) && (
+                <Badge variant="info" className="ml-1 px-1.5 py-0 rounded-full text-[8px]">
+                  {[typeFilter !== 'All', minHealth > 0].filter(Boolean).length}
+                </Badge>
+              )}
+            </button>
+
+            {isFilterOpen && (
+              <div className="absolute right-0 mt-2 w-72 bg-background border border-border rounded-xl shadow-2xl p-6 z-50 space-y-6">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Dataset Type</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['All', 'Physical', 'Virtual'].map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setTypeFilter(t as any)}
+                        className={cn(
+                          "px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border transition-all",
+                          typeFilter === t 
+                            ? "bg-accent text-accent-foreground border-accent" 
+                            : "bg-muted/50 border-transparent hover:bg-muted"
+                        )}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Min Health Score</label>
+                    <span className="text-[10px] font-bold text-accent">{minHealth}%</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    step="5"
+                    value={minHealth}
+                    onChange={(e) => setMinHealth(parseInt(e.target.value))}
+                    className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-accent"
+                  />
+                  <div className="flex justify-between text-[8px] text-muted-foreground font-black uppercase tracking-widest">
+                    <span>0%</span>
+                    <span>50%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-border flex justify-between items-center">
+                  <button 
+                    onClick={() => {
+                      setTypeFilter('All');
+                      setMinHealth(0);
+                    }}
+                    className="text-[10px] font-bold text-muted-foreground hover:text-foreground uppercase tracking-widest"
+                  >
+                    Reset
+                  </button>
+                  <button 
+                    onClick={() => setIsFilterOpen(false)}
+                    className="btn-primary px-4 py-1.5 text-[10px]"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <button 
             onClick={() => setIsModalOpen(true)}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            Import CSV
+          </button>
+
+          <button 
+            onClick={() => setIsNewDatasetModalOpen(true)}
             className="btn-primary flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Import CSV
+            New Dataset
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {datasets.map((ds, i) => (
-          <DatasetCard key={i} {...ds} />
-        ))}
+        {isLoading ? (
+          [1, 2, 3].map(i => (
+            <div key={i} className="h-64 bg-muted animate-pulse rounded-2xl"></div>
+          ))
+        ) : datasets.length > 0 ? (
+          datasets.map((ds, i) => (
+            <DatasetCard key={i} {...ds} />
+          ))
+        ) : (
+          <div className="col-span-full py-24 text-center border border-dashed border-border rounded-2xl">
+            <Database className="w-12 h-12 text-muted/40 mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No datasets found</h3>
+            <p className="text-muted-foreground text-sm">Try adjusting your search or filters.</p>
+          </div>
+        )}
       </div>
 
       {/* Import Modal */}
@@ -218,6 +383,71 @@ export const DatasetsExplorer = () => {
             </p>
           </div>
         </div>
+      </Modal>
+      {/* New Virtual Dataset Modal */}
+      <Modal 
+        isOpen={isNewDatasetModalOpen} 
+        onClose={() => setIsNewDatasetModalOpen(false)} 
+        title="Create Virtual Dataset"
+      >
+        <form onSubmit={handleCreateVirtualDataset} className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Dataset Name</label>
+              <input 
+                type="text" 
+                value={newDataset.name}
+                onChange={(e) => setNewDataset({ ...newDataset, name: e.target.value })}
+                placeholder="e.g. Monthly Revenue Analysis" 
+                className="input-minimal"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Database</label>
+              <select 
+                value={newDataset.database_id}
+                onChange={(e) => setNewDataset({ ...newDataset, database_id: e.target.value })}
+                className="input-minimal appearance-none"
+                required
+              >
+                <option value="">Select a database...</option>
+                {databases.map(db => (
+                  <option key={db.id} value={db.id}>{db.database_name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">SQL Query</label>
+              <textarea 
+                value={newDataset.sql}
+                onChange={(e) => setNewDataset({ ...newDataset, sql: e.target.value })}
+                placeholder="SELECT * FROM my_table WHERE ..." 
+                className="input-minimal min-h-[200px] font-mono text-xs"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 flex gap-3">
+            <button 
+              type="button"
+              onClick={() => setIsNewDatasetModalOpen(false)}
+              className="flex-1 btn-secondary"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              disabled={isCreating}
+              className="flex-1 btn-primary"
+            >
+              {isCreating ? 'Creating...' : 'Create Dataset'}
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

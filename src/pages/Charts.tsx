@@ -6,112 +6,13 @@ import {
   Search, 
   LayoutGrid, 
   List, 
-  MoreVertical,
-  Star,
-  Database,
   Plus,
-  PieChart,
-  BarChart,
-  LineChart,
-  Map,
-  Table as TableIcon,
-  Activity
+  BarChart
 } from 'lucide-react';
-import { Badge } from '../components/Badge';
-import { getCharts } from '../lib/db';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
-const ChartCard = ({ chart, view }: any) => {
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'Pie': return PieChart;
-      case 'Bar': return BarChart;
-      case 'Line': return LineChart;
-      case 'Map': return Map;
-      case 'Table': return TableIcon;
-      default: return Activity;
-    }
-  };
-
-  const Icon = getIcon(chart.chart_type);
-
-  if (view === 'list') {
-    return (
-      <div className="glass-panel p-5 flex items-center gap-8 group cursor-pointer hover:border-accent/30 transition-all duration-500">
-        <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center shrink-0 border border-slate-100 group-hover:bg-accent group-hover:text-accent-foreground group-hover:ring-8 group-hover:ring-accent/5 transition-all">
-          <Icon className="w-5 h-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-base text-slate-900 tracking-tight group-hover:text-accent transition-colors">{chart.name}</h4>
-          <div className="flex items-center gap-3 mt-1.5">
-            <span className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">Visualization Asset</span>
-            <div className="w-1 h-1 rounded-full bg-slate-200" />
-            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{new Date(chart.created_at).toLocaleDateString()}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-10">
-          <div className="hidden sm:flex flex-col items-end">
-            <div className="flex items-center gap-2 text-slate-400">
-              <Database className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-black uppercase tracking-widest">{chart.table_name}</span>
-            </div>
-            <span className="text-[8px] text-slate-300 mt-1 font-serif italic">Source Table</span>
-          </div>
-          <Badge variant="info" className="bg-accent/5 text-accent border-accent/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">{chart.chart_type}</Badge>
-          <button className="p-2.5 text-slate-300 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all">
-            <MoreVertical className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <motion.div 
-      layout
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="glass-panel group cursor-pointer overflow-hidden hover:border-accent/30 transition-all duration-500"
-    >
-      <div className="h-44 bg-slate-50 relative overflow-hidden flex items-center justify-center">
-        <img 
-          src={`https://picsum.photos/seed/${chart.name}/600/400`} 
-          alt={chart.name} 
-          className="w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-100 transition-all duration-1000"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-500">
-          <button className="p-2.5 bg-white/90 backdrop-blur-xl rounded-xl border border-white/20 hover:bg-white transition-all shadow-xl">
-            <Star className="w-3.5 h-3.5 text-slate-400 hover:text-amber-500" />
-          </button>
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="p-4 bg-white/90 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
-            <Icon className="w-6 h-6 text-slate-900" />
-          </div>
-        </div>
-      </div>
-      <div className="p-6">
-        <h3 className="font-bold text-lg text-slate-900 tracking-tight mb-1 truncate group-hover:text-accent transition-colors">{chart.name}</h3>
-        <p className="text-[10px] text-slate-400 font-serif italic mb-6">Visual intelligence component</p>
-        <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-          <div className="flex items-center gap-2">
-            <Database className="w-3.5 h-3.5 text-slate-300" />
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest truncate max-w-[100px]">{chart.table_name}</span>
-          </div>
-          <Badge variant="info" className="bg-accent/5 text-accent border-accent/10 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">{chart.chart_type}</Badge>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-;
+import { getCharts as getLocalCharts } from '../lib/db';
+import { supersetService } from '../services/supersetService';
+import { ChartCard } from '../components/cards/ChartCard';
+import { cn } from '../lib/utils';
 
 const FilterSection = ({ title, options }: any) => (
   <div className="space-y-4">
@@ -140,10 +41,21 @@ export const Charts = () => {
 
   const loadCharts = async () => {
     try {
-      const c = await getCharts();
-      setCharts(c);
+      const { result } = await supersetService.getCharts();
+      if (result.length > 0) {
+        setCharts(result);
+      } else {
+        const local = await getLocalCharts();
+        setCharts(local);
+      }
     } catch (err) {
-      console.error('Failed to load charts:', err);
+      console.error('Failed to load charts from Superset, falling back to local:', err);
+      try {
+        const local = await getLocalCharts();
+        setCharts(local);
+      } catch (localErr) {
+        console.error('Failed to load local charts:', localErr);
+      }
     } finally {
       setIsLoading(false);
     }

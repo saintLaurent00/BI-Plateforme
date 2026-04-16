@@ -41,7 +41,7 @@ export const AIChat = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
           parts: [{ text: m.text }]
         })),
         config: {
-          systemInstruction: "Tu es Kwaku, l'assistant IA de Prism, une plateforme d'analyse de données d'entreprise. Sois professionnel, serviable et concis. Réponds en français.",
+          systemInstruction: "Tu es Kwaku, l'assistant IA de Prism, une plateforme d'analyse de données d'entreprise. Sois professionnel, serviable et concis. Réponds en français. Tu as accès aux outils de gouvernance et de screening dans le panneau d'administration pour surveiller la santé de la plateforme et la sécurité des données.",
         }
       });
 

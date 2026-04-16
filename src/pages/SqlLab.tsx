@@ -20,6 +20,7 @@ import {
 import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
 import { executeQuery, getTables, getTableSchema, saveQuery, getSavedQueries } from '../lib/db';
+import { supersetService } from '../services/supersetService';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -70,19 +71,39 @@ export const SqlLab = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [executionTime, setExecutionTime] = React.useState<number | null>(null);
   const [activeQueryId, setActiveQueryId] = React.useState<string | null>(null);
+  const [databases, setDatabases] = React.useState<any[]>([]);
+  const [selectedDatabase, setSelectedDatabase] = React.useState<any>({ id: 'local', database_name: 'Local_SQLite' });
+  const [isDbSelectorOpen, setIsDbSelectorOpen] = React.useState(false);
 
   React.useEffect(() => {
     loadSchema();
     loadSavedQueries();
     loadHistory();
+    loadDatabases();
   }, []);
 
-  const loadSchema = async () => {
+  const loadDatabases = async () => {
     try {
-      const t = await getTables();
-      setTables(t);
+      const { result } = await supersetService.getDatabases();
+      setDatabases([{ id: 'local', database_name: 'Local_SQLite' }, ...(result || [])]);
     } catch (err) {
-      console.error('Failed to load tables:', err);
+      console.error('Failed to load Superset databases:', err);
+      setDatabases([{ id: 'local', database_name: 'Local_SQLite' }]);
+    }
+  };
+
+  const loadSchema = async () => {
+    if (selectedDatabase.id === 'local') {
+      try {
+        const t = await getTables();
+        setTables(t);
+      } catch (err) {
+        console.error('Failed to load tables:', err);
+      }
+    } else {
+      // For Superset, we'd ideally fetch tables for the selected DB
+      // For now, we'll keep it simple or show a message
+      setTables([]);
     }
   };
 
@@ -126,7 +147,14 @@ export const SqlLab = () => {
     setError(null);
     const start = performance.now();
     try {
-      const res = await executeQuery(sql);
+      let res;
+      if (selectedDatabase.id === 'local') {
+        res = await executeQuery(sql);
+      } else {
+        const supersetRes = await supersetService.executeSql(sql, selectedDatabase.id);
+        // Superset result structure varies, we need to adapt it
+        res = supersetRes.data || [];
+      }
       setResults(res);
       const time = Math.round(performance.now() - start);
       setExecutionTime(time);
@@ -169,15 +197,40 @@ export const SqlLab = () => {
       {/* Left Sidebar: Schema Explorer */}
       <aside className="w-60 border-r border-border flex flex-col">
         <div className="p-6 border-b border-border space-y-6">
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
             <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Database</label>
-            <button className="w-full flex items-center justify-between px-3 py-2 bg-muted rounded-md border border-border text-xs font-medium">
-              <div className="flex items-center gap-2">
-                <Database className="w-3.5 h-3.5" />
-                Local_SQLite
+            <button 
+              onClick={() => setIsDbSelectorOpen(!isDbSelectorOpen)}
+              className="w-full flex items-center justify-between px-3 py-2 bg-muted rounded-md border border-border text-xs font-medium hover:border-accent transition-colors"
+            >
+              <div className="flex items-center gap-2 truncate">
+                <Database className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{selectedDatabase.database_name}</span>
               </div>
-              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+              <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform", isDbSelectorOpen && "rotate-180")} />
             </button>
+
+            {isDbSelectorOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-md shadow-xl z-50 py-1 max-h-60 overflow-y-auto">
+                {databases.map(db => (
+                  <button
+                    key={db.id}
+                    onClick={() => {
+                      setSelectedDatabase(db);
+                      setIsDbSelectorOpen(false);
+                      loadSchema();
+                    }}
+                    className={cn(
+                      "w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors flex items-center gap-2",
+                      selectedDatabase.id === db.id ? "text-accent font-bold" : "text-muted-foreground"
+                    )}
+                  >
+                    <Database className="w-3 h-3" />
+                    {db.database_name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground group-focus-within:text-foreground transition-colors" />
@@ -293,7 +346,7 @@ export const SqlLab = () => {
             spellCheck={false}
           />
           <div className="absolute bottom-4 right-6 flex items-center gap-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            <span>SQLite WASM</span>
+            <span>{selectedDatabase.id === 'local' ? 'SQLite WASM' : 'Superset Backend'}</span>
             <span>UTF-8</span>
           </div>
         </div>
