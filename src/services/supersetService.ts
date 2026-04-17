@@ -36,7 +36,10 @@ export const supersetService = {
 
   async getDashboard(idOrSlug: string | number): Promise<Dashboard> {
     const response = await supersetClient.get(`/api/v1/dashboard/${idOrSlug}`);
-    const d = response.data.result;
+    const d = response.data?.result;
+    if (!d) {
+      throw new Error(`Dashboard ${idOrSlug} not found in Superset`);
+    }
     const metadata = d.json_metadata ? JSON.parse(d.json_metadata) : {};
     return {
       ...d,

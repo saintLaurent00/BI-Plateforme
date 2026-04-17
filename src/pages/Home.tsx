@@ -18,7 +18,6 @@ import { DashboardCard } from '../components/cards/DashboardCard';
 import { supersetService } from '../services/supersetService';
 import { getDashboards as getLocalDashboards } from '../lib/db';
 import { useNavigate } from 'react-router-dom';
-import ChartBuilderWizard from '../features/chart-builder/components/ChartBuilderWizard';
 
 const StatCard = ({ label, value, trend, icon: Icon }: any) => (
   <div className="minimal-card p-6 flex flex-col gap-4 group">
@@ -167,8 +166,6 @@ export const Home = () => {
           </div>
         </div>
       </div>
-
-      <ChartBuilderWizard />
     </div>
   );
 };
