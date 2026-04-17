@@ -81,10 +81,47 @@ export const Home = () => {
 
   return (
     <div className="p-6 lg:p-12 space-y-12">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="grid grid-cols-1 md:grid-cols-2 gap-8"
+      >
+        <button
+          onClick={() => navigate('/chart-builder')}
+          className="p-12 bg-indigo-600 text-white rounded-[48px] text-left group hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-600/20 relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+            <Sparkles size={120} />
+          </div>
+          <Sparkles className="mb-6 text-indigo-200" size={40} />
+          <h2 className="text-3xl font-bold mb-2">BI Builder</h2>
+          <p className="text-indigo-100 text-lg opacity-80">Créez des analyses complexes en quelques clics via un flux guidé par l'IA.</p>
+          <div className="mt-8 flex items-center gap-2 font-bold uppercase tracking-widest text-xs">
+            Commencer <ChevronRight size={16} />
+          </div>
+        </button>
+
+        <button
+          onClick={() => navigate('/dashboard-builder')}
+          className="p-12 bg-slate-900 text-white rounded-[48px] text-left group hover:bg-black transition-all shadow-2xl shadow-slate-900/20 relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+            <LayoutDashboard size={120} />
+          </div>
+          <LayoutDashboard className="mb-6 text-slate-400" size={40} />
+          <h2 className="text-3xl font-bold mb-2">Dashboard Builder</h2>
+          <p className="text-slate-400 text-lg">Assemblez vos briques d'intelligence sur un canvas dynamique et interactif.</p>
+          <div className="mt-8 flex items-center gap-2 font-bold uppercase tracking-widest text-xs">
+            Construire <ChevronRight size={16} />
+          </div>
+        </button>
+      </motion.div>
+
       {/* AI Briefing */}
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
         className="space-y-8"
       >
         <div className="flex items-center gap-2 text-muted-foreground">

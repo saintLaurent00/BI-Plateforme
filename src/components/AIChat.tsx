@@ -16,7 +16,10 @@ export const AIChat = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
   const [isLoading, setIsLoading] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
-  const ai = React.useMemo(() => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }), []);
+  const ai = React.useMemo(() => {
+    const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || "dummy-key";
+    return new GoogleGenAI({ apiKey });
+  }, []);
 
   React.useEffect(() => {
     if (scrollRef.current) {
