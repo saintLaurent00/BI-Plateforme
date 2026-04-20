@@ -56,12 +56,24 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ chart }) => {
         setData(res.result?.[0]?.data || []);
       } else {
         // Local chart
-        const x = Array.isArray(chart.x_axis) ? chart.x_axis[0] : chart.x_axis;
-        const metrics = Array.isArray(chart.y_axis) ? chart.y_axis : [chart.y_axis];
-        const y = metrics.map((col: string) => `SUM("${col}") as "${col}"`).join(', ');
-        const sql = `SELECT "${x}", ${y} FROM "${chart.table_name}" GROUP BY "${x}" LIMIT 100;`;
-        const res = await executeQuery(sql);
-        setData(res);
+        const x = Array.isArray(chart.x_axis) ? chart.x_axis[0] : (chart.x_axis || 'id');
+        let metrics = [];
+        if (Array.isArray(chart.y_axis)) {
+          metrics = chart.y_axis.filter(m => m && m.toString().length > 0);
+        } else if (chart.y_axis) {
+          metrics = [chart.y_axis];
+        }
+
+        if (metrics.length === 0) {
+          const sql = `SELECT "${x}" FROM "${chart.table_name || 'charts'}" LIMIT 100;`;
+          const res = await executeQuery(sql);
+          setData(res);
+        } else {
+          const y = metrics.map((col: string) => `SUM("${col}") as "${col}"`).join(', ');
+          const sql = `SELECT "${x}", ${y} FROM "${chart.table_name}" GROUP BY "${x}" LIMIT 100;`;
+          const res = await executeQuery(sql);
+          setData(res);
+        }
       }
     } catch (err: any) {
       console.error('Failed to load chart data:', err);

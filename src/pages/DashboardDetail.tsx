@@ -184,33 +184,44 @@ export const DashboardDetail = () => {
 
   const loadDashboard = async (dashboardId: string) => {
     setIsLoading(true);
-    try {
-      // Try Superset first
-      const d = await supersetService.getDashboard(dashboardId);
-      
-      // If Superset returns a dashboard, we need to handle its layout
-      // Superset layout is in position_json (stringified)
-      if (d.position_json) {
-        const position = typeof d.position_json === 'string' ? JSON.parse(d.position_json) : d.position_json;
-        const normalized = mapSupersetLayoutToPrism(position);
-        setDashboard({
-          ...d,
-          layout: denormalizeLayout(normalized)
-        });
-      } else {
-        setDashboard(d);
+    const isSupersetId = dashboardId && !isNaN(Number(dashboardId));
+
+    if (isSupersetId) {
+      try {
+        // Try Superset first
+        const d = await supersetService.getDashboard(dashboardId);
+
+        // If Superset returns a dashboard, we need to handle its layout
+        // Superset layout is in position_json (stringified)
+        if (d.position_json) {
+          const position = typeof d.position_json === 'string' ? JSON.parse(d.position_json) : d.position_json;
+          const normalized = mapSupersetLayoutToPrism(position);
+          setDashboard({
+            ...d,
+            layout: denormalizeLayout(normalized)
+          });
+        } else {
+          setDashboard(d);
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard from Superset, falling back to local:', err);
+        try {
+          const local = await getLocalDashboard(dashboardId);
+          setDashboard(local);
+        } catch (localErr) {
+          console.error('Failed to load local dashboard:', localErr);
+        }
       }
-    } catch (err) {
-      console.error('Failed to load dashboard from Superset, falling back to local:', err);
+    } else {
+      // Local only
       try {
         const local = await getLocalDashboard(dashboardId);
         setDashboard(local);
       } catch (localErr) {
         console.error('Failed to load local dashboard:', localErr);
       }
-    } finally {
-      setIsLoading(false);
     }
+    setIsLoading(false);
   };
 
   if (isLoading) {

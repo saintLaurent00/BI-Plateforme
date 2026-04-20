@@ -23,7 +23,7 @@ import {
   Search,
   Eye
 } from 'lucide-react';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { DndProvider, useDrag, useDrop, useDragLayer } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { getCharts, saveDashboard, getDashboard } from '../lib/db';
 import { supersetService } from '../services/supersetService';
@@ -41,6 +41,8 @@ import {
   mapPrismLayoutToSuperset
 } from '../lib/dashboardLayout';
 import ReactMarkdown from 'react-markdown';
+
+import { animate, onScroll, stagger, createLayout, createDraggable } from 'animejs';
 
 const ITEM_TYPE = 'DASHBOARD_ITEM';
 
@@ -65,12 +67,12 @@ interface LayoutElement {
 }
 
 const ELEMENT_TYPES = [
-  { type: 'header', icon: Type, label: 'Header' },
-  { type: 'markdown', icon: FileText, label: 'Markdown' },
-  { type: 'divider', icon: Divide, label: 'Divider' },
-  { type: 'row', icon: Rows, label: 'Row' },
-  { type: 'column', icon: ColumnsIcon, label: 'Column' },
-  { type: 'tabs', icon: Layers, label: 'Tabs' },
+  { type: 'header', icon: Type, label: 'En-tête' },
+  { type: 'markdown', icon: FileText, label: 'Texte Libre' },
+  { type: 'divider', icon: Divide, label: 'Séparateur' },
+  { type: 'row', icon: Rows, label: 'Ligne' },
+  { type: 'column', icon: ColumnsIcon, label: 'Colonne' },
+  { type: 'tabs', icon: Layers, label: 'Onglets' },
 ];
 
 const GRID_CLASSES: Record<number, string> = {
@@ -97,12 +99,33 @@ const DropZone = ({
   const [{ isOver, canDrop, isDragging }, drop] = useDrop({
     accept: ITEM_TYPE,
     canDrop: (item: any) => {
+      // Don't allow dropping an item into itself
       if (item.id === parentId) return false;
+
+      // Get the type of the item being dragged
       const itemType = item.newItem ? item.newItem.type : layout[item.id]?.type;
-      const parentType = layout[parentId]?.type || 'root';
-      return isValidChild(itemType, parentType);
+      const p = layout[parentId];
+      if (!p) return false;
+
+      // Basic hierarchy validation
+      const basicValid = isValidChild(itemType, p.type);
+      if (!basicValid) return false;
+
+      // Special check: don't allow dropping a parent into its own child (circularity)
+      // This is unlikely in this UI but good practice
+      let currentParent = p;
+      while (currentParent) {
+        if (currentParent.id === item.id) return false;
+        const nextParentId = currentParent.parents[0];
+        currentParent = nextParentId ? layout[nextParentId] : null as any;
+      }
+
+      return true;
     },
-    drop: (item: any) => {
+    drop: (item: any, monitor) => {
+      const didDrop = monitor.didDrop();
+      if (didDrop) return; // Nested drop zone handled it
+
       moveItem(item.id, item.parentId, parentId, index, item.newItem);
     },
     collect: (monitor) => ({
@@ -112,36 +135,57 @@ const DropZone = ({
     }),
   });
 
-  if (!isDragging && !isOver) return <div ref={drop as any} className={cn(horizontal ? "w-4 h-full" : "h-4 w-full", "bg-transparent")} />;
+  // Dynamic sizing based on drag state to provide a "landing pad"
+  const sizeClass = isDragging
+    ? (horizontal ? "w-32 -mx-16" : "h-32 -my-16")
+    : (horizontal ? "w-4" : "h-4");
 
   return (
     <div 
       ref={drop as any}
       className={cn(
-        "transition-all duration-300 rounded-xl flex items-center justify-center relative z-40",
-        horizontal ? "w-20 h-full -mx-8" : "h-20 w-full -my-8",
-        isOver && canDrop ? "opacity-100 scale-100" : "opacity-0 scale-95",
+        "transition-all duration-300 flex items-center justify-center relative z-40 group/dz",
+        sizeClass,
         className
       )}
     >
+      {/* Target Line - More prominent during hover */}
       <div className={cn(
-        "bg-slate-900 rounded-full transition-all duration-300",
-        isOver && canDrop ? (horizontal ? "w-1.5 h-full" : "h-1.5 w-full") : (horizontal ? "w-1 h-1/2" : "h-1 w-1/2"),
-        isOver && canDrop ? "shadow-[0_0_30px_rgba(15,23,42,0.5)]" : ""
+        "transition-all duration-500 rounded-full",
+        isOver && canDrop
+          ? (horizontal ? "w-1.5 h-full bg-slate-900 shadow-[0_0_20px_rgba(0,0,0,0.2)]" : "h-1.5 w-full bg-slate-900 shadow-[0_0_20px_rgba(0,0,0,0.2)]")
+          : (isDragging ? (horizontal ? "w-1 h-1/2 bg-slate-200" : "h-1 w-1/2 bg-slate-200") : "opacity-0 invisible")
       )} />
       
-      {isOver && canDrop && (
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="absolute inset-0 bg-slate-900/5 rounded-[40px] border-2 border-dashed border-slate-900/20 animate-pulse" 
-        />
+      {/* Magnetic Pulse effect when eligible */}
+      {isDragging && canDrop && !isOver && (
+        <div className={cn(
+          "absolute inset-0 bg-slate-900/5 animate-pulse rounded-sm pointer-events-none",
+          horizontal ? "mx-4" : "my-4"
+        )} />
       )}
+
+      {/* Drop Badge */}
+      <AnimatePresence>
+        {isOver && canDrop && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: horizontal ? 0 : 20, x: horizontal ? 20 : 0 }}
+            animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="absolute bg-slate-900 px-5 py-2.5 rounded-full border border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-3 z-50 whitespace-nowrap"
+          >
+            <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center">
+              <Plus className="w-3.5 h-3.5 text-slate-900 stroke-[3]" />
+            </div>
+            <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Déposer Ici</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-const DashboardItem = ({ 
+export const DashboardItem = ({
   id, 
   index, 
   layout, 
@@ -176,6 +220,18 @@ const DashboardItem = ({
   const [activeTab, setActiveTab] = useState(0);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (containerRef.current) {
+      animate(containerRef.current, {
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 800,
+        ease: 'outQuart',
+        delay: index * 100
+      });
+    }
+  }, []);
+
   const handleResize = (delta: number, direction: 'h' | 'v') => {
     if (!containerRef.current) return;
     
@@ -197,32 +253,52 @@ const DashboardItem = ({
   const gridClass = GRID_CLASSES[item.meta?.width || 12];
 
   return (
-    <div className={cn(parentType === 'row' ? gridClass : "w-full", "flex", parentType === 'row' ? "flex-row" : "flex-col")}>
-      <DropZone parentId={item.parents[0]} index={index} moveItem={moveItem} layout={layout} horizontal={parentType === 'row'} />
+    <div className={cn(
+      parentType === 'row' ? gridClass : "w-full",
+      "flex dashboard-item-container transition-all duration-500",
+      parentType === 'row' ? "flex-row" : "flex-col",
+      isDragging && "z-50 pointer-events-none"
+    )}>
+      <DropZone
+        parentId={item.parents[0]}
+        index={index}
+        moveItem={moveItem}
+        layout={layout}
+        horizontal={parentType === 'row'}
+        className={parentType === 'row' ? "h-full" : "w-full"}
+      />
       <div 
         ref={(el) => {
           preview(el);
           (containerRef as any).current = el;
         }}
         className={cn(
-          "group relative rounded-[32px] border transition-all duration-500 flex-1",
-          isDragging ? "opacity-20 grayscale" : "opacity-100",
+          "group relative rounded-sm border transition-all duration-500 flex-1",
+          isDragging ? "opacity-30 grayscale blur-[1px] rotate-1 scale-[0.98] shadow-none" : "opacity-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]",
           item.type === 'row' || item.type === 'column' || item.type === 'tabs' 
-            ? "p-4 bg-slate-50/20 border-slate-200/40" 
-            : "p-8 bg-white border-slate-100 premium-shadow hover:-translate-y-1",
+            ? "p-2 bg-slate-50 border-slate-200"
+            : "p-5 bg-white border-slate-200 hover:border-slate-800 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)]",
         )}
         style={{ 
           backgroundColor: item.meta?.backgroundColor || undefined,
           height: (item.type === 'chart' || item.type === 'row' || item.type === 'column') ? (item.meta?.height || undefined) : undefined
         }}
       >
+        {/* Cell indicator for Excel feel */}
+        <div className="absolute top-0 left-0 -translate-y-full flex items-center gap-2 py-1 px-3 pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-white px-2 py-1 border border-slate-200 border-b-0 italic uppercase tracking-[0.2em] shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-900" />
+            {['A','B','C','D','E','F','G'][index % 7]}{index + 1}
+          </div>
+        </div>
         {/* Contextual Toolbar */}
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-2 py-1 shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 z-30">
           <div 
             ref={drag as any}
-            className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-full transition-colors cursor-grab active:cursor-grabbing"
+            className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-full transition-colors cursor-grab active:cursor-grabbing flex items-center gap-1"
           >
             <GripVertical className="w-3.5 h-3.5" />
+            <span className="text-[8px] font-black sr-only">DÉPLACER</span>
           </div>
           <div className="w-px h-4 bg-slate-100 mx-0.5" />
           <div className="flex items-center gap-1 px-1">
@@ -335,28 +411,28 @@ const DashboardItem = ({
         )}
 
         {(item.type === 'row' || item.type === 'column') && (
-          <div className="flex-1 flex flex-col min-h-0 relative group/container">
+          <div className="flex-1 flex flex-col min-h-0 relative group/container mt-4">
             {/* Container Label */}
-            <div className="absolute -top-3 left-6 px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 z-10 flex items-center gap-2 shadow-sm opacity-0 group-hover/container:opacity-100 transition-all duration-300">
-              {item.type === 'row' ? <Rows className="w-3 h-3" /> : <ColumnsIcon className="w-3 h-3" />}
-              {item.type}
+            <div className="absolute -top-4 left-6 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] text-white z-10 flex items-center gap-2 shadow-2xl opacity-0 group-hover/container:opacity-100 transition-all duration-300 -translate-y-2 group-hover/container:translate-y-0">
+              {item.type === 'row' ? <Rows className="w-3.5 h-3.5" /> : <ColumnsIcon className="w-3.5 h-3.5" />}
+              {item.type === 'row' ? 'LIGNE' : 'COLONNE'}
             </div>
 
-            <div className={cn(
-              "min-h-[140px] rounded-[40px] border-2 border-dashed transition-all duration-500 flex-1 relative",
-              item.type === 'row' ? "grid grid-cols-12 gap-8 p-8" : "flex flex-col gap-8 p-8",
-              "border-slate-200/20 bg-slate-50/10 hover:border-slate-300/40"
-            )}>
-              {item.children.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="flex flex-col items-center gap-4 opacity-10">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-200 flex items-center justify-center">
-                      <Plus className="w-6 h-6 text-slate-400" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">Drop Zone</span>
-                  </div>
+        <div className={cn(
+          "min-h-[140px] rounded-lg border-2 border-dashed transition-all duration-700 flex-1 relative",
+          item.type === 'row' ? "grid grid-cols-12 gap-6 p-6" : "flex flex-col gap-6 p-6",
+          "border-slate-200/40 bg-slate-50/20 hover:border-slate-400 group-hover:bg-white/50"
+        )}>
+          {item.children.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="flex flex-col items-center gap-4 opacity-10 group-hover:opacity-30 transition-opacity">
+                <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center shadow-xl">
+                  <Plus className="w-6 h-6 text-white" />
                 </div>
-              )}
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-900">Zone de Drop</span>
+              </div>
+            </div>
+          )}
               {item.children.map((childId, i) => (
                 <DashboardItem 
                   key={childId} 
@@ -497,12 +573,12 @@ const SidebarItem = ({ type, label, icon: Icon }: { type: string, label: string,
     <div
       ref={drag as any}
       className={cn(
-        "flex flex-col items-center justify-center gap-3 p-5 bg-white border border-slate-100 rounded-[32px] cursor-grab active:cursor-grabbing transition-all hover:border-slate-200 hover:shadow-2xl hover:shadow-slate-200/50 group relative overflow-hidden",
-        isDragging ? "opacity-40" : "opacity-100"
+        "flex flex-col items-center justify-center gap-3 p-5 bg-white border border-slate-100 rounded-sm cursor-grab active:cursor-grabbing transition-all duration-300 hover:border-slate-800 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] group relative overflow-hidden sidebar-item",
+        isDragging ? "opacity-40 scale-90 blur-[0.5px]" : "opacity-100"
       )}
     >
       <div className="absolute top-0 left-0 w-full h-1 bg-slate-900 opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all duration-300 group-hover:rotate-6">
+      <div className="w-12 h-12 rounded bg-slate-50 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all duration-300 group-hover:-translate-y-1">
         <Icon className="w-6 h-6" />
       </div>
       <span className="text-[10px] font-black text-slate-400 group-hover:text-slate-900 uppercase tracking-[0.2em] transition-colors">{label}</span>
@@ -544,12 +620,12 @@ const SidebarChartItem = ({ chart }: { chart: any }) => {
     <div
       ref={drag as any}
       className={cn(
-        "flex items-center gap-4 p-5 bg-white border border-slate-100 rounded-[32px] cursor-grab active:cursor-grabbing transition-all hover:border-slate-200 hover:shadow-2xl hover:shadow-slate-200/50 group relative overflow-hidden",
-        isDragging ? "opacity-40" : "opacity-100"
+        "flex items-center gap-4 p-4 bg-white border border-slate-100 rounded-sm cursor-grab active:cursor-grabbing transition-all duration-300 hover:border-slate-800 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] group relative overflow-hidden sidebar-item",
+        isDragging ? "opacity-40 scale-95 blur-[0.5px]" : "opacity-100"
       )}
     >
       <div className="absolute top-0 left-0 w-1 h-full bg-slate-900 opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all duration-300 shrink-0 group-hover:scale-110">
+      <div className="w-12 h-12 rounded bg-slate-50 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all duration-300 shrink-0">
         <BarChart className="w-6 h-6" />
       </div>
       <div className="flex-1 min-w-0">
@@ -568,7 +644,7 @@ const SidebarChartItem = ({ chart }: { chart: any }) => {
   );
 };
 
-export const DashboardEditor = () => {
+const DashboardEditorInner = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [charts, setCharts] = useState<any[]>([]);
@@ -578,10 +654,72 @@ export const DashboardEditor = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
+  const { isSomethingDragging } = useDragLayer((monitor) => ({
+    isSomethingDragging: monitor.isDragging(),
+  }));
+
+  const gridRef = React.useRef<HTMLDivElement>(null);
+  const autoLayoutRef = React.useRef<any>(null);
 
   useEffect(() => {
+    if (!isLoading) {
+      animate('.dashboard-item-container', {
+        opacity: [0, 1],
+        translateY: [30, 0],
+        scale: [0.98, 1],
+        delay: stagger(60),
+        ease: 'outQuart',
+        duration: 1000
+      });
+    }
     loadData();
-  }, [id]);
+  }, [id, isLoading]);
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      onScroll({
+        container: scrollContainerRef.current,
+        onUpdate: (self) => {
+          const headers = document.querySelectorAll('.excel-column-header, .excel-row-header');
+          headers.forEach(h => {
+            (h as HTMLElement).style.boxShadow = self.progress > 0.01 ? '0 4px 12px rgba(15,23,42,0.08)' : 'none';
+          });
+        }
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    animate('.dashboard-item-container', {
+      scale: [0.98, 1],
+      duration: 400,
+      ease: 'outQuart'
+    });
+  }, [layout]);
+
+  useEffect(() => {
+    if (gridRef.current && !autoLayoutRef.current && !isLoading) {
+      autoLayoutRef.current = createLayout(gridRef.current, {
+        duration: 500,
+        ease: 'outQuart',
+        children: '.dashboard-item-container'
+      });
+    }
+  }, [isLoading]);
+
+  React.useLayoutEffect(() => {
+    if (autoLayoutRef.current) {
+      autoLayoutRef.current.record();
+    }
+  });
+
+  useEffect(() => {
+    if (autoLayoutRef.current) {
+      autoLayoutRef.current.animate();
+    }
+  }, [layout]);
 
   const loadData = async () => {
     try {
@@ -596,17 +734,28 @@ export const DashboardEditor = () => {
       setCharts([...localCharts, ...supersetCharts]);
       
       if (id) {
-        try {
-          // Try Superset first
-          const d = await supersetService.getDashboard(id);
-          if (d) {
-            setDashboardName(d.name);
-            const position = typeof d.position_json === 'string' ? JSON.parse(d.position_json) : d.position_json;
-            setLayout(normalizeLayout(denormalizeLayout(mapSupersetLayoutToPrism(position))));
-            setDashboardBg(d.backgroundColor || '#f8fafc');
+        const isSupersetId = id && !isNaN(Number(id));
+        if (isSupersetId) {
+          try {
+            // Try Superset first
+            const d = await supersetService.getDashboard(id);
+            if (d) {
+              setDashboardName(d.name);
+              const position = typeof d.position_json === 'string' ? JSON.parse(d.position_json) : d.position_json;
+              setLayout(normalizeLayout(denormalizeLayout(mapSupersetLayoutToPrism(position))));
+              setDashboardBg(d.backgroundColor || '#f8fafc');
+            }
+          } catch (err) {
+            console.error('Failed to load dashboard from Superset, falling back to local:', err);
+            const d = await getDashboard(id);
+            if (d) {
+              setDashboardName(d.name);
+              setLayout(normalizeLayout(d.layout || []));
+              setDashboardBg(d.backgroundColor || '#f8fafc');
+            }
           }
-        } catch (err) {
-          console.error('Failed to load dashboard from Superset, falling back to local:', err);
+        } else {
+          // Local dashboard (likely a UUID)
           const d = await getDashboard(id);
           if (d) {
             setDashboardName(d.name);
@@ -692,16 +841,31 @@ export const DashboardEditor = () => {
 
   const [sidebarTab, setSidebarTab] = useState<'charts' | 'elements'>('charts');
 
+  useEffect(() => {
+    animate('.sidebar-item', {
+      opacity: [0, 1],
+      translateX: [20, 0],
+      delay: stagger(40),
+      ease: 'outQuad',
+      duration: 400
+    });
+  }, [sidebarTab]);
+
   return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="flex h-full bg-slate-100">
+    <div className="flex h-full bg-slate-100">
         {/* Main Canvas */}
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 px-8 flex items-center justify-between sticky top-0 z-30">
+          <header className={cn(
+            "h-16 border-b border-slate-100 px-8 flex items-center justify-between sticky top-0 z-30 transition-all duration-500",
+            isSomethingDragging ? "bg-slate-900 border-slate-800" : "bg-white/80 backdrop-blur-md"
+          )}>
             <div className="flex items-center gap-6">
               <button 
                 onClick={() => navigate('/dashboards')}
-                className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all active:scale-90"
+                className={cn(
+                  "p-2.5 rounded-xl transition-all active:scale-90",
+                  isSomethingDragging ? "text-slate-500 hover:text-white hover:bg-slate-800" : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
+                )}
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -710,12 +874,21 @@ export const DashboardEditor = () => {
                   type="text" 
                   value={dashboardName}
                   onChange={(e) => setDashboardName(e.target.value)}
-                  className="bg-transparent border-none text-base font-bold outline-none focus:ring-0 p-0 text-slate-900 placeholder:text-slate-300"
+                  className={cn(
+                    "bg-transparent border-none text-base font-bold outline-none focus:ring-0 p-0 transition-colors",
+                    isSomethingDragging ? "text-white" : "text-slate-900 placeholder:text-slate-300"
+                  )}
                   placeholder="Untitled Dashboard"
                 />
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">Draft Mode</span>
-                  <div className="w-1 h-1 rounded-full bg-slate-900 animate-pulse" />
+                  <span className={cn(
+                    "text-[9px] font-black uppercase tracking-[0.2em] transition-colors",
+                    isSomethingDragging ? "text-slate-500" : "text-slate-400"
+                  )}>Draft Mode</span>
+                  <div className={cn(
+                    "w-1 h-1 rounded-full animate-pulse",
+                    isSomethingDragging ? "bg-white" : "bg-slate-900"
+                  )} />
                 </div>
               </div>
             </div>
@@ -753,41 +926,101 @@ export const DashboardEditor = () => {
             </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-12 relative" style={{ backgroundColor: dashboardBg }}>
-            <div className="min-h-full w-full max-w-7xl mx-auto space-y-8 transition-all relative pb-64">
-              {layout[DASHBOARD_GRID_ID]?.children.length === 0 ? (
-                <div className="h-[600px] flex flex-col items-center justify-center text-center border-4 border-dashed border-slate-200/30 rounded-[60px] bg-white/40 backdrop-blur-md shadow-inner">
-                  <div className="w-32 h-32 rounded-[40px] bg-white flex items-center justify-center mb-8 shadow-xl shadow-slate-200/50 border border-slate-100">
-                    <Plus className="w-12 h-12 text-slate-900" />
+          <div ref={scrollContainerRef} className="flex-1 overflow-auto relative bg-slate-100" style={{ backgroundColor: dashboardBg }}>
+            <div className="min-h-full w-[2000px] flex">
+              {/* Row Headers */}
+              <div className="w-10 bg-slate-50 border-r border-slate-200 sticky left-0 z-20 flex flex-col pt-10 excel-row-header">
+                {Array.from({ length: 50 }).map((_, i) => (
+                  <div key={i} className="h-20 flex items-center justify-center text-[10px] font-mono text-slate-400 border-b border-slate-100 italic">
+                    {i + 1}
                   </div>
-                  <h3 className="text-2xl font-black text-slate-800 tracking-tight">Design your dashboard</h3>
-                  <p className="text-sm text-slate-400 mt-4 max-w-sm leading-relaxed font-medium">
-                    Drag and drop layout elements or charts from the sidebar to start building your data intelligence platform.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-8">
-                  {layout[DASHBOARD_GRID_ID]?.children.map((childId, index) => (
-                    <DashboardItem 
-                      key={childId}
-                      id={childId}
-                      index={index}
-                      layout={layout}
-                      moveItem={handleMoveItem}
-                      removeElement={removeElement}
-                      updateElement={updateElement}
-                      updateElementMeta={updateElementMeta}
-                      setLayout={setLayout}
-                    />
+                ))}
+              </div>
+
+              <div className={cn("flex-1 flex flex-col relative excel-grid min-h-[150vh] bg-[#fdfdfd]", isSomethingDragging && "excel-grid-active")}>
+                {/* Column Headers */}
+                <div className="h-10 bg-slate-50 border-b border-slate-200 sticky top-0 z-20 flex shadow-sm excel-column-header">
+                  {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'].map((col) => (
+                    <div key={col} className={cn(
+                      "w-40 flex items-center justify-center text-[10px] font-bold border-r border-slate-200 transition-colors",
+                      isSomethingDragging ? "bg-slate-900 text-white border-slate-700" : "bg-slate-100 text-slate-500"
+                    )}>
+                      {col}
+                    </div>
                   ))}
-                  <DropZone 
-                    parentId={DASHBOARD_GRID_ID} 
-                    index={layout[DASHBOARD_GRID_ID]?.children.length || 0}
-                    moveItem={handleMoveItem}
-                    layout={layout}
-                  />
                 </div>
-              )}
+
+                <div ref={gridRef} className="p-20 min-h-screen relative overflow-auto">
+                  <div className="max-w-[1600px] transition-all relative pb-64 min-h-[800px]">
+                    {layout[DASHBOARD_GRID_ID]?.children.length === 0 ? (
+                      <div className="relative h-[600px]">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center border-2 border-slate-200 rounded-sm bg-white/50 backdrop-blur-sm shadow-[0_30px_90px_rgba(0,0,0,0.03)] border-dashed border-spacing-8 pointer-events-none">
+                          <div className="w-20 h-20 rounded-sm bg-slate-900 flex items-center justify-center mb-8 shadow-2xl">
+                            <Plus className="w-8 h-8 text-white" />
+                          </div>
+                          <h3 className="text-xl font-bold text-slate-900 tracking-tight uppercase">Prism Sheet Intelligence</h3>
+                          <p className="text-xs text-slate-400 mt-4 max-w-sm leading-relaxed font-bold uppercase tracking-widest opacity-60">
+                            Glissez-déposez des graphiques ou des lignes pour commencer votre analyse.
+                          </p>
+                        </div>
+                        {/* THE MISSING DROP TARGET FOR EMPTY STATE */}
+                        <DropZone
+                          parentId={DASHBOARD_GRID_ID}
+                          index={0}
+                          moveItem={handleMoveItem}
+                          layout={layout}
+                          className="absolute inset-0 !h-full !w-full !m-0 opacity-0 hover:opacity-100 transition-opacity z-10"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-0">
+                        {layout[DASHBOARD_GRID_ID]?.children.map((childId, index) => (
+                          <DashboardItem
+                            key={childId}
+                            id={childId}
+                            index={index}
+                            layout={layout}
+                            moveItem={handleMoveItem}
+                            removeElement={removeElement}
+                            updateElement={updateElement}
+                            updateElementMeta={updateElementMeta}
+                            setLayout={setLayout}
+                            parentType="column"
+                          />
+                        ))}
+                        <DropZone
+                          parentId={DASHBOARD_GRID_ID}
+                          index={layout[DASHBOARD_GRID_ID]?.children.length || 0}
+                          moveItem={handleMoveItem}
+                          layout={layout}
+                          className="min-h-[200px]"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Excel-like Bottom Bar */}
+          <div className="h-8 bg-slate-100 border-t border-slate-200 flex items-center px-4 gap-0.5 shrink-0 z-30">
+            <div className="flex items-center">
+              <div className="px-4 h-8 flex items-center bg-white border-x border-slate-200 text-[10px] font-black text-slate-900 border-t-2 border-t-slate-900 -mt-[1px] shadow-sm">
+                FEUILLE 1
+              </div>
+              <button className="px-4 h-8 flex items-center text-[10px] font-black text-slate-400 hover:bg-slate-200 transition-colors">
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="flex-1" />
+            <div className="flex items-center gap-3 px-4 text-[9px] font-mono text-slate-400 tracking-widest uppercase">
+              <span className="flex items-center gap-1.5">
+                <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                Prêt
+              </span>
+              <div className="w-px h-3 bg-slate-200" />
+              <span>100%</span>
             </div>
           </div>
         </div>
@@ -818,32 +1051,32 @@ export const DashboardEditor = () => {
           <div className="flex-1 overflow-y-auto px-6 py-2 custom-scrollbar">
             {sidebarTab === 'elements' ? (
               <div className="space-y-10">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 mb-8 px-2">Structure Elements</span>
-                  <div className="grid grid-cols-2 gap-4">
-                    {ELEMENT_TYPES.map((el) => (
-                      <SidebarItem key={el.type} type={el.type} label={el.label} icon={el.icon} />
-                    ))}
-                  </div>
-                </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 mb-8 px-2">Éléments de Structure</span>
+                      <div className="grid grid-cols-2 gap-4">
+                        {ELEMENT_TYPES.map((el) => (
+                          <SidebarItem key={el.type} type={el.type} label={el.label} icon={el.icon} />
+                        ))}
+                      </div>
+                    </div>
               </div>
             ) : (
               <div className="space-y-8">
                 <div className="flex items-center justify-between mb-4 px-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">Available Charts</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">Graphiques Disponibles</span>
                   <button 
                     onClick={() => navigate('/chart/add')}
                     className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-1.5 hover:opacity-70 transition-opacity"
                   >
                     <Plus className="w-3 h-3" />
-                    New Chart
+                    Nouveau
                   </button>
                 </div>
                 <div className="relative mb-8 px-2">
                   <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" />
                   <input 
                     type="text" 
-                    placeholder="Search charts..."
+                    placeholder="Rechercher un graphique..."
                     className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs font-medium outline-none focus:bg-white focus:border-slate-900 transition-all"
                   />
                 </div>
@@ -934,6 +1167,13 @@ export const DashboardEditor = () => {
           )}
         </AnimatePresence>
       </div>
+    );
+};
+
+export const DashboardEditor = () => {
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <DashboardEditorInner />
     </DndProvider>
   );
 };

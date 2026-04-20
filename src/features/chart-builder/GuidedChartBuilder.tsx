@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import anime from 'animejs';
+import { animate, stagger } from 'animejs';
 import { biService } from '../../services/biService';
 import {
   Database,
@@ -30,11 +30,10 @@ import { useNavigate } from 'react-router-dom';
 
 const InsightPanel = ({ insights }: { insights: any[] }) => {
   useEffect(() => {
-    anime({
-      targets: '.insight-card',
+    animate('.insight-card', {
       translateX: [100, 0],
       opacity: [0, 1],
-      delay: anime.stagger(100),
+      delay: stagger(100),
       easing: 'easeOutExpo'
     });
   }, [insights]);
@@ -80,8 +79,7 @@ export const GuidedChartBuilder = () => {
       handleRunQuery();
     }
 
-    anime({
-      targets: '.step-content',
+    animate('.step-content', {
       opacity: [0, 1],
       translateX: [20, 0],
       easing: 'easeOutExpo',
@@ -123,7 +121,6 @@ export const GuidedChartBuilder = () => {
         }
       });
       toast.success("Analyse sauvegardée !");
-      // Add a little delay before navigation
       setTimeout(() => navigate('/dashboard-builder'), 1000);
     } catch (err) {
       console.error(err);
@@ -146,7 +143,6 @@ export const GuidedChartBuilder = () => {
 
   return (
     <div ref={containerRef} className="max-w-6xl mx-auto p-8 space-y-12 bg-slate-50 min-h-screen">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 text-indigo-600 mb-1">
@@ -340,7 +336,6 @@ export const GuidedChartBuilder = () => {
                         dataKey={selectedMetrics[0]}
                         radius={[12, 12, 0, 0]}
                         animationDuration={1500}
-                        animationEasing="ease-out"
                       >
                         {queryResult.data.map((entry: any, index: number) => (
                           <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#4f46e5' : '#818cf8'} />
