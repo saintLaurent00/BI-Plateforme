@@ -185,12 +185,12 @@ export const DashboardDetail = () => {
   const loadDashboard = async (dashboardId: string) => {
     setIsLoading(true);
     const isSupersetId = dashboardId && !isNaN(Number(dashboardId));
-    
+
     if (isSupersetId) {
       try {
         // Try Superset first
         const d = await supersetService.getDashboard(dashboardId);
-        
+
         // If Superset returns a dashboard, we need to handle its layout
         // Superset layout is in position_json (stringified)
         if (d.position_json) {

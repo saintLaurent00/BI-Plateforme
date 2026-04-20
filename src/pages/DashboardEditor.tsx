@@ -101,12 +101,12 @@ const DropZone = ({
     canDrop: (item: any) => {
       // Don't allow dropping an item into itself
       if (item.id === parentId) return false;
-      
+
       // Get the type of the item being dragged
       const itemType = item.newItem ? item.newItem.type : layout[item.id]?.type;
       const p = layout[parentId];
       if (!p) return false;
-      
+
       // Basic hierarchy validation
       const basicValid = isValidChild(itemType, p.type);
       if (!basicValid) return false;
@@ -125,7 +125,7 @@ const DropZone = ({
     drop: (item: any, monitor) => {
       const didDrop = monitor.didDrop();
       if (didDrop) return; // Nested drop zone handled it
-      
+
       moveItem(item.id, item.parentId, parentId, index, item.newItem);
     },
     collect: (monitor) => ({
@@ -136,8 +136,8 @@ const DropZone = ({
   });
 
   // Dynamic sizing based on drag state to provide a "landing pad"
-  const sizeClass = isDragging 
-    ? (horizontal ? "w-32 -mx-16" : "h-32 -my-16") 
+  const sizeClass = isDragging
+    ? (horizontal ? "w-32 -mx-16" : "h-32 -my-16")
     : (horizontal ? "w-4" : "h-4");
 
   return (
@@ -152,8 +152,8 @@ const DropZone = ({
       {/* Target Line - More prominent during hover */}
       <div className={cn(
         "transition-all duration-500 rounded-full",
-        isOver && canDrop 
-          ? (horizontal ? "w-1.5 h-full bg-slate-900 shadow-[0_0_20px_rgba(0,0,0,0.2)]" : "h-1.5 w-full bg-slate-900 shadow-[0_0_20px_rgba(0,0,0,0.2)]") 
+        isOver && canDrop
+          ? (horizontal ? "w-1.5 h-full bg-slate-900 shadow-[0_0_20px_rgba(0,0,0,0.2)]" : "h-1.5 w-full bg-slate-900 shadow-[0_0_20px_rgba(0,0,0,0.2)]")
           : (isDragging ? (horizontal ? "w-1 h-1/2 bg-slate-200" : "h-1 w-1/2 bg-slate-200") : "opacity-0 invisible")
       )} />
       
@@ -164,11 +164,11 @@ const DropZone = ({
           horizontal ? "mx-4" : "my-4"
         )} />
       )}
-      
+
       {/* Drop Badge */}
       <AnimatePresence>
         {isOver && canDrop && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.8, y: horizontal ? 0 : 20, x: horizontal ? 20 : 0 }}
             animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
             exit={{ opacity: 0, scale: 0.8 }}
@@ -185,7 +185,7 @@ const DropZone = ({
   );
 };
 
-export const DashboardItem = ({ 
+export const DashboardItem = ({
   id, 
   index, 
   layout, 
@@ -254,17 +254,17 @@ export const DashboardItem = ({
 
   return (
     <div className={cn(
-      parentType === 'row' ? gridClass : "w-full", 
-      "flex dashboard-item-container transition-all duration-500", 
+      parentType === 'row' ? gridClass : "w-full",
+      "flex dashboard-item-container transition-all duration-500",
       parentType === 'row' ? "flex-row" : "flex-col",
       isDragging && "z-50 pointer-events-none"
     )}>
-      <DropZone 
-        parentId={item.parents[0]} 
-        index={index} 
-        moveItem={moveItem} 
-        layout={layout} 
-        horizontal={parentType === 'row'} 
+      <DropZone
+        parentId={item.parents[0]}
+        index={index}
+        moveItem={moveItem}
+        layout={layout}
+        horizontal={parentType === 'row'}
         className={parentType === 'row' ? "h-full" : "w-full"}
       />
       <div 
@@ -276,7 +276,7 @@ export const DashboardItem = ({
           "group relative rounded-sm border transition-all duration-500 flex-1",
           isDragging ? "opacity-30 grayscale blur-[1px] rotate-1 scale-[0.98] shadow-none" : "opacity-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]",
           item.type === 'row' || item.type === 'column' || item.type === 'tabs' 
-            ? "p-2 bg-slate-50 border-slate-200" 
+            ? "p-2 bg-slate-50 border-slate-200"
             : "p-5 bg-white border-slate-200 hover:border-slate-800 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)]",
         )}
         style={{ 
@@ -964,8 +964,8 @@ const DashboardEditorInner = () => {
                           </p>
                         </div>
                         {/* THE MISSING DROP TARGET FOR EMPTY STATE */}
-                        <DropZone 
-                          parentId={DASHBOARD_GRID_ID} 
+                        <DropZone
+                          parentId={DASHBOARD_GRID_ID}
                           index={0}
                           moveItem={handleMoveItem}
                           layout={layout}
@@ -975,7 +975,7 @@ const DashboardEditorInner = () => {
                     ) : (
                       <div className="flex flex-col gap-0">
                         {layout[DASHBOARD_GRID_ID]?.children.map((childId, index) => (
-                          <DashboardItem 
+                          <DashboardItem
                             key={childId}
                             id={childId}
                             index={index}
@@ -988,8 +988,8 @@ const DashboardEditorInner = () => {
                             parentType="column"
                           />
                         ))}
-                        <DropZone 
-                          parentId={DASHBOARD_GRID_ID} 
+                        <DropZone
+                          parentId={DASHBOARD_GRID_ID}
                           index={layout[DASHBOARD_GRID_ID]?.children.length || 0}
                           moveItem={handleMoveItem}
                           layout={layout}
