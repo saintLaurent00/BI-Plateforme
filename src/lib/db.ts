@@ -103,6 +103,15 @@ export const initDatabase = async () => {
       CREATE TABLE IF NOT EXISTS finance (category TEXT, amount NUMBER);
       INSERT OR IGNORE INTO finance VALUES ('Software', 5000), ('Hardware', 3000), ('Services', 2000);
 
+      -- Seed transactions for BI-Plateforme
+      CREATE TABLE IF NOT EXISTS transactions (id NUMBER, date TEXT, category TEXT, amount NUMBER, merchant TEXT);
+      INSERT OR IGNORE INTO transactions VALUES
+      (1, '2024-01-01', 'Food', 50, 'Whole Foods'),
+      (2, '2024-01-02', 'Tech', 1200, 'Apple'),
+      (3, '2024-01-03', 'Food', 30, 'Trader Joes'),
+      (4, '2024-01-04', 'Transport', 15, 'Uber'),
+      (5, '2024-01-05', 'Tech', 200, 'Amazon');
+
       -- Seed a sample dashboard
       INSERT OR IGNORE INTO dashboards (id, name, description, layout, background_color)
       VALUES ('sample-dashboard', 'Executive Sales Overview', 'A high-level view of sales performance and user growth.', 
