@@ -44,18 +44,18 @@ export const Login = ({ onLogin }: { onLogin: () => void }) => {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-6 relative overflow-hidden text-slate-900 border-t-4 border-slate-900">
       {/* Background Grid - Subtil et technique */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ 
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{
         backgroundImage: `radial-gradient(circle at 2px 2px, black 1px, transparent 0)`,
-        backgroundSize: '32px 32px' 
+        backgroundSize: '32px 32px'
       }}></div>
 
       <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 bg-white rounded-[32px] overflow-hidden shadow-[0_50px_100px_rgba(0,0,0,0.08)] border border-slate-100 relative z-10 transition-all">
-        
+
         {/* Left Side - Brand & Info */}
         <div className="hidden lg:flex flex-col justify-between p-12 bg-slate-50 border-r border-slate-100 relative overflow-hidden">
           {/* Subtle noise pattern */}
           <div className="absolute inset-0 opacity-[0.4] mix-blend-overlay pointer-events-none" style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")' }}></div>
-          
+
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-12">
               <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-xl">
