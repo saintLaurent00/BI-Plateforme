@@ -5,6 +5,13 @@ class QueryBuilder:
     def __init__(self, datasets: Dict[str, Dataset]):
         self.datasets = datasets
 
+    def _sanitize(self, val) -> str:
+        if isinstance(val, str):
+            # Basic escaping for single quotes
+            escaped = val.replace("'", "''")
+            return f"'{escaped}'"
+        return str(val)
+
     def build(self, request: QueryRequest) -> str:
         dataset = self.datasets.get(request.dataset)
         if not dataset:
@@ -33,11 +40,16 @@ class QueryBuilder:
         where_parts = []
         if request.filters:
             for f in request.filters:
+                # Basic validation for field name (should be alphanumeric or underscored)
+                field = f.field.replace('"', '')
+
                 if f.op == "between" and isinstance(f.value, list) and len(f.value) == 2:
-                    where_parts.append(f'"{f.field}" BETWEEN \'{f.value[0]}\' AND \'{f.value[1]}\'')
+                    v1 = self._sanitize(f.value[0])
+                    v2 = self._sanitize(f.value[1])
+                    where_parts.append(f'"{field}" BETWEEN {v1} AND {v2}')
                 elif f.op == "eq":
-                    val = f"'{f.value}'" if isinstance(f.value, str) else f.value
-                    where_parts.append(f'"{f.field}" = {val}')
+                    val = self._sanitize(f.value)
+                    where_parts.append(f'"{field}" = {val}')
 
         where_clause = ""
         if where_parts:
