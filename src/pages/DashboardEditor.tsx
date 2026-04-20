@@ -129,7 +129,7 @@ const DropZone = ({
       moveItem(item.id, item.parentId, parentId, index, item.newItem);
     },
     collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
+  isOver: !!monitor.isOver(),
       canDrop: !!monitor.canDrop(),
       isDragging: !!monitor.getItem(),
     }),
