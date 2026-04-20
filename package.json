@@ -1,5 +1,6 @@
 {
-  "name": "react-example",
+  "name": "bi-plateforme",
+  "homepage": "https://saintlaurent00.github.io/BI-Plateforme",
   "private": true,
   "version": "0.0.0",
   "type": "module",
