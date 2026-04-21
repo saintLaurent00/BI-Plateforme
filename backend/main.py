@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.models.schemas import QueryRequest, Dataset, DatasetColumn, DatasetMetric
+from app.models.schemas import QueryRequest
 from app.engine.query_builder import QueryBuilder
 from app.engine.insight_generator import InsightGenerator
+from app.services.dataset_service import DatasetService
 import sqlite3
 import pandas as pd
 import os
@@ -16,27 +17,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mock Datasets
-DATASETS = {
-    "transactions": Dataset(
-        name="transactions",
-        table_name="transactions",
-        columns=[
-            DatasetColumn(name="id", type="number"),
-            DatasetColumn(name="date", type="date"),
-            DatasetColumn(name="category", type="string"),
-            DatasetColumn(name="amount", type="number"),
-            DatasetColumn(name="merchant", type="string"),
-        ],
-        metrics=[
-            DatasetMetric(name="total_amount", expression="SUM(amount)"),
-            DatasetMetric(name="transaction_count", expression="COUNT(*)"),
-            DatasetMetric(name="avg_amount", expression="AVG(amount)"),
-        ]
-    )
-}
-
-query_builder = QueryBuilder(DATASETS)
+dataset_service = DatasetService()
+query_builder = QueryBuilder(dataset_service.datasets)
 insight_generator = InsightGenerator()
 
 DB_PATH = "bi_platform.db"
@@ -60,7 +42,7 @@ def startup_event():
 
 @app.get("/api/datasets")
 def get_datasets():
-    return list(DATASETS.values())
+    return dataset_service.get_all()
 
 @app.post("/api/query")
 def run_query(request: QueryRequest):
@@ -81,6 +63,41 @@ def run_query(request: QueryRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/explain")
+def explain_data(request: QueryRequest):
+    # This endpoint provides a text explanation of the query results
+    # In a real app, this could connect to an LLM
+    try:
+        sql = query_builder.build(request)
+        conn = sqlite3.connect(DB_PATH)
+        df = pd.read_sql_query(sql, conn)
+        conn.close()
+
+        data = df.to_dict(orient="records")
+        insights = insight_generator.generate(request.dataset, data)
+
+        explanation = f"Analyse de {request.dataset} : "
+        if insights:
+            explanation += " ".join([i['message'] for i in insights])
+        else:
+            explanation += "Aucune tendance significative détectée pour le moment."
+
+        return {"explanation": explanation}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/suggest-queries/{dataset_name}")
+def suggest_queries(dataset_name: str):
+    if not dataset_service.get_by_name(dataset_name):
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    suggestions = [
+        {"name": "Total par catégorie", "metrics": ["total_amount"], "dimensions": ["category"]},
+        {"name": "Évolution temporelle", "metrics": ["total_amount"], "dimensions": ["date"], "granularity": "month"},
+        {"name": "Top marchands", "metrics": ["transaction_count"], "dimensions": ["merchant"], "limit": 5}
+    ]
+    return suggestions
 
 if __name__ == "__main__":
     import uvicorn
