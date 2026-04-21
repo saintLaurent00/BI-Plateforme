@@ -130,22 +130,22 @@ export const ChartSelector = () => {
   };
 
   return (
-    <div className="min-h-full bg-slate-50 flex flex-col">
+    <div className="min-h-full bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+      <header className="bg-background border-b border-border px-8 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/charts')}
-            className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-bold text-slate-900">Create a new chart</h1>
+          <h1 className="text-xl font-bold text-foreground">Create a new chart</h1>
         </div>
         <button 
           onClick={handleCreate}
           disabled={!selectedTable || !selectedType}
-          className="px-6 py-2 bg-prism-600 text-white rounded-xl text-sm font-bold hover:bg-prism-700 transition-all shadow-lg shadow-prism-200 disabled:opacity-50 disabled:shadow-none active:scale-95"
+          className="btn-primary px-6 py-2 shadow-lg shadow-accent/20 transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none"
         >
           Create new chart
         </button>
@@ -153,31 +153,31 @@ export const ChartSelector = () => {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar: Categories */}
-        <aside className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0">
-          <div className="p-6 border-b border-slate-100">
-            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Choose a dataset</h2>
+        <aside className="w-64 bg-background border-r border-border flex flex-col shrink-0">
+          <div className="p-6 border-b border-border">
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Choose a dataset</h2>
             <div className="relative">
-              <Database className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-prism-600" />
+              <Database className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-accent" />
               <select 
                 value={selectedTable}
                 onChange={(e) => setSelectedTable(e.target.value)}
-                className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none appearance-none focus:border-prism-500 transition-all"
+                className="w-full pl-9 pr-8 py-2 bg-muted border border-border rounded-xl text-xs font-medium outline-none appearance-none focus:border-accent transition-all text-foreground"
               >
                 {tables.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             </div>
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 space-y-1">
-            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-4 mb-4 mt-2">Choose chart type</h2>
+            <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-4 mb-4 mt-2">Choose chart type</h2>
             {CHART_CATEGORIES.map(cat => (
               <button 
                 key={cat.name}
                 onClick={() => setCategory(cat.name)}
                 className={cn(
                   "w-full text-left px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-3",
-                  category === cat.name ? 'bg-prism-50 text-prism-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                  category === cat.name ? 'bg-accent/10 text-accent' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )}
               >
                 <cat.icon className="w-4 h-4" />
@@ -188,22 +188,22 @@ export const ChartSelector = () => {
         </aside>
 
         {/* Main Content: Grid & Details */}
-        <div className="flex-1 flex flex-col min-w-0 bg-white">
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between gap-6">
+        <div className="flex-1 flex flex-col min-w-0 bg-background">
+          <div className="p-6 border-b border-border flex items-center justify-between gap-6">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input 
                 type="text"
                 placeholder="Search all charts"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-prism-500 transition-all"
+                className="w-full pl-11 pr-4 py-2 bg-muted border border-border rounded-xl text-xs outline-none focus:border-accent transition-all text-foreground"
               />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tags</span>
-              <Badge variant="outline" className="cursor-pointer hover:bg-slate-50">Advanced</Badge>
-              <Badge variant="outline" className="cursor-pointer hover:bg-slate-50">New</Badge>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Tags</span>
+              <Badge variant="outline" className="cursor-pointer hover:bg-muted">Advanced</Badge>
+              <Badge variant="outline" className="cursor-pointer hover:bg-muted">New</Badge>
             </div>
           </div>
 
@@ -216,26 +216,26 @@ export const ChartSelector = () => {
                   className={cn(
                     "p-4 rounded-2xl border-2 transition-all text-left flex flex-col gap-4 group relative",
                     selectedType === type.label 
-                      ? 'border-prism-500 bg-prism-50/30' 
-                      : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
+                      ? 'border-accent bg-accent/5' 
+                      : 'border-border bg-background hover:border-border hover:bg-muted/50'
                   )}
                 >
                   <div className={cn(
-                    "w-full aspect-video rounded-xl flex items-center justify-center transition-all overflow-hidden border border-slate-100",
-                    selectedType === type.label ? 'bg-white' : 'bg-slate-50'
+                    "w-full aspect-video rounded-xl flex items-center justify-center transition-all overflow-hidden border border-border",
+                    selectedType === type.label ? 'bg-background' : 'bg-muted/30'
                   )}>
                     <img 
                       src={getChartImageUrl(type.label, 400, 225)} 
                       alt={type.label}
-                      className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-500"
+                      className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-500 grayscale"
                       referrerPolicy="no-referrer"
                     />
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-900 text-[11px]">{type.label}</h4>
+                    <h4 className="font-bold text-foreground text-[11px]">{type.label}</h4>
                   </div>
                   {selectedType === type.label && (
-                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-prism-600 text-white flex items-center justify-center shadow-lg">
+                    <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow-lg">
                       <Check className="w-3 h-3" />
                     </div>
                   )}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { executeQuery } from '../lib/db';
 import { supersetService } from '../services/supersetService';
+import { isConfigured as isSupersetConfigured } from '../lib/supersetClient';
 import { D3Chart } from './D3Chart';
 import { DataTable } from './DataTable';
 import { PivotTable } from './PivotTable';
@@ -23,16 +24,14 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ chart }) => {
     setIsLoading(true);
     setError(null);
     try {
-      if (typeof chart.id === 'number' || (typeof chart.id === 'string' && !isNaN(Number(chart.id)))) {
+      const isSupersetId = typeof chart.id === 'number' || (typeof chart.id === 'string' && !isNaN(Number(chart.id)));
+      
+      if (isSupersetId && isSupersetConfigured) {
         // Superset chart
         const chartId = Number(chart.id);
         
-        // We need the query context. For now, let's try to get it from the chart metadata
-        // or use a generic one if we can't.
-        // In a real app, we'd fetch the chart metadata first if not provided.
         const chartMetadata = await supersetService.getChart(chartId);
         
-        // Construct a basic query context if params are available
         let queryContext = {};
         if (chartMetadata.params) {
           const params = JSON.parse(chartMetadata.params);
@@ -52,14 +51,13 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ chart }) => {
         }
 
         const res = await supersetService.getChartData(chartId, queryContext);
-        // Superset returns data in result[0].data
         setData(res.result?.[0]?.data || []);
       } else {
-        // Local chart
+        // Local chart or Superset not configured
         const x = Array.isArray(chart.x_axis) ? chart.x_axis[0] : (chart.x_axis || 'id');
         let metrics = [];
         if (Array.isArray(chart.y_axis)) {
-          metrics = chart.y_axis.filter(m => m && m.toString().length > 0);
+          metrics = chart.y_axis.filter((m: any) => m && m.toString().length > 0);
         } else if (chart.y_axis) {
           metrics = [chart.y_axis];
         }
@@ -70,14 +68,19 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ chart }) => {
           setData(res);
         } else {
           const y = metrics.map((col: string) => `SUM("${col}") as "${col}"`).join(', ');
-          const sql = `SELECT "${x}", ${y} FROM "${chart.table_name}" GROUP BY "${x}" LIMIT 100;`;
+          const sql = `SELECT "${x}", ${y} FROM "${chart.table_name || 'charts'}" GROUP BY "${x}" LIMIT 100;`;
           const res = await executeQuery(sql);
           setData(res);
         }
       }
     } catch (err: any) {
-      console.error('Failed to load chart data:', err);
-      setError(err.message);
+      if (isSupersetConfigured) {
+        console.error('Failed to load chart data:', err);
+        setError(err.message);
+      } else {
+        // If not configured, just try local fallback if not already there
+        setData([]);
+      }
     } finally {
       setIsLoading(false);
     }

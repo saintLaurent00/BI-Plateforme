@@ -19,8 +19,18 @@ import {
 } from 'lucide-react';
 import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
+import { 
+  FormSection, 
+  FormInput, 
+  FormTextarea, 
+  FormActions, 
+  FormButton,
+  FormLabel,
+  FormButtonGroup
+} from '../components/FormElements';
 import { executeQuery, getTables, getTableSchema, saveQuery, getSavedQueries } from '../lib/db';
 import { supersetService } from '../services/supersetService';
+import { isConfigured as isSupersetConfigured } from '../lib/supersetClient';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -31,26 +41,28 @@ function cn(...inputs: ClassValue[]) {
 const SchemaItem = ({ name, type, icon: Icon, onClick }: any) => (
   <div 
     onClick={onClick}
-    className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted cursor-pointer group transition-colors"
+    className="flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-muted/50 cursor-pointer group transition-all duration-300 border border-transparent hover:border-border"
   >
-    <Icon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground" />
-    <span className="text-xs text-muted-foreground group-hover:text-foreground font-medium truncate flex-1">{name}</span>
-    <span className="text-[10px] font-medium text-muted-foreground/40 uppercase tracking-widest">{type}</span>
+    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-background group-hover:text-accent group-hover:shadow-sm transition-all">
+      <Icon className="w-4 h-4" />
+    </div>
+    <span className="text-xs font-bold text-muted-foreground group-hover:text-foreground truncate flex-1">{name}</span>
+    <span className="text-[9px] font-black text-muted-foreground/30 uppercase tracking-widest group-hover:text-muted-foreground/50">{type}</span>
   </div>
 );
 
 const SchemaFolder = ({ title, children, defaultOpen = false }: any) => {
   const [isOpen, setIsOpen] = React.useState(defaultOpen);
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted transition-colors group"
+        className="w-full flex items-center gap-2 px-2 py-2 rounded-xl hover:bg-muted/50 transition-all group/folder"
       >
-        <ChevronRight className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex-1 text-left">{title}</span>
+        <ChevronRight className={cn("w-3.5 h-3.5 text-muted-foreground/50 group-hover/folder:text-muted-foreground transition-transform", isOpen && "rotate-90")} />
+        <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] flex-1 text-left group-hover/folder:text-foreground transition-colors uppercase">{title}</span>
       </button>
-      {isOpen && <div className="pl-4 space-y-0.5">{children}</div>}
+      {isOpen && <div className="pl-4 space-y-1">{children}</div>}
     </div>
   );
 };
@@ -74,6 +86,9 @@ export const SqlLab = () => {
   const [databases, setDatabases] = React.useState<any[]>([]);
   const [selectedDatabase, setSelectedDatabase] = React.useState<any>({ id: 'local', database_name: 'Local_SQLite' });
   const [isDbSelectorOpen, setIsDbSelectorOpen] = React.useState(false);
+  const [paramsModalOpen, setParamsModalOpen] = React.useState(false);
+  const [queryParameters, setQueryParameters] = React.useState<Record<string, string>>({});
+  const [paramKeys, setParamKeys] = React.useState<string[]>([]);
 
   React.useEffect(() => {
     loadSchema();
@@ -83,11 +98,15 @@ export const SqlLab = () => {
   }, []);
 
   const loadDatabases = async () => {
+    if (!isSupersetConfigured) {
+      setDatabases([{ id: 'local', database_name: 'Local_SQLite' }]);
+      return;
+    }
+
     try {
       const { result } = await supersetService.getDatabases();
       setDatabases([{ id: 'local', database_name: 'Local_SQLite' }, ...(result || [])]);
     } catch (err) {
-      console.error('Failed to load Superset databases:', err);
       setDatabases([{ id: 'local', database_name: 'Local_SQLite' }]);
     }
   };
@@ -142,24 +161,53 @@ export const SqlLab = () => {
     localStorage.setItem('prism_sql_history', JSON.stringify(newHistory));
   };
 
-  const handleRun = async () => {
+  const handleRun = async (params: Record<string, string> = {}) => {
+    // Detect parameters if they exist: {{param_name}}
+    const matches = sql.match(/\{\{([^}]+)\}\}/g);
+    const uniqueParams = matches ? Array.from(new Set(matches.map(m => m.slice(2, -2).trim()))) : [];
+
+    // If there are parameters and we haven't provided them yet, open the modal
+    if (uniqueParams.length > 0 && Object.keys(params).length === 0) {
+      setParamKeys(uniqueParams);
+      // Initialize with existing values if any
+      const initialParams: Record<string, string> = {};
+      uniqueParams.forEach(key => {
+        initialParams[key] = queryParameters[key] || '';
+      });
+      setQueryParameters(initialParams);
+      setParamsModalOpen(true);
+      return;
+    }
+
     setIsExecuting(true);
     setError(null);
     const start = performance.now();
     try {
+      // Replace parameters in SQL
+      let finalizedSql = sql;
+      Object.entries(params).forEach(([key, value]) => {
+        // Simple string replacement for now. 
+        // Note: For real security, we should ideally use prepared statements if the backend supports it,
+        // but since we are executing arbitrary SQL, we at least sanitize the value to prevent common breaks.
+        const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\1*`, 'g');
+        // If it's a number-like value, don't wrap in quotes, otherwise wrap if needed
+        // For simplicity and safety in this demo, we assume the user might need quotes if it's a string
+        finalizedSql = finalizedSql.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g'), value);
+      });
+
       let res;
       if (selectedDatabase.id === 'local') {
-        res = await executeQuery(sql);
+        res = await executeQuery(finalizedSql);
       } else {
-        const supersetRes = await supersetService.executeSql(sql, selectedDatabase.id);
-        // Superset result structure varies, we need to adapt it
+        const supersetRes = await supersetService.executeSql(finalizedSql, selectedDatabase.id);
         res = supersetRes.data || [];
       }
       setResults(res);
       const time = Math.round(performance.now() - start);
       setExecutionTime(time);
-      addToHistory(sql, time, true);
+      addToHistory(finalizedSql, time, true);
       setActiveTab('results');
+      setParamsModalOpen(false);
     } catch (err: any) {
       setError(err.message || 'Failed to execute query');
       setResults([]);
@@ -168,6 +216,11 @@ export const SqlLab = () => {
     } finally {
       setIsExecuting(false);
     }
+  };
+
+  const handleParamsSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleRun(queryParameters);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -290,49 +343,49 @@ export const SqlLab = () => {
         </div>
       </aside>
 
-      {/* Main Area */}
+        {/* Main Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Editor Tabs */}
-        <div className="h-14 border-b border-border px-6 flex items-center justify-between bg-background">
+        <div className="h-16 border-b border-border px-8 flex items-center justify-between bg-background/80 backdrop-blur-xl sticky top-0 z-20">
           <div className="flex items-center gap-1 h-full">
-            <div className="flex items-center gap-2 px-4 h-full border-b-2 border-accent text-xs font-medium text-foreground">
-              <Terminal className="w-3.5 h-3.5" />
-              {queryInfo.name || 'Untitled Query'}
+            <div className="flex items-center gap-3 px-6 h-full border-b-[3px] border-accent text-xs font-bold text-foreground bg-muted/30">
+              <Terminal className="w-4 h-4 text-accent" />
+              <span className="tracking-tight">{queryInfo.name || 'Nouvelle Requête'}</span>
               <button 
                 onClick={() => {
                   setSql('');
                   setQueryInfo({ name: '', description: '' });
                   setActiveQueryId(null);
                 }}
-                className="p-0.5 hover:bg-muted rounded transition-colors ml-2"
+                className="p-1.5 hover:bg-muted rounded-lg transition-colors ml-4"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button 
-              onClick={handleRun}
+              onClick={() => handleRun()}
               disabled={isExecuting}
-              className="flex items-center gap-2 px-8 py-2.5 bg-accent text-accent-foreground rounded-2xl text-sm font-bold hover:opacity-90 transition-all shadow-xl shadow-accent/10 active:scale-95 disabled:opacity-50"
+              className="btn-primary flex items-center gap-2 px-8 py-2.5 shadow-lg shadow-accent/20"
             >
               <Play className={cn("w-4 h-4", isExecuting && "animate-spin")} />
-              {isExecuting ? 'Executing...' : 'Run Intelligence'}
+              {isExecuting ? 'Exécution...' : 'Exécuter'}
             </button>
-            <div className="h-8 w-px bg-slate-100 mx-2"></div>
+            <div className="h-8 w-px bg-border mx-2"></div>
             <button 
               onClick={() => { setSaveType('query'); setIsModalOpen(true); }}
-              className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all"
-              title="Save Query"
+              className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
+              title="Sauvegarder"
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-4.5 h-4.5" />
             </button>
             <button 
               onClick={() => { setSaveType('dataset'); setIsModalOpen(true); }}
-              className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all"
-              title="Save as Dataset"
+              className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
+              title="Publier en Dataset"
             >
-              <Database className="w-4 h-4" />
+              <Database className="w-4.5 h-4.5" />
             </button>
           </div>
         </div>
@@ -352,7 +405,7 @@ export const SqlLab = () => {
         </div>
 
         {/* Results Area */}
-        <div className="flex-1 flex flex-col bg-background overflow-hidden text-slate-900">
+        <div className="flex-1 flex flex-col bg-background overflow-hidden">
           <div className="h-14 border-b border-border px-8 flex items-center justify-between bg-muted/10">
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-6">
@@ -360,23 +413,23 @@ export const SqlLab = () => {
                   onClick={() => setActiveTab('results')}
                   className={cn(
                     "flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-all relative py-4",
-                    activeTab === 'results' ? "text-prism-600" : "text-slate-400 hover:text-slate-600"
+                    activeTab === 'results' ? "text-accent" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <TableIcon className="w-4 h-4" />
                   Results
-                  {activeTab === 'results' && <motion.div layoutId="sqlTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-prism-600" />}
+                  {activeTab === 'results' && <motion.div layoutId="sqlTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />}
                 </button>
                 <button 
                   onClick={() => setActiveTab('history')}
                   className={cn(
                     "flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-all relative py-4",
-                    activeTab === 'history' ? "text-prism-600" : "text-slate-400 hover:text-slate-600"
+                    activeTab === 'history' ? "text-accent" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <Clock className="w-4 h-4" />
                   History
-                  {activeTab === 'history' && <motion.div layoutId="sqlTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-prism-600" />}
+                  {activeTab === 'history' && <motion.div layoutId="sqlTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />}
                 </button>
               </div>
               {activeTab === 'results' && (
@@ -443,7 +496,7 @@ export const SqlLab = () => {
             ) : (
               <div className="p-4 space-y-2">
                 {history.length === 0 ? (
-                  <div className="p-12 text-center text-slate-400">
+                  <div className="p-12 text-center text-muted-foreground">
                     <Clock className="w-10 h-10 mx-auto mb-4 opacity-20" />
                     <p className="text-sm">No query history yet.</p>
                   </div>
@@ -452,16 +505,16 @@ export const SqlLab = () => {
                     <div 
                       key={entry.id}
                       onClick={() => setSql(entry.sql)}
-                      className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-prism-200 cursor-pointer group transition-all"
+                      className="p-4 bg-muted/10 rounded-xl border border-border hover:border-accent/30 cursor-pointer group transition-all"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <Badge variant={entry.success ? 'success' : 'error'} className="text-[8px]">{entry.success ? 'SUCCESS' : 'FAILED'}</Badge>
-                          <span className="text-[10px] font-mono text-slate-400">{new Date(entry.timestamp).toLocaleString()}</span>
+                          <span className="text-[10px] font-mono text-muted-foreground">{new Date(entry.timestamp).toLocaleString()}</span>
                         </div>
-                        <span className="text-[10px] font-bold text-slate-400">{entry.time}ms</span>
+                        <span className="text-[10px] font-bold text-muted-foreground">{entry.time}ms</span>
                       </div>
-                      <code className="text-xs text-slate-600 line-clamp-1 font-mono group-hover:text-prism-600">{entry.sql}</code>
+                      <code className="text-xs text-muted-foreground line-clamp-1 font-mono group-hover:text-foreground">{entry.sql}</code>
                     </div>
                   ))
                 )}
@@ -478,67 +531,75 @@ export const SqlLab = () => {
         title={saveType === 'query' ? "Save Intelligence Query" : "Publish as Virtual Dataset"}
       >
         <form onSubmit={handleSave} className="space-y-8">
-          <div className="flex p-2 bg-slate-50 rounded-2xl border border-slate-100">
-            <button 
-              type="button"
-              onClick={() => setSaveType('query')}
-              className={cn(
-                "flex-1 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-xl",
-                saveType === 'query' ? "bg-white text-slate-900 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              Query
-            </button>
-            <button 
-              type="button"
-              onClick={() => setSaveType('dataset')}
-              className={cn(
-                "flex-1 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-xl",
-                saveType === 'dataset' ? "bg-white text-slate-900 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              Dataset
-            </button>
-          </div>
+          <FormButtonGroup 
+            options={['query', 'dataset']}
+            value={saveType}
+            onChange={(type) => setSaveType(type as any)}
+            className="p-1 bg-muted/30 border border-border rounded-2xl"
+          />
 
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Identifier</label>
-            <input 
-              type="text" 
+          <FormSection label="Identifier">
+            <FormInput 
               value={queryInfo.name}
               onChange={(e) => setQueryInfo({ ...queryInfo, name: e.target.value })}
               placeholder={saveType === 'query' ? "e.g. Regional Revenue Q1" : "e.g. V_REGIONAL_SALES"} 
-              className="w-full px-5 py-4 bg-slate-50 border-transparent focus:bg-white focus:border-accent focus:ring-8 focus:ring-accent/5 rounded-2xl text-sm font-bold transition-all outline-none"
               required
             />
-          </div>
+          </FormSection>
 
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1">Description</label>
-            <textarea 
+          <FormSection label="Description">
+            <FormTextarea 
               value={queryInfo.description}
               onChange={(e) => setQueryInfo({ ...queryInfo, description: e.target.value })}
               placeholder="What strategic value does this provide?" 
-              className="w-full px-5 py-4 bg-slate-50 border-transparent focus:bg-white focus:border-accent focus:ring-8 focus:ring-accent/5 rounded-2xl text-sm font-medium transition-all outline-none min-h-[120px] resize-none"
             />
-          </div>
+          </FormSection>
 
-          <div className="pt-4 flex gap-4">
-            <button 
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="flex-1 py-4 bg-slate-50 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-100 transition-all"
-            >
+          <FormActions>
+            <FormButton variant="secondary" type="button" onClick={() => setIsModalOpen(false)} className="flex-1">
               Discard
-            </button>
-            <button 
-              type="submit"
-              className="flex-1 py-4 bg-accent text-accent-foreground rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:opacity-90 transition-all shadow-xl shadow-accent/10 active:scale-95"
-            >
+            </FormButton>
+            <FormButton type="submit" className="flex-1">
               {saveType === 'query' ? 'Save Query' : 'Publish Dataset'}
-            </button>
-          </div>
+            </FormButton>
+          </FormActions>
         </form>
+      </Modal>
+
+      {/* Parameter Inputs Modal */}
+      <Modal
+        isOpen={paramsModalOpen}
+        onClose={() => setParamsModalOpen(false)}
+        title="Query Parameters"
+      >
+        <div className="space-y-6">
+          <p className="text-xs text-muted-foreground">
+            This query contains parameters. Please provide values for the placeholders below to continue.
+          </p>
+          <form onSubmit={handleParamsSubmit} className="space-y-6">
+            <div className="space-y-4">
+              {paramKeys.map(key => (
+                <FormSection key={key} label={key.replace(/_/g, ' ')}>
+                  <FormInput
+                    value={queryParameters[key] || ''}
+                    onChange={(e) => setQueryParameters(prev => ({ ...prev, [key]: e.target.value }))}
+                    placeholder={`Value for {{${key}}}`}
+                    className="py-3"
+                    required
+                  />
+                </FormSection>
+              ))}
+            </div>
+            <FormActions className="pt-2">
+              <FormButton variant="secondary" type="button" onClick={() => setParamsModalOpen(false)} className="flex-1 py-3 rounded-xl font-black text-[10px]">
+                Cancel
+              </FormButton>
+              <FormButton type="submit" disabled={isExecuting} className="flex-1 py-3 rounded-xl font-black text-[10px]">
+                {isExecuting ? 'Executing...' : 'Run Query'}
+              </FormButton>
+            </FormActions>
+          </form>
+        </div>
       </Modal>
     </div>
   );

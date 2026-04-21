@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
 import { Dashboards } from './pages/Dashboards';
@@ -14,7 +14,6 @@ import { DatasetsExplorer } from './pages/DatasetsExplorer';
 import { Datasets as DatasetDetail } from './pages/Datasets';
 import { ChartEditor } from './pages/ChartEditor';
 import { ChartSelector } from './pages/ChartSelector';
-import { SimpleDashboardBuilder } from './features/dashboard/SimpleDashboardBuilder';
 import { DashboardDetail } from './pages/DashboardDetail';
 import { DashboardEditor } from './pages/DashboardEditor';
 import { Admin } from './pages/Admin';
@@ -23,7 +22,7 @@ import { Login } from './pages/Login';
 import { Toaster } from 'sonner';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(true);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
 
   // Simple login handler for demo purposes
   const handleLogin = () => setIsAuthenticated(true);
@@ -47,7 +46,6 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/dashboards" element={<Dashboards />} />
-          <Route path="/dashboard-builder" element={<SimpleDashboardBuilder />} />
           <Route path="/dashboards/:id" element={<DashboardDetail />} />
           <Route path="/dashboard-editor" element={<DashboardEditor />} />
           <Route path="/dashboard-editor/:id" element={<DashboardEditor />} />

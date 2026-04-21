@@ -82,10 +82,35 @@ export const initDatabase = async () => {
       sql TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    -- Ensure sample data tables exist
+    CREATE TABLE IF NOT EXISTS sales_data (region TEXT, sales NUMBER);
+    CREATE TABLE IF NOT EXISTS users (created_at TEXT, id NUMBER);
+    CREATE TABLE IF NOT EXISTS finance (category TEXT, amount NUMBER);
   `);
 
+  // Check if sample tables are empty and seed them if needed
+  const checkSeeded = (tableName: string) => {
+    try {
+      const res = dbInstance!.exec(`SELECT COUNT(*) FROM "${tableName}"`);
+      return res[0].values[0][0] as number > 0;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  if (!checkSeeded('sales_data')) {
+    dbInstance.run(`INSERT INTO sales_data VALUES ('North', 1200), ('South', 800), ('East', 1500), ('West', 1100)`);
+  }
+  if (!checkSeeded('users')) {
+    dbInstance.run(`INSERT INTO users VALUES ('2026-01-01', 10), ('2026-02-01', 25), ('2026-03-01', 45), ('2026-04-01', 80)`);
+  }
+  if (!checkSeeded('finance')) {
+    dbInstance.run(`INSERT INTO finance VALUES ('Software', 5000), ('Hardware', 3000), ('Services', 2000)`);
+  }
+
   if (!savedData) {
-    // Seed sample charts if empty
+    // Seed sample charts and dashboards only on first run
     dbInstance.run(`
       INSERT OR IGNORE INTO charts (id, name, table_name, chart_type, x_axis, y_axis, config)
       VALUES 
@@ -93,26 +118,6 @@ export const initDatabase = async () => {
       ('sample-2', 'User Growth', 'users', 'Line', '["created_at"]', '["id"]', '{"showGrid":true}'),
       ('sample-3', 'Revenue Distribution', 'finance', 'Pie', '["category"]', '["amount"]', '{"labelType":"Category Name"}');
 
-      -- Seed sample data tables
-      CREATE TABLE IF NOT EXISTS sales_data (region TEXT, sales NUMBER);
-      INSERT OR IGNORE INTO sales_data VALUES ('North', 1200), ('South', 800), ('East', 1500), ('West', 1100);
-
-      CREATE TABLE IF NOT EXISTS users (created_at TEXT, id NUMBER);
-      INSERT OR IGNORE INTO users VALUES ('2026-01-01', 10), ('2026-02-01', 25), ('2026-03-01', 45), ('2026-04-01', 80);
-
-      CREATE TABLE IF NOT EXISTS finance (category TEXT, amount NUMBER);
-      INSERT OR IGNORE INTO finance VALUES ('Software', 5000), ('Hardware', 3000), ('Services', 2000);
-
-      -- Seed transactions for BI-Plateforme
-      CREATE TABLE IF NOT EXISTS transactions (id NUMBER, date TEXT, category TEXT, amount NUMBER, merchant TEXT);
-      INSERT OR IGNORE INTO transactions VALUES
-      (1, '2024-01-01', 'Food', 50, 'Whole Foods'),
-      (2, '2024-01-02', 'Tech', 1200, 'Apple'),
-      (3, '2024-01-03', 'Food', 30, 'Trader Joes'),
-      (4, '2024-01-04', 'Transport', 15, 'Uber'),
-      (5, '2024-01-05', 'Tech', 200, 'Amazon');
-
-      -- Seed a sample dashboard
       INSERT OR IGNORE INTO dashboards (id, name, description, layout, background_color)
       VALUES ('sample-dashboard', 'Executive Sales Overview', 'A high-level view of sales performance and user growth.', 
       '[{"id":"r1","type":"row","children":[{"id":"c1","type":"chart","content":{"id":"sample-1","name":"Sales by Region","chart_type":"Bar","table_name":"sales_data","x_axis":"region","y_axis":["sales"]},"meta":{"width":6,"height":350}},{"id":"c2","type":"chart","content":{"id":"sample-2","name":"User Growth","chart_type":"Line","table_name":"users","x_axis":"created_at","y_axis":["id"]},"meta":{"width":6,"height":350}}],"meta":{"height":400}},{"id":"r2","type":"row","children":[{"id":"c3","type":"chart","content":{"id":"sample-3","name":"Revenue Distribution","chart_type":"Pie","table_name":"finance","x_axis":"category","y_axis":["amount"]},"meta":{"width":12,"height":400}}],"meta":{"height":450}}]', 
@@ -161,6 +166,24 @@ export const getCharts = async () => {
     });
     return obj;
   });
+};
+
+export const getChart = async (id: string) => {
+  const { db } = await initDatabase();
+  const res = db.exec(`SELECT * FROM charts WHERE id = '${id}'`);
+  if (res.length === 0) return null;
+  
+  const { columns, values } = res[0];
+  const row = values[0];
+  const obj: any = {};
+  columns.forEach((col, i) => {
+    if (['x_axis', 'y_axis', 'config'].includes(col)) {
+      obj[col] = JSON.parse(row[i] as string);
+    } else {
+      obj[col] = row[i];
+    }
+  });
+  return obj;
 };
 
 export const getDashboards = async () => {

@@ -89,7 +89,6 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
   const navItems = [
     { to: "/", icon: Home, label: "Home" },
     { to: "/dashboards", icon: LayoutDashboard, label: "Dashboards" },
-    { to: "/dashboard-builder", icon: LayoutDashboard, label: "Dash Builder" },
     { to: "/charts", icon: BarChart3, label: "Charts" },
     { to: "/sql-lab", icon: Terminal, label: "SQL Lab" },
     { to: "/datasets", icon: Database, label: "Datasets" },
@@ -132,7 +131,7 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
       {/* Sidebar */}
       <aside 
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-background border-r border-border transition-all duration-300 ease-in-out lg:relative lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-background border-r border-border transition-all duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0",
           !isSidebarOpen && "-translate-x-full lg:w-20"
         )}
       >
@@ -140,7 +139,7 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
           {/* Logo */}
           <div className="h-20 flex items-center px-6">
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center transition-all group-hover:rotate-12 group-hover:scale-110 shadow-lg shadow-accent/10">
+              <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center transition-all shadow-lg shadow-accent/10">
                 <Command className="w-4 h-4 text-accent-foreground" />
               </div>
               {isSidebarOpen && (
@@ -240,33 +239,6 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
               )}
             </div>
           </nav>
-
-          {/* User Profile */}
-          <div className="p-4 border-t border-border">
-            <div className={cn(
-              "flex items-center gap-3 p-2 rounded-2xl hover:bg-muted transition-all duration-300 group cursor-pointer relative",
-              !isSidebarOpen && "justify-center p-0"
-            )}>
-              <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border shadow-sm group-hover:ring-4 group-hover:ring-accent/10 transition-all">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" className="w-full h-full object-cover" />
-              </div>
-              {isSidebarOpen && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-foreground truncate">Laurent O.</p>
-                  <p className="text-[9px] text-muted-foreground truncate uppercase tracking-[0.2em] font-black">Intelligence Admin</p>
-                </div>
-              )}
-              {isSidebarOpen && (
-                <button 
-                  onClick={onLogout}
-                  className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-                  title="Sign Out"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
         </div>
       </aside>
 
@@ -306,14 +278,25 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
               <Bell className="w-4 h-4" />
               <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-accent rounded-full border border-background"></span>
             </button>
-            <div className="w-px h-4 bg-border mx-1"></div>
-            <button 
-              onClick={onLogout}
-              className="p-2 text-muted-foreground hover:text-rose-500 hover:bg-rose-50 rounded-md transition-colors"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <div className="w-px h-6 bg-border mx-2"></div>
+            
+            {/* User Profile in Navbar */}
+            <div className="flex items-center gap-3 pl-2 group cursor-pointer transition-all">
+              <div className="flex flex-col items-end hidden sm:flex">
+                <span className="text-[10px] font-black text-foreground uppercase tracking-tight leading-none">Laurent O.</span>
+                <span className="text-[8px] text-muted-foreground uppercase tracking-[0.15em] font-black mt-1">Intelligence Admin</span>
+              </div>
+              <div className="w-10 h-10 rounded-2xl bg-muted flex items-center justify-center overflow-hidden border border-border group-hover:bg-muted transition-all shadow-sm">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" className="w-full h-full object-cover" />
+              </div>
+              <button 
+                onClick={onLogout}
+                className="p-2.5 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all ml-1"
+                title="Déconnexion"
+              >
+                <LogOut className="w-4.5 h-4.5" />
+              </button>
+            </div>
           </div>
         </header>
 
@@ -324,7 +307,8 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
           </div>
         </main>
 
-        {/* AI Chat Toggle */}
+        {/* AI Chat Disabled for MVP */}
+        {/* 
         <button 
           onClick={() => setIsChatOpen(!isChatOpen)}
           className={cn(
@@ -339,8 +323,8 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
           )}
         </button>
 
-        {/* AI Chat Dialog */}
         <AIChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+        */}
       </div>
     </div>
   );

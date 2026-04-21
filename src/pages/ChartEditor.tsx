@@ -25,14 +25,28 @@ import {
   Table as TableIcon,
   Info,
   Check,
-  Palette
+  Palette,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import { Badge } from '../components/Badge';
+import { 
+  FormSection, 
+  FormInput, 
+  FormSelect, 
+  FormTextarea, 
+  FormActions, 
+  FormButton,
+  FormLabel
+} from '../components/FormElements';
 import { executeQuery, getTables, getTableSchema, saveChart } from '../lib/db';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Modal } from '../components/Modal';
 import { D3Chart } from '../components/D3Chart';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { KwakuInsight } from '../components/KwakuInsight';
+import { kwakuService } from '../services/kwakuService';
+import { toast } from 'sonner';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -43,13 +57,13 @@ const FieldItem = ({ id, name, type, index }: any) => (
         ref={provided.innerRef}
         {...provided.draggableProps}
         {...provided.dragHandleProps}
-        className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-slate-100 hover:border-accent hover:shadow-xl hover:shadow-accent/5 cursor-grab active:cursor-grabbing group transition-all mb-3"
+        className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-background border border-border hover:border-accent hover:shadow-xl hover:shadow-accent/5 cursor-grab active:cursor-grabbing group transition-all mb-3"
       >
-        <GripVertical className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500" />
-        <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-[8px] font-black text-slate-400 uppercase tracking-tighter group-hover:bg-accent group-hover:text-accent-foreground transition-all">
+        <GripVertical className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground" />
+        <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-[8px] font-black text-muted-foreground uppercase tracking-tighter group-hover:bg-accent group-hover:text-accent-foreground transition-all">
           {type.substring(0, 3)}
         </div>
-        <span className="text-xs text-slate-600 font-bold truncate flex-1 group-hover:text-slate-900">{name}</span>
+        <span className="text-xs text-muted-foreground font-bold truncate flex-1 group-hover:text-foreground">{name}</span>
       </div>
     )}
   </Draggable>
@@ -62,7 +76,7 @@ interface Metric {
 }
 
 const MetricItem = ({ metric, onRemove, onUpdateAgg }: { metric: Metric, onRemove: () => void, onUpdateAgg: (agg: string) => void }) => (
-  <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-100 rounded-xl shadow-sm group hover:border-accent transition-all">
+  <div className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border rounded-xl shadow-sm group hover:border-accent transition-all">
     <select 
       value={metric.agg}
       onChange={(e) => onUpdateAgg(e.target.value)}
@@ -75,8 +89,8 @@ const MetricItem = ({ metric, onRemove, onUpdateAgg }: { metric: Metric, onRemov
       <option value="MAX">MAX</option>
       <option value="NONE">NONE</option>
     </select>
-    <span className="text-xs font-bold text-slate-700 truncate max-w-[100px]">{metric.column}</span>
-    <button onClick={onRemove} className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-all">
+    <span className="text-xs font-bold text-foreground truncate max-w-[100px]">{metric.column}</span>
+    <button onClick={onRemove} className="p-1 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-full transition-all">
       <X className="w-3 h-3" />
     </button>
   </div>
@@ -99,13 +113,13 @@ const DropZone = ({ id, label, icon: Icon, items = [], onRemove, onUpdateAgg, is
             "min-h-[80px] p-3 border-2 border-dashed rounded-[24px] flex flex-wrap gap-2 transition-all duration-500",
             snapshot.isDraggingOver 
               ? "bg-accent/5 border-accent ring-8 ring-accent/5 scale-[1.02]" 
-              : "bg-slate-50/50 border-slate-100 hover:border-slate-200"
+              : "bg-muted/30 border-border hover:border-border/80"
           )}
         >
           {items.length === 0 ? (
             <div className="m-auto flex flex-col items-center gap-2 opacity-20">
-              <Plus className="w-5 h-5 text-slate-400" />
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Drop Zone</span>
+              <Plus className="w-5 h-5 text-muted-foreground" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Drop Zone</span>
             </div>
           ) : (
             items.map((item: any, i: number) => (
@@ -117,9 +131,9 @@ const DropZone = ({ id, label, icon: Icon, items = [], onRemove, onUpdateAgg, is
                   onUpdateAgg={(agg) => onUpdateAgg(item, agg)} 
                 />
               ) : (
-                <div key={item} className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-100 rounded-xl shadow-sm group hover:border-accent transition-all">
-                  <span className="text-xs font-bold text-slate-700">{item}</span>
-                  <button onClick={() => onRemove(item)} className="p-1 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-all">
+                <div key={item} className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border rounded-xl shadow-sm group hover:border-accent transition-all">
+                  <span className="text-xs font-bold text-foreground">{item}</span>
+                  <button onClick={() => onRemove(item)} className="p-1 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-full transition-all">
                     <X className="w-3 h-3" />
                   </button>
                 </div>
@@ -140,28 +154,28 @@ function cn(...inputs: any[]) {
 const CollapsibleSection = ({ title, icon: Icon, children, defaultOpen = false }: any) => {
   const [isOpen, setIsOpen] = React.useState(defaultOpen);
   return (
-    <div className="border-b border-slate-100 last:border-none">
+    <div className="border-b border-border last:border-none">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between py-4 px-1 hover:bg-slate-50/50 transition-colors group"
+        className="w-full flex items-center justify-between py-4 px-1 hover:bg-muted/30 transition-colors group"
       >
         <div className="flex items-center gap-3">
           <div className={cn(
             "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-            isOpen ? "bg-prism-100 text-prism-600" : "bg-slate-50 text-slate-400 group-hover:text-slate-600"
+            isOpen ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground/60 group-hover:text-muted-foreground"
           )}>
             <Icon className="w-4 h-4" />
           </div>
           <span className={cn(
             "text-sm font-bold transition-colors",
-            isOpen ? "text-slate-900" : "text-slate-500 group-hover:text-slate-700"
+            isOpen ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
           )}>
             {title}
           </span>
         </div>
         <ChevronDown className={cn(
-          "w-4 h-4 text-slate-300 transition-transform duration-300",
-          isOpen && "rotate-180 text-prism-500"
+          "w-4 h-4 text-muted-foreground/40 transition-transform duration-300",
+          isOpen && "rotate-180 text-accent"
         )} />
       </button>
       <AnimatePresence>
@@ -205,6 +219,32 @@ export const ChartEditor = () => {
   
   const [calcColName, setCalcColName] = React.useState('');
   const [calcColSql, setCalcColSql] = React.useState('');
+  const [isRecommending, setIsRecommending] = React.useState(false);
+
+  const handleRecommend = async () => {
+    if (!schema.length) return;
+    setIsRecommending(true);
+    try {
+      const rec = await kwakuService.getChartRecommendation(schema);
+      if (rec) {
+        setChartType(rec.chartType || 'Bar');
+        if (rec.xAxis && schema.find(s => s.name === rec.xAxis)) {
+          setXAxis([rec.xAxis]);
+        }
+        if (rec.yAxis && schema.find(s => s.name === rec.yAxis)) {
+          setYAxis([{ column: rec.yAxis, agg: 'SUM', alias: rec.yAxis }]);
+        }
+        toast.success(`Kwaku recommande : ${rec.chartType}`, {
+          description: rec.reasoning
+        });
+      }
+    } catch (err) {
+      console.error('Recommendation failed:', err);
+      toast.error('Kwaku n\'a pas pu générer de recommandation.');
+    } finally {
+      setIsRecommending(false);
+    }
+  };
 
   // Customization options
   const [customConfig, setCustomConfig] = React.useState({
@@ -391,19 +431,19 @@ g.selectAll('rect')
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex h-full bg-slate-50 overflow-hidden">
+      <div className="flex h-full bg-background overflow-hidden">
         {/* Left Sidebar: Source & Fields */}
-        <aside className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0">
-          <div className="p-4 border-b border-slate-200 space-y-4">
+        <aside className="w-64 bg-background border-r border-border flex flex-col shrink-0">
+          <div className="p-4 border-b border-border space-y-4">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chart Source</label>
-              <button className="p-1 text-slate-400 hover:text-slate-900">
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Chart Source</label>
+              <button className="p-1 text-muted-foreground hover:text-foreground">
                 <Info className="w-3.5 h-3.5" />
               </button>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-              <Database className="w-4 h-4 text-prism-600" />
-              <span className="text-sm font-bold text-slate-700 truncate">{selectedTable}</span>
+            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border">
+              <Database className="w-4 h-4 text-accent" />
+              <span className="text-sm font-bold text-foreground truncate">{selectedTable}</span>
             </div>
           </div>
 
@@ -411,19 +451,19 @@ g.selectAll('rect')
             {/* Metrics Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Metrics</label>
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Metrics</label>
                 <button 
                   onClick={() => setIsCalcModalOpen(true)}
-                  className="p-1 text-prism-600 hover:bg-prism-50 rounded transition-colors"
+                  className="p-1 text-accent hover:bg-accent/10 rounded transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
               <div className="space-y-1">
                 {schema.filter(s => s.type === 'number' || s.type === 'calculated').map((col, i) => (
-                  <div key={col.name} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 group cursor-default">
-                    <div className="w-5 h-5 rounded bg-prism-50 flex items-center justify-center text-[8px] font-bold text-prism-600 uppercase">fx</div>
-                    <span className="text-xs font-medium text-slate-600 truncate flex-1">{col.displayName || col.name}</span>
+                  <div key={col.name} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/30 group cursor-default">
+                    <div className="w-5 h-5 rounded bg-accent/10 flex items-center justify-center text-[8px] font-bold text-accent uppercase">fx</div>
+                    <span className="text-xs font-medium text-muted-foreground truncate flex-1">{col.displayName || col.name}</span>
                   </div>
                 ))}
               </div>
@@ -437,7 +477,7 @@ g.selectAll('rect')
                   {...provided.droppableProps}
                   className="space-y-4"
                 >
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Columns</label>
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Columns</label>
                   <div className="space-y-0.5">
                     {schema.map((col, index) => (
                       <FieldItem 
@@ -457,13 +497,13 @@ g.selectAll('rect')
         </aside>
 
         {/* Middle Panel: Configuration */}
-        <aside className="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0">
-          <div className="flex p-2 bg-slate-50/50 m-4 rounded-2xl border border-slate-100">
+        <aside className="w-80 bg-background border-r border-border flex flex-col shrink-0">
+          <div className="flex p-2 bg-muted/30 m-4 rounded-2xl border border-border">
             <button 
               onClick={() => setActiveConfigTab('data')}
               className={cn(
                 "flex-1 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-xl",
-                activeConfigTab === 'data' ? "bg-white text-slate-900 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600"
+                activeConfigTab === 'data' ? "bg-background text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"
               )}
             >
               Data
@@ -472,7 +512,7 @@ g.selectAll('rect')
               onClick={() => setActiveConfigTab('customize')}
               className={cn(
                 "flex-1 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-xl",
-                activeConfigTab === 'customize' ? "bg-white text-slate-900 shadow-sm border border-slate-100" : "text-slate-400 hover:text-slate-600"
+                activeConfigTab === 'customize' ? "bg-background text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"
               )}
             >
               Style
@@ -485,58 +525,54 @@ g.selectAll('rect')
                 {/* Visualization Type */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Visualization Type</label>
-                    <button onClick={() => navigate('/chart/add')} className="text-[10px] font-bold text-prism-600 hover:underline">View all charts</button>
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Type de Visualisation</label>
                   </div>
-                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="w-8 h-8 rounded-lg bg-prism-600 text-white flex items-center justify-center">
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border">
+                    <div className="w-8 h-8 rounded-lg bg-accent text-accent-foreground flex items-center justify-center">
                       <BarChartIcon className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-bold text-slate-900">{chartType} Chart</h4>
-                      <p className="text-[10px] text-slate-500">D3.js Rendering</p>
+                      <h4 className="text-sm font-bold text-foreground">{chartType} Chart</h4>
+                      <p className="text-[10px] text-muted-foreground">D3.js Rendering</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Time Section */}
-                <div className="space-y-6 pt-6 border-t border-slate-100">
-                  <h3 className="text-sm font-bold text-slate-900">Time</h3>
+                <div className="space-y-6 pt-6 border-t border-border">
+                  <h3 className="text-sm font-bold text-foreground">Time</h3>
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time Column</label>
-                      <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
+                    <FormSection label="Time Column">
+                      <FormSelect className="py-2.5 px-4 h-auto text-xs">
                         <option>No filter</option>
                         {schema.filter(s => s.type === 'date' || s.type === 'timestamp').map(s => (
                           <option key={s.name} value={s.name}>{s.name}</option>
                         ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time Grain</label>
-                      <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
+                      </FormSelect>
+                    </FormSection>
+                    <FormSection label="Time Grain">
+                      <FormSelect className="py-2.5 px-4 h-auto text-xs">
                         <option>Day</option>
                         <option>Week</option>
                         <option>Month</option>
                         <option>Year</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time Range</label>
-                      <button className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left text-slate-600 hover:border-prism-500 transition-all">
+                      </FormSelect>
+                    </FormSection>
+                    <FormSection label="Time Range">
+                      <FormButton variant="secondary" className="w-full text-left justify-start px-4 py-2.5 rounded-2xl h-auto tracking-normal lowercase first-letter:uppercase font-medium">
                         Last week
-                      </button>
-                    </div>
+                      </FormButton>
+                    </FormSection>
                   </div>
                 </div>
 
                 {/* Query Section */}
-                <div className="space-y-6 pt-6 border-t border-slate-100">
+                <div className="space-y-6 pt-6 border-t border-border">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-900">Query</h3>
-                    <div className="flex bg-slate-100 p-0.5 rounded-lg">
-                      <button className="px-3 py-1 text-[10px] font-bold bg-white text-prism-600 rounded-md shadow-sm">Aggregate</button>
-                      <button className="px-3 py-1 text-[10px] font-bold text-slate-400">Raw records</button>
+                    <h3 className="text-sm font-bold text-foreground">Query</h3>
+                    <div className="flex bg-muted p-0.5 rounded-lg border border-border">
+                      <button className="px-3 py-1 text-[10px] font-bold bg-background text-accent rounded-md shadow-sm">Aggregate</button>
+                      <button className="px-3 py-1 text-[10px] font-bold text-muted-foreground hover:text-foreground">Raw records</button>
                     </div>
                   </div>
 
@@ -561,102 +597,97 @@ g.selectAll('rect')
                   />
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filters</label>
-                    <div className="p-4 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 flex items-center justify-center">
-                      <span className="text-[10px] text-slate-400 italic">Drop columns/metrics here</span>
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Filters</label>
+                    <div className="p-4 border-2 border-dashed border-border rounded-xl bg-muted/30 flex items-center justify-center">
+                      <span className="text-[10px] text-muted-foreground/60 italic">Drop columns/metrics here</span>
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Row Limit</label>
-                    <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none">
+                  <FormSection label="Row Limit">
+                    <FormSelect className="py-2.5 px-4 h-auto text-xs">
                       <option>1000</option>
                       <option>5000</option>
                       <option>10000</option>
-                    </select>
-                  </div>
+                    </FormSelect>
+                  </FormSection>
                 </div>
               </>
             ) : (
               <div className="flex-1 overflow-y-auto p-4">
                 <CollapsibleSection title="General" icon={Settings2} defaultOpen={true}>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-600">Show Legend</span>
+                    <span className="text-xs font-medium text-muted-foreground">Show Legend</span>
                     <input 
                       type="checkbox" 
                       checked={customConfig.showLegend}
                       onChange={(e) => setCustomConfig({ ...customConfig, showLegend: e.target.checked })}
-                      className="w-4 h-4 rounded border-slate-300 text-prism-600 focus:ring-prism-500"
+                      className="w-4 h-4 rounded border-border bg-background text-accent focus:ring-accent"
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-600">Show Grid</span>
+                    <span className="text-xs font-medium text-muted-foreground">Show Grid</span>
                     <input 
                       type="checkbox" 
                       checked={customConfig.showGrid}
                       onChange={(e) => setCustomConfig({ ...customConfig, showGrid: e.target.checked })}
-                      className="w-4 h-4 rounded border-slate-300 text-prism-600 focus:ring-prism-500"
+                      className="w-4 h-4 rounded border-border bg-background text-accent focus:ring-accent"
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-600">Show cell bars</span>
+                    <span className="text-xs font-medium text-muted-foreground">Show cell bars</span>
                     <input 
                       type="checkbox" 
                       checked={customConfig.showCellBars}
                       onChange={(e) => setCustomConfig({ ...customConfig, showCellBars: e.target.checked })}
-                      className="w-4 h-4 rounded border-slate-300 text-prism-600 focus:ring-prism-500"
+                      className="w-4 h-4 rounded border-border bg-background text-accent focus:ring-accent"
                     />
                   </div>
                 </CollapsibleSection>
 
                 <CollapsibleSection title="Axes" icon={Activity}>
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">X-Axis Label</label>
-                      <input type="text" placeholder="Auto" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Y-Axis Label</label>
-                      <input type="text" placeholder="Auto" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none" />
-                    </div>
+                    <FormSection label="X-Axis Label">
+                      <FormInput placeholder="Auto" className="py-2.5 px-4 h-auto text-xs rounded-xl" />
+                    </FormSection>
+                    <FormSection label="Y-Axis Label">
+                      <FormInput placeholder="Auto" className="py-2.5 px-4 h-auto text-xs rounded-xl" />
+                    </FormSection>
                   </div>
                 </CollapsibleSection>
 
                 <CollapsibleSection title="Tooltips" icon={Info}>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-slate-600">Enable Tooltips</span>
-                    <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-slate-300 text-prism-600 focus:ring-prism-500" />
+                    <span className="text-xs font-medium text-muted-foreground">Enable Tooltips</span>
+                    <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-border bg-background text-accent focus:ring-accent" />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Value Format</label>
-                    <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none">
+                  <FormSection label="Value Format" className="mt-4">
+                    <FormSelect className="py-2.5 px-4 h-auto text-xs rounded-xl">
                       <option>Default</option>
                       <option>Currency</option>
                       <option>Percentage</option>
-                    </select>
-                  </div>
+                    </FormSelect>
+                  </FormSection>
                 </CollapsibleSection>
 
                 <CollapsibleSection title="Colors" icon={Palette}>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Color Scheme</label>
-                    <select 
+                  <FormSection label="Color Scheme">
+                    <FormSelect 
                       value={customConfig.colorScheme}
                       onChange={(e) => setCustomConfig({ ...customConfig, colorScheme: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none"
+                      className="py-2.5 px-4 h-auto text-xs rounded-xl"
                     >
                       <option>Superset Colors</option>
                       <option>Prism Theme</option>
                       <option>Vibrant</option>
-                    </select>
-                  </div>
+                    </FormSelect>
+                  </FormSection>
                 </CollapsibleSection>
 
                 {chartType === 'Custom D3' && (
                   <CollapsibleSection title="Custom Configuration" icon={Settings2} defaultOpen={true}>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                           D3.js Script
                         </label>
                         <textarea 
@@ -665,10 +696,10 @@ g.selectAll('rect')
                             ...customConfig, 
                             customScript: e.target.value 
                           })}
-                          className="w-full h-64 px-3 py-2 bg-slate-900 text-emerald-400 font-mono text-[10px] rounded-lg outline-none border border-slate-800 focus:border-prism-500"
+                          className="w-full h-64 px-3 py-2 bg-muted/50 text-accent font-mono text-[10px] rounded-lg outline-none border border-border focus:border-accent"
                           spellCheck={false}
                         />
-                        <p className="text-[9px] text-slate-400 italic">
+                        <p className="text-[9px] text-muted-foreground italic">
                           Use d3, svg, data, width, height, margin, xAxis, yAxis to render.
                         </p>
                       </div>
@@ -679,11 +710,11 @@ g.selectAll('rect')
             )}
           </div>
 
-          <div className="p-6 border-t border-slate-200 bg-slate-50/50">
+          <div className="p-6 border-t border-border bg-muted/30">
             <button 
               onClick={handleRun}
               disabled={isExecuting || xAxis.length === 0 || yAxis.length === 0}
-              className="w-full py-3 bg-prism-600 text-white rounded-xl font-bold text-sm hover:bg-prism-700 transition-all shadow-lg shadow-prism-200 disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
+              className="btn-primary w-full py-3 shadow-lg shadow-accent/20 disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
             >
               <Play className={cn("w-4 h-4", isExecuting && "animate-spin")} />
               Update Chart
@@ -692,20 +723,20 @@ g.selectAll('rect')
         </aside>
 
         {/* Main Panel: Preview & Results */}
-        <main className="flex-1 flex flex-col min-w-0 bg-white">
+        <main className="flex-1 flex flex-col min-w-0 bg-background">
           {/* Topbar */}
-          <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 px-8 flex items-center justify-between sticky top-0 z-30">
+          <header className="h-16 bg-background/80 backdrop-blur-md border-b border-border px-8 flex items-center justify-between sticky top-0 z-30">
             <div className="flex items-center gap-6">
               <button 
                 onClick={() => navigate('/charts')}
-                className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all active:scale-90"
+                className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all active:scale-90"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <div className="flex flex-col">
-                <h2 className="text-base font-bold text-slate-900 tracking-tight">{chartName || 'Untitled Intelligence'}</h2>
+                <h2 className="text-base font-bold text-foreground tracking-tight">{chartName || 'Untitled Intelligence'}</h2>
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">Draft Visualization</span>
+                  <span className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em]">Draft Visualization</span>
                   <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
               </div>
@@ -713,15 +744,15 @@ g.selectAll('rect')
             <div className="flex items-center gap-4">
               <button 
                 onClick={() => navigate('/sql-lab')}
-                className="px-4 py-2 text-slate-500 text-xs font-bold hover:text-slate-900 transition-all flex items-center gap-2"
+                className="px-4 py-2 text-muted-foreground text-xs font-bold hover:text-foreground transition-all flex items-center gap-2"
               >
                 <Database className="w-3.5 h-3.5" />
                 SQL Lab
               </button>
-              <div className="h-6 w-px bg-slate-100 mx-1"></div>
+              <div className="h-6 w-px bg-border mx-1"></div>
               <button 
                 onClick={() => handleSave()}
-                className="flex items-center gap-2 px-8 py-2.5 bg-accent text-accent-foreground rounded-2xl text-sm font-bold hover:opacity-90 transition-all shadow-xl shadow-accent/10 active:scale-95"
+                className="btn-primary px-8 py-2.5 shadow-xl shadow-accent/10"
               >
                 <Save className="w-4 h-4" />
                 Publish
@@ -730,34 +761,32 @@ g.selectAll('rect')
           </header>
 
           {/* Content */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-muted/10">
             <div className="flex-1 p-6 overflow-hidden flex flex-col">
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div className="bg-background rounded-2xl shadow-sm border border-border flex-1 flex flex-col overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border">
                   <div className="flex items-center gap-6">
                     <button 
                       onClick={() => setActivePreviewTab('preview')}
                       className={cn(
                         "text-[11px] font-bold uppercase tracking-widest transition-all pb-4 -mb-4 border-b-2",
-                        activePreviewTab === 'preview' ? "border-prism-500 text-prism-600" : "border-transparent text-slate-400 hover:text-slate-600"
+                        activePreviewTab === 'preview' ? "border-accent text-accent" : "border-transparent text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      Results
+                      Résultats
                     </button>
                     <button 
                       onClick={() => setActivePreviewTab('data')}
                       className={cn(
                         "text-[11px] font-bold uppercase tracking-widest transition-all pb-4 -mb-4 border-b-2",
-                        activePreviewTab === 'data' ? "border-prism-500 text-prism-600" : "border-transparent text-slate-400 hover:text-slate-600"
+                        activePreviewTab === 'data' ? "border-accent text-accent" : "border-transparent text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      Samples
+                      Échantillons
                     </button>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{results.length} rows</span>
-                    <div className="h-4 w-px bg-slate-200"></div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">0.123s</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{results.length} lignes</span>
                   </div>
                 </div>
 
@@ -767,17 +796,17 @@ g.selectAll('rect')
                       {error ? (
                         <div className="h-full flex flex-col items-center justify-center text-center">
                           <AlertCircle className="w-12 h-12 text-rose-500 mb-4" />
-                          <h4 className="font-bold text-slate-900">Query Error</h4>
-                          <p className="text-sm text-slate-500 max-w-md mt-2">{error}</p>
+                          <h4 className="font-bold text-foreground">Query Error</h4>
+                          <p className="text-sm text-muted-foreground max-w-md mt-2">{error}</p>
                         </div>
                       ) : results.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-center gap-4">
-                          <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center">
-                            <BarChartIcon className="w-8 h-8 text-slate-200" />
+                          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+                            <BarChartIcon className="w-8 h-8 text-muted-foreground/30" />
                           </div>
                           <div>
-                            <h4 className="text-sm font-bold text-slate-900">No data to display</h4>
-                            <p className="text-xs text-slate-500 mt-1">Configure your query and click "Update Chart"</p>
+                            <h4 className="text-sm font-bold text-foreground">No data to display</h4>
+                            <p className="text-xs text-muted-foreground mt-1">Configure your query and click "Update Chart"</p>
                           </div>
                         </div>
                       ) : (
@@ -791,12 +820,12 @@ g.selectAll('rect')
                       )}
                     </div>
                   ) : (
-                    <div className="w-full h-full overflow-auto border border-slate-100 rounded-xl">
+                    <div className="w-full h-full overflow-auto border border-border rounded-xl">
                       <table className="w-full text-left border-collapse">
-                        <thead className="sticky top-0 bg-slate-50 z-10">
+                        <thead className="sticky top-0 bg-muted z-10">
                           <tr>
                             {schema.map(col => (
-                              <th key={col.name} className="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                              <th key={col.name} className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border">
                                 {col.name}
                               </th>
                             ))}
@@ -804,9 +833,9 @@ g.selectAll('rect')
                         </thead>
                         <tbody>
                           {(activePreviewTab === 'data' ? sampleRows : results).map((row, i) => (
-                            <tr key={i} className="hover:bg-slate-50 transition-colors">
+                            <tr key={i} className="hover:bg-muted/30 transition-colors">
                               {schema.map(col => (
-                                <td key={col.name} className="px-4 py-3 text-xs text-slate-600 border-b border-slate-50">
+                                <td key={col.name} className="px-4 py-3 text-xs text-foreground/80 border-b border-border/50">
                                   {String(row[col.name])}
                                 </td>
                               ))}
@@ -819,11 +848,11 @@ g.selectAll('rect')
                 </div>
 
                 {/* Bottom Action Bar */}
-                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-center">
+                <div className="px-6 py-4 bg-muted/30 border-t border-border flex items-center justify-center">
                   <button 
                     onClick={handleRun}
                     disabled={isExecuting || xAxis.length === 0 || yAxis.length === 0}
-                    className="flex items-center gap-2 px-8 py-2 bg-prism-600 text-white rounded-xl text-xs font-bold hover:bg-prism-700 transition-all shadow-lg shadow-prism-200 disabled:opacity-50 active:scale-95"
+                    className="btn-primary"
                   >
                     {isExecuting ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -845,34 +874,24 @@ g.selectAll('rect')
         onClose={() => setIsSaveModalOpen(false)} 
         title="Save Chart"
       >
-        <form onSubmit={handleSave} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Chart Name</label>
-            <input 
-              type="text" 
+        <form onSubmit={handleSave} className="space-y-8">
+          <FormSection label="Chart Name">
+            <FormInput 
               value={chartName}
               onChange={(e) => setChartName(e.target.value)}
               placeholder="e.g. Sales by Region" 
-              className="w-full px-4 py-3 bg-slate-100 border-transparent focus:bg-white focus:border-prism-500 focus:ring-4 focus:ring-prism-500/10 rounded-xl text-sm transition-all outline-none"
               required
             />
-          </div>
+          </FormSection>
 
-          <div className="pt-4 flex gap-3">
-            <button 
-              type="button"
-              onClick={() => setIsSaveModalOpen(false)}
-              className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
-            >
+          <FormActions>
+            <FormButton variant="secondary" type="button" onClick={() => setIsSaveModalOpen(false)} className="flex-1">
               Cancel
-            </button>
-            <button 
-              type="submit"
-              className="flex-1 py-3 bg-prism-600 text-white rounded-xl font-bold text-sm hover:bg-prism-700 transition-all shadow-lg shadow-prism-200 active:scale-95"
-            >
+            </FormButton>
+            <FormButton type="submit" className="flex-1">
               Save Chart
-            </button>
-          </div>
+            </FormButton>
+          </FormActions>
         </form>
       </Modal>
 
@@ -882,41 +901,30 @@ g.selectAll('rect')
         onClose={() => setIsCalcModalOpen(false)} 
         title="Add Calculated Column"
       >
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Column Name</label>
-            <input 
-              type="text" 
+        <div className="space-y-8">
+          <FormSection label="Column Name">
+            <FormInput 
               value={calcColName}
               onChange={(e) => setCalcColName(e.target.value)}
               placeholder="e.g. total_revenue" 
-              className="w-full px-4 py-3 bg-slate-100 border-transparent focus:bg-white focus:border-prism-500 focus:ring-4 focus:ring-prism-500/10 rounded-xl text-sm transition-all outline-none"
             />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">SQL Expression</label>
-            <textarea 
+          </FormSection>
+          <FormSection label="SQL Expression">
+            <FormTextarea 
               value={calcColSql}
               onChange={(e) => setCalcColSql(e.target.value)}
               placeholder="e.g. price * quantity" 
-              className="w-full px-4 py-3 bg-slate-100 border-transparent focus:bg-white focus:border-prism-500 focus:ring-4 focus:ring-prism-500/10 rounded-xl text-sm transition-all outline-none h-32 resize-none"
+              className="h-32"
             />
-          </div>
-          <div className="pt-4 flex gap-3">
-            <button 
-              type="button"
-              onClick={() => setIsCalcModalOpen(false)}
-              className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all"
-            >
+          </FormSection>
+          <FormActions>
+            <FormButton variant="secondary" type="button" onClick={() => setIsCalcModalOpen(false)} className="flex-1">
               Cancel
-            </button>
-            <button 
-              onClick={handleAddCalculatedColumn}
-              className="flex-1 py-3 bg-prism-600 text-white rounded-xl font-bold text-sm hover:bg-prism-700 transition-all shadow-lg shadow-prism-200 active:scale-95"
-            >
+            </FormButton>
+            <FormButton onClick={handleAddCalculatedColumn} className="flex-1">
               Add Column
-            </button>
-          </div>
+            </FormButton>
+          </FormActions>
         </div>
       </Modal>
     </DragDropContext>

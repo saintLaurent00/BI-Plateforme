@@ -2,6 +2,8 @@ import axios from 'axios';
 
 const SUPERSET_BASE_URL = import.meta.env.VITE_SUPERSET_BASE_URL || '';
 
+export const isConfigured = !!SUPERSET_BASE_URL && SUPERSET_BASE_URL.startsWith('http');
+
 export const supersetClient = axios.create({
   baseURL: SUPERSET_BASE_URL,
   withCredentials: true,

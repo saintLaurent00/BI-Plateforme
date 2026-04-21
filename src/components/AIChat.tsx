@@ -16,10 +16,7 @@ export const AIChat = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
   const [isLoading, setIsLoading] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
-  const ai = React.useMemo(() => {
-    const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || "dummy-key";
-    return new GoogleGenAI({ apiKey });
-  }, []);
+  const ai = React.useMemo(() => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }), []);
 
   React.useEffect(() => {
     if (scrollRef.current) {
@@ -38,7 +35,7 @@ export const AIChat = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-3-flash-preview",
         contents: [...messages, { role: 'user', text: userMessage }].map(m => ({
           role: m.role,
           parts: [{ text: m.text }]

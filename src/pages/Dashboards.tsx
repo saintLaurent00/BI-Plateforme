@@ -12,9 +12,18 @@ import {
 } from 'lucide-react';
 import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
+import { 
+  FormSection, 
+  FormInput, 
+  FormTextarea, 
+  FormActions, 
+  FormButton,
+  FormLabel
+} from '../components/FormElements';
 import { getDashboards as getLocalDashboards, saveDashboard, deleteDashboard } from '../lib/db';
 import { DASHBOARD_TEMPLATES, DashboardTemplate } from '../constants/templates';
 import { supersetService } from '../services/supersetService';
+import { isConfigured as isSupersetConfigured } from '../lib/supersetClient';
 import { DashboardCard } from '../components/cards/DashboardCard';
 import { cn } from '../lib/utils';
 import { Check } from 'lucide-react';
@@ -57,23 +66,30 @@ export const Dashboards = () => {
   }, []);
 
   const loadDashboards = async () => {
+    if (!isSupersetConfigured) {
+      try {
+        const local = await getLocalDashboards();
+        setDashboards(local);
+      } catch (err) {
+        console.error('Failed to load local dashboards:', err);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     try {
       const { result } = await supersetService.getDashboards();
       if (result.length > 0) {
         setDashboards(result);
       } else {
-        // Fallback to local if Superset returns empty
         const local = await getLocalDashboards();
         setDashboards(local);
       }
     } catch (err) {
-      console.error('Failed to load dashboards from Superset, falling back to local:', err);
-      try {
-        const local = await getLocalDashboards();
-        setDashboards(local);
-      } catch (localErr) {
-        console.error('Failed to load local dashboards:', localErr);
-      }
+      // Quiet fallback if not explicitly configured or network issues
+      const local = await getLocalDashboards();
+      setDashboards(local);
     } finally {
       setIsLoading(false);
     }
@@ -133,20 +149,20 @@ export const Dashboards = () => {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Horizontal Filter Bar */}
-      <div className="border-b border-border bg-background/50 backdrop-blur-md px-8 py-4 flex items-center gap-8 sticky top-0 z-10">
-        <div className="flex items-center gap-2 text-muted-foreground">
+      <div className="border-b border-border bg-background/80 backdrop-blur-xl px-8 py-3 flex items-center gap-6 sticky top-0 z-10 shadow-sm transition-colors">
+        <div className="flex items-center gap-3 text-muted-foreground">
           <Filter className="w-3.5 h-3.5" />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Filters</span>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em]">Filtres</span>
         </div>
         
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">Status:</span>
-            <div className="flex items-center gap-1">
+          <div className="flex items-center gap-3">
+            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Statut:</span>
+            <div className="flex items-center gap-1.5">
               {["Published", "Draft", "Archived"].map(status => (
                 <button 
                   key={status}
-                  className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-border hover:bg-muted transition-colors"
+                  className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border border-border hover:border-accent/30 hover:bg-accent/5 transition-all"
                 >
                   {status}
                 </button>
@@ -157,54 +173,54 @@ export const Dashboards = () => {
 
         <div className="flex-1"></div>
 
-        <button className="text-[10px] font-bold text-muted-foreground hover:text-foreground uppercase tracking-wider">Clear All</button>
+        <button className="text-[9px] font-black text-muted-foreground hover:text-foreground uppercase tracking-[0.2em] transition-colors">Réinitialiser</button>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 p-8 lg:p-12 space-y-10 overflow-y-auto">
+      <div className="flex-1 p-6 lg:p-10 space-y-10 overflow-y-auto bg-muted/20">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Dashboards</h2>
-            <p className="text-muted-foreground text-sm mt-1">Organize and share your data stories.</p>
+          <div className="space-y-1">
+            <h2 className="text-3xl font-semibold tracking-tight text-foreground">Tableaux de Bord</h2>
+            <p className="text-muted-foreground text-base font-light">Organisez et partagez vos histoires de données.</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <div className="flex items-center gap-3">
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
               <input 
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search dashboards..."
-                className="pl-10 pr-4 py-2 bg-muted border-none rounded-xl text-sm focus:ring-2 ring-accent/20 w-64 transition-all"
+                placeholder="Rechercher..."
+                className="pl-11 pr-5 py-2 bg-background border border-border rounded-xl text-xs focus:ring-4 ring-accent/5 focus:border-accent w-64 transition-all shadow-sm"
               />
             </div>
-            <div className="flex items-center bg-muted rounded-md p-1">
+            <div className="flex items-center bg-background border border-border rounded-xl p-1 shadow-sm">
               <button 
                 onClick={() => setView('grid')}
                 className={cn(
-                  "p-1.5 rounded-md transition-all",
-                  view === 'grid' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  "p-1.5 rounded-lg transition-all",
+                  view === 'grid' ? "bg-muted text-foreground shadow-inner" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <LayoutGrid className="w-4 h-4" />
+                <LayoutGrid className="w-3.5 h-3.5" />
               </button>
               <button 
                 onClick={() => setView('list')}
                 className={cn(
-                  "p-1.5 rounded-md transition-all",
-                  view === 'list' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  "p-1.5 rounded-lg transition-all",
+                  view === 'list' ? "bg-muted text-foreground shadow-inner" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <List className="w-4 h-4" />
+                <List className="w-3.5 h-3.5" />
               </button>
             </div>
             <button 
               onClick={openCreateModal}
-              className="btn-primary flex items-center gap-2"
+              className="btn-primary flex items-center gap-2 px-5 py-2 shadow-lg shadow-accent/20"
             >
-              <Plus className="w-4 h-4" />
-              New Dashboard
+              <Plus className="w-3.5 h-3.5" />
+              Nouveau
             </button>
           </div>
         </div>
@@ -260,46 +276,40 @@ export const Dashboards = () => {
         onClose={() => setIsModalOpen(false)} 
         title={step === 1 ? "Create New Dashboard" : "Select a Template"}
       >
-        <form onSubmit={handleCreate} className="space-y-6">
+        <form onSubmit={handleCreate} className="space-y-8">
           {step === 1 ? (
-            <>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Title</label>
-                <input 
-                  type="text" 
+            <div className="space-y-6">
+              <FormSection label="Title">
+                <FormInput 
                   value={newDashboard.title}
                   onChange={(e) => setNewDashboard({ ...newDashboard, title: e.target.value })}
                   placeholder="e.g. Q2 Revenue Analysis" 
-                  className="input-minimal"
                   required
                   autoFocus
                 />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Description</label>
-                <textarea 
+              </FormSection>
+              
+              <FormSection label="Description">
+                <FormTextarea 
                   value={newDashboard.description}
                   onChange={(e) => setNewDashboard({ ...newDashboard, description: e.target.value })}
                   placeholder="Briefly describe the purpose..." 
-                  className="input-minimal min-h-[100px] resize-none"
+                  className="min-h-[100px]"
                 />
-              </div>
+              </FormSection>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Tags</label>
+              <FormSection label="Tags">
                 <div className="relative group">
-                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-foreground transition-colors" />
-                  <input 
-                    type="text" 
+                  <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-accent transition-colors z-10" />
+                  <FormInput 
                     value={newDashboard.tags}
                     onChange={(e) => setNewDashboard({ ...newDashboard, tags: e.target.value })}
                     placeholder="Sales, Q2, Revenue" 
-                    className="input-minimal pl-10"
+                    className="pl-12"
                   />
                 </div>
-              </div>
-            </>
+              </FormSection>
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
               {DASHBOARD_TEMPLATES.map((template) => {
@@ -334,7 +344,7 @@ export const Dashboards = () => {
                           <Check className="w-4 h-4 text-accent" />
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed text-balance">
                         {template.description}
                       </p>
                     </div>
@@ -344,26 +354,27 @@ export const Dashboards = () => {
             </div>
           )}
 
-          <div className="pt-4 flex gap-3">
-            <button 
+          <FormActions>
+            <FormButton 
               type="button"
+              variant="secondary"
               onClick={() => step === 1 ? setIsModalOpen(false) : setStep(1)}
-              className="btn-secondary flex-1"
+              className="flex-1"
             >
               {step === 1 ? "Cancel" : "Back"}
-            </button>
-            <button 
+            </FormButton>
+            <FormButton 
               type="submit"
               disabled={isCreating}
-              className="btn-primary flex-1"
+              className="flex-1"
             >
               {isCreating ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 step === 1 ? "Next" : "Create Dashboard"
               )}
-            </button>
-          </div>
+            </FormButton>
+          </FormActions>
         </form>
       </Modal>
     </div>

@@ -33,18 +33,19 @@ const DocumentCard = ({ title, description, icon: Icon, children }: { title: str
 
 export const Documentation = () => {
   return (
-    <div className="p-6 lg:p-12 max-w-7xl mx-auto space-y-12">
-      <header className="space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 text-accent text-xs font-bold uppercase tracking-widest">
-          <BookOpen className="w-3 h-3" />
+    <div className="p-8 lg:p-12 max-w-7xl mx-auto space-y-16 bg-background min-h-full">
+      <header className="space-y-6">
+        <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-2xl bg-accent/10 border border-accent/20 text-accent text-[10px] font-black uppercase tracking-[0.2em]">
+          <BookOpen className="w-4 h-4" />
           Base de Connaissances
         </div>
-        <h1 className="text-4xl font-black tracking-tight text-foreground lg:text-5xl">
-          Documentation Technique
+        <h1 className="text-5xl font-semibold tracking-tight text-foreground leading-[1.1]">
+          Documentation <br />
+          <span className="text-muted-foreground font-light">Technique & Stratégique</span>
         </h1>
-        <p className="text-xl text-muted-foreground max-w-3xl">
+        <p className="text-xl text-muted-foreground max-w-3xl font-light leading-relaxed">
           Tout ce que vous devez savoir sur l'architecture de Prism Intelligence, 
-          l'intégration frontend et les protocoles de sécurité.
+          l'intégration frontend et les protocoles de sécurité avancés.
         </p>
       </header>
 
@@ -59,10 +60,10 @@ export const Documentation = () => {
             <div className="relative pl-8 border-l-2 border-accent/20 space-y-8">
               <div className="relative">
                 <div className="absolute -left-[41px] top-0 w-4 h-4 rounded-full bg-accent border-4 border-background" />
-                <h5 className="font-bold text-foreground">1. Authentification & Briefing</h5>
+                <h5 className="font-bold text-foreground">1. Authentification & Accueil</h5>
                 <p className="text-sm text-muted-foreground mt-1">
-                  L'utilisateur se connecte et arrive sur le tableau de bord **Home**. Kwaku, l'assistant IA, 
-                  présente un briefing matinal basé sur les dernières données et alertes critiques.
+                  L'utilisateur se connecte et arrive sur le tableau de bord **Home**,
+                  qui présente une vue d'ensemble des statistiques et des activités récentes de la plateforme.
                 </p>
               </div>
               <div className="relative">

@@ -44,7 +44,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({ chart, view = 'grid', onCl
         onClick={onClick}
         className="glass-panel p-5 flex items-center gap-8 group cursor-pointer hover:border-accent/30 transition-all duration-500"
       >
-        <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center shrink-0 border border-border group-hover:bg-accent group-hover:text-accent-foreground group-hover:ring-8 group-hover:ring-accent/5 transition-all">
+        <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center shrink-0 border border-border group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-accent/20 transition-all">
           <Icon className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
@@ -80,46 +80,46 @@ export const ChartCard: React.FC<ChartCardProps> = ({ chart, view = 'grid', onCl
       onClick={onClick}
       className="glass-panel group cursor-pointer overflow-hidden hover:border-accent/30 transition-all duration-500"
     >
-      <div className="h-44 bg-muted/30 relative overflow-hidden flex items-center justify-center p-6">
-        <div className="w-full h-full opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
+      <div className="h-32 bg-muted/30 relative overflow-hidden flex items-center justify-center p-4">
+        <div className="w-full h-full opacity-60 group-hover:opacity-100 transition-all duration-500">
           <MiniChart type={type} />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-500">
+        <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
           <button 
             onClick={(e) => { e.stopPropagation(); }}
-            className="p-2.5 bg-background/90 backdrop-blur-xl rounded-xl border border-border/20 hover:bg-background transition-all shadow-xl"
+            className="p-2 bg-background/90 backdrop-blur-xl rounded-xl border border-border/20 hover:bg-background transition-all shadow-md"
           >
-            <Star className="w-3.5 h-3.5 text-muted-foreground hover:text-amber-500" />
+            <Star className="w-3 h-3 text-muted-foreground hover:text-amber-500" />
           </button>
         </div>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="p-4 bg-background/90 backdrop-blur-xl rounded-2xl border border-border/20 shadow-2xl group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
-            <Icon className="w-6 h-6 text-foreground" />
+          <div className="p-3 bg-background/90 backdrop-blur-xl rounded-xl border border-border/20 shadow-lg group-hover:bg-accent group-hover:text-accent-foreground transition-all duration-300">
+            <Icon className="w-4.5 h-4.5 text-foreground" />
           </div>
         </div>
       </div>
-      <div className="p-6">
-        <div className="flex items-start justify-between gap-4">
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h4 className="font-bold text-lg text-foreground tracking-tight truncate group-hover:text-accent transition-colors">{title}</h4>
+            <h4 className="font-bold text-sm text-foreground tracking-tight truncate group-hover:text-accent transition-colors">{title}</h4>
             <div className="flex items-center gap-2 mt-1">
-              <Database className="w-3 h-3 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest truncate">{dataset}</span>
+              <Database className="w-2.5 h-2.5 text-muted-foreground" />
+              <span className="text-[9px] text-muted-foreground font-black uppercase tracking-widest truncate">{dataset}</span>
             </div>
           </div>
-          <Badge variant="info" className="bg-accent/5 text-accent border-accent/10 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest shrink-0">{type}</Badge>
+          <Badge variant="info" className="bg-accent/5 text-accent border-accent/10 px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest shrink-0">{type}</Badge>
         </div>
         
-        <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
+        <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-prism-500 to-blue-500 flex items-center justify-center text-[10px] font-bold text-white">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-prism-500 to-blue-500 flex items-center justify-center text-[8px] font-bold text-white">
               {title.charAt(0)}
             </div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{date}</span>
+            <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">{date}</span>
           </div>
-          <button className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all">
-            <MoreVertical className="w-4 h-4" />
+          <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all">
+            <MoreVertical className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
