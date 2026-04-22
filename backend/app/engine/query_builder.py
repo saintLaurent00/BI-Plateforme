@@ -1,5 +1,5 @@
-from app.models.schemas import QueryRequest, Dataset
-from typing import Dict, List
+from app.models.schemas import QueryRequest, Dataset, User
+from typing import Dict, List, Optional
 
 class QueryBuilder:
     def __init__(self, datasets: Dict[str, Dataset]):
@@ -28,7 +28,7 @@ class QueryBuilder:
             return f"date({field})"
         return field
 
-    def build(self, request: QueryRequest) -> str:
+    def build(self, request: QueryRequest, user: Optional[User] = None) -> str:
         dataset = self.datasets.get(request.dataset)
         if not dataset:
             raise ValueError(f"Dataset {request.dataset} not found")
@@ -36,11 +36,15 @@ class QueryBuilder:
         # Select clause
         select_parts = []
         for dim in request.dimensions:
-            # Check if dimension is a date type and granularity is requested
+            # Check if dimension is a valid column
             col_meta = next((c for c in dataset.columns if c.name == dim), None)
+            if not col_meta:
+                raise ValueError(f"Dimension {dim} non valide pour ce dataset")
 
-            base_expr = f'"{dim}"'
-            if col_meta and col_meta.expression:
+            # Escape double quotes in column names
+            safe_dim = dim.replace('"', '""')
+            base_expr = f'"{safe_dim}"'
+            if col_meta.expression:
                 base_expr = col_meta.expression
 
             if col_meta and col_meta.type == 'date' and request.granularity:
@@ -51,11 +55,11 @@ class QueryBuilder:
         for metric_req in request.metrics:
             # Check if it's a predefined metric
             predefined = next((m for m in dataset.metrics if m.name == metric_req), None)
-            if predefined:
-                select_parts.append(f'{predefined.expression} AS "{predefined.name}"')
-            else:
-                # Fallback or validation
-                select_parts.append(metric_req)
+            if not predefined:
+                raise ValueError(f"Métrique {metric_req} non définie pour ce dataset")
+
+            safe_metric_name = predefined.name.replace('"', '""')
+            select_parts.append(f'{predefined.expression} AS "{safe_metric_name}"')
 
         select_clause = "SELECT " + ", ".join(select_parts)
 
@@ -64,6 +68,25 @@ class QueryBuilder:
 
         # Where clause
         where_parts = []
+
+        # --- Automatic RLS Injection ---
+        if user and user.role_id != 'admin':
+            # Check for columns with security_scope
+            for col in dataset.columns:
+                if col.security_scope and col.security_scope in user.security_attributes:
+                    val = user.security_attributes[col.security_scope]
+
+                    if val == "*":
+                        # Wildcard: skip filter for this scope
+                        continue
+                    elif isinstance(val, list):
+                        # Multiple values: IN clause
+                        vals = ", ".join([self._sanitize(v) for v in val])
+                        where_parts.append(f'"{col.name}" IN ({vals})')
+                    else:
+                        # Single value: EQ clause
+                        where_parts.append(f'"{col.name}" = {self._sanitize(val)}')
+
         op_map = {
             "eq": "=", "ne": "!=", "gt": ">", "lt": "<",
             "ge": ">=", "le": "<=", "like": "LIKE"

@@ -22,8 +22,9 @@ class QueryRequest(BaseModel):
 
 class DatasetColumn(BaseModel):
     name: str
-    type: str # 'string', 'number', 'date'
+    type: str # 'string', 'number', 'date', 'boolean'
     expression: Optional[str] = None # For calculated columns
+    security_scope: Optional[str] = None # e.g., 'region', 'department'
     description: Optional[str] = None
 
 class DatasetMetric(BaseModel):
@@ -36,3 +37,21 @@ class Dataset(BaseModel):
     table_name: str
     columns: List[DatasetColumn]
     metrics: List[DatasetMetric]
+
+# --- Identity & Security ---
+
+class Role(BaseModel):
+    id: str
+    name: str
+    permissions: List[str]
+
+class User(BaseModel):
+    id: str
+    username: str
+    role_id: str
+    group_ids: List[str] = []
+    # security_attributes: e.g. {"region": "Sud", "department": "Sales"}
+    security_attributes: Dict[str, Any] = {}
+
+class QueryContext(BaseModel):
+    user: Optional[User] = None
