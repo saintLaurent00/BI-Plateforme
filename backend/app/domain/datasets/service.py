@@ -1,4 +1,4 @@
-from app.models.schemas import Dataset, DatasetColumn, DatasetMetric
+from app.domain.schemas import Dataset, DatasetColumn, DatasetMetric
 from typing import Dict
 
 class DatasetService:

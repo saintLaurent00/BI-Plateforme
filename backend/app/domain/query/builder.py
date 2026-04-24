@@ -1,32 +1,24 @@
-from app.models.schemas import QueryRequest, Dataset, User
-from typing import Dict, List, Optional
+from app.domain.schemas import QueryRequest, Dataset, User
+from app.infrastructure.drivers.base import BaseDialect
+from app.infrastructure.drivers.sqlite import SQLiteDialect
+from typing import Dict, List, Optional, Any
+from jinja2 import Template
 
 class QueryBuilder:
-    def __init__(self, datasets: Dict[str, Dataset]):
+    def __init__(self, datasets: Dict[str, Dataset], dialect: Optional[BaseDialect] = None):
         self.datasets = datasets
+        self.dialect = dialect or SQLiteDialect()
 
-    def _sanitize(self, val) -> str:
+    def _sanitize_value(self, val) -> str:
         if isinstance(val, str):
             # Basic escaping for single quotes
             escaped = val.replace("'", "''")
             return f"'{escaped}'"
         return str(val)
 
-    def _apply_granularity(self, field: str, granularity: str) -> str:
-        # SQLite specific date truncation
-        if granularity == 'year':
-            return f"strftime('%Y-01-01', {field})"
-        elif granularity == 'quarter':
-            # Quarter logic for SQLite: (month-1)/3 + 1
-            return f"strftime('%Y-', {field}) || printf('%02d-01', ((strftime('%m', {field}) - 1) / 3) * 3 + 1)"
-        elif granularity == 'month':
-            return f"strftime('%Y-%m-01', {field})"
-        elif granularity == 'week':
-            # Week start (Monday)
-            return f"date({field}, 'weekday 1', '-7 days')"
-        elif granularity == 'day':
-            return f"date({field})"
-        return field
+    def _compile_expression(self, expr: str, context: Dict[str, Any]) -> str:
+        template = Template(expr)
+        return template.render(**context)
 
     def build(self, request: QueryRequest, user: Optional[User] = None) -> str:
         dataset = self.datasets.get(request.dataset)
@@ -41,16 +33,19 @@ class QueryBuilder:
             if not col_meta:
                 raise ValueError(f"Dimension {dim} non valide pour ce dataset")
 
-            # Escape double quotes in column names
-            safe_dim = dim.replace('"', '""')
-            base_expr = f'"{safe_dim}"'
+            # Use dialect to quote identifiers
+            quoted_dim = self.dialect.quote_identifier(dim)
+
+            template_context = {"user": user, "params": request.params}
+
+            base_expr = quoted_dim
             if col_meta.expression:
-                base_expr = col_meta.expression
+                base_expr = self._compile_expression(col_meta.expression, template_context)
 
             if col_meta and col_meta.type == 'date' and request.granularity:
-                select_parts.append(f'{self._apply_granularity(base_expr, request.granularity)} AS "{dim}"')
+                select_parts.append(f'{self.dialect.format_date(base_expr, request.granularity)} AS {quoted_dim}')
             else:
-                select_parts.append(f'{base_expr} AS "{dim}"')
+                select_parts.append(f'{base_expr} AS {quoted_dim}')
 
         for metric_req in request.metrics:
             # Check if it's a predefined metric
@@ -58,13 +53,16 @@ class QueryBuilder:
             if not predefined:
                 raise ValueError(f"Métrique {metric_req} non définie pour ce dataset")
 
-            safe_metric_name = predefined.name.replace('"', '""')
-            select_parts.append(f'{predefined.expression} AS "{safe_metric_name}"')
+            template_context = {"user": user, "params": request.params}
+            compiled_expression = self._compile_expression(predefined.expression, template_context)
+
+            quoted_metric = self.dialect.quote_identifier(predefined.name)
+            select_parts.append(f'{compiled_expression} AS {quoted_metric}')
 
         select_clause = "SELECT " + ", ".join(select_parts)
 
         # From clause
-        from_clause = f'FROM "{dataset.table_name}"'
+        from_clause = f'FROM {self.dialect.quote_identifier(dataset.table_name)}'
 
         # Where clause
         where_parts = []
@@ -75,37 +73,34 @@ class QueryBuilder:
             for col in dataset.columns:
                 if col.security_scope and col.security_scope in user.security_attributes:
                     val = user.security_attributes[col.security_scope]
+                    quoted_col = self.dialect.quote_identifier(col.name)
 
                     if val == "*":
                         # Wildcard: skip filter for this scope
                         continue
                     elif isinstance(val, list):
                         # Multiple values: IN clause
-                        vals = ", ".join([self._sanitize(v) for v in val])
-                        where_parts.append(f'"{col.name}" IN ({vals})')
+                        vals = ", ".join([self._sanitize_value(v) for v in val])
+                        where_parts.append(f'{quoted_col} IN ({vals})')
                     else:
                         # Single value: EQ clause
-                        where_parts.append(f'"{col.name}" = {self._sanitize(val)}')
-
-        op_map = {
-            "eq": "=", "ne": "!=", "gt": ">", "lt": "<",
-            "ge": ">=", "le": "<=", "like": "LIKE"
-        }
+                        where_parts.append(f'{quoted_col} = {self._sanitize_value(val)}')
 
         if request.filters:
             for f in request.filters:
-                field = f.field.replace('"', '')
+                quoted_field = self.dialect.quote_identifier(f.field)
+                op = self.dialect.get_op(f.op)
 
                 if f.op == "between" and isinstance(f.value, list) and len(f.value) == 2:
-                    v1 = self._sanitize(f.value[0])
-                    v2 = self._sanitize(f.value[1])
-                    where_parts.append(f'"{field}" BETWEEN {v1} AND {v2}')
+                    v1 = self._sanitize_value(f.value[0])
+                    v2 = self._sanitize_value(f.value[1])
+                    where_parts.append(f'{quoted_field} BETWEEN {v1} AND {v2}')
                 elif f.op == "in" and isinstance(f.value, list):
-                    vals = ", ".join([self._sanitize(v) for v in f.value])
-                    where_parts.append(f'"{field}" IN ({vals})')
-                elif f.op in op_map:
-                    val = self._sanitize(f.value)
-                    where_parts.append(f'"{field}" {op_map[f.op]} {val}')
+                    vals = ", ".join([self._sanitize_value(v) for v in f.value])
+                    where_parts.append(f'{quoted_field} IN ({vals})')
+                else:
+                    val = self._sanitize_value(f.value)
+                    where_parts.append(f'{quoted_field} {op} {val}')
 
         where_clause = ""
         if where_parts:
@@ -119,12 +114,14 @@ class QueryBuilder:
             for dim in request.dimensions:
                 col_meta = next((c for c in dataset.columns if c.name == dim), None)
 
-                base_expr = f'"{dim}"'
+                template_context = {"user": user, "params": request.params}
+
+                base_expr = self.dialect.quote_identifier(dim)
                 if col_meta and col_meta.expression:
-                    base_expr = col_meta.expression
+                    base_expr = self._compile_expression(col_meta.expression, template_context)
 
                 if col_meta and col_meta.type == 'date' and request.granularity:
-                    group_parts.append(self._apply_granularity(base_expr, request.granularity))
+                    group_parts.append(self.dialect.format_date(base_expr, request.granularity))
                 else:
                     group_parts.append(base_expr)
             group_by_clause = "GROUP BY " + ", ".join(group_parts)
@@ -135,9 +132,10 @@ class QueryBuilder:
             parts = []
             for o in request.order_by:
                 direction = "DESC" if o.direction.lower() == "desc" else "ASC"
-                parts.append(f'"{o.field}" {direction}')
+                parts.append(f'{self.dialect.quote_identifier(o.field)} {direction}')
             order_by_clause = "ORDER BY " + ", ".join(parts)
 
         # Final assembly
-        sql = f"{select_clause} {from_clause} {where_clause} {group_by_clause} {order_by_clause} LIMIT {request.limit} OFFSET {request.offset}"
-        return sql.strip()
+        limit_offset = self.dialect.limit_offset(request.limit, request.offset)
+        sql = f"{select_clause} {from_clause} {where_clause} {group_by_clause} {order_by_clause} {limit_offset}"
+        return sql.strip().replace("  ", " ")

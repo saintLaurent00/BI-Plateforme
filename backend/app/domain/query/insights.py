@@ -1,4 +1,4 @@
-from app.models.schemas import QueryRequest
+from app.domain.schemas import QueryRequest
 from typing import List, Dict
 
 import statistics

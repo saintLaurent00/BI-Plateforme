@@ -1,4 +1,4 @@
-from app.models.schemas import User, Role
+from app.domain.schemas import User, Role
 from typing import Dict, List, Optional
 
 class AuthService:

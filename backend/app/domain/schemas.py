@@ -17,6 +17,7 @@ class QueryRequest(BaseModel):
     filters: Optional[List[Filter]] = []
     order_by: Optional[List[OrderBy]] = []
     granularity: Optional[str] = None # 'day', 'week', 'month', 'quarter', 'year'
+    params: Optional[Dict[str, Any]] = {} # For Jinja2 templates
     limit: Optional[int] = 1000
     offset: Optional[int] = 0
 
