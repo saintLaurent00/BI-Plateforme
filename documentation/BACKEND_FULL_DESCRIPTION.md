@@ -18,7 +18,7 @@ Le backend est décomposé en services autonomes orchestrés pour une scalabilit
 ### Composants Clés :
 *   **Gateway Service** : Point d'entrée unique et routage intelligent.
 *   **Identity Service** : Gestion des profils, sessions et attributs de sécurité.
-*   **Metadata Service** : Le cerveau sémantique (définition des Datasets, Métriques, Scopes).
+*   **Metadata Service (Prism Meta)** : Le cerveau central gérant l'identité (Users/Roles), la sémantique (Datasets/Metrics), la sécurité (RLS/RBAC) et l'opérationnel (Scheduling/Caching).
 *   **Query Intelligence Service** : Le moteur de traduction DSL -> SQL agnostique.
 *   **Action Service** : Gestionnaire de Write-back (écriture), Alertes et Rapports.
 

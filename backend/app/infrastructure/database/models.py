@@ -1,7 +1,61 @@
-from sqlalchemy import Column, String, Integer, JSON, ForeignKey, Table, Text
+from sqlalchemy import Column, String, Integer, JSON, ForeignKey, Table, Text, DateTime, Float, Boolean
 from sqlalchemy.orm import relationship, declarative_base
+from datetime import datetime
 
 Base = declarative_base()
+
+# --- Tables de liaison RBAC ---
+user_groups = Table(
+    "user_groups",
+    Base.metadata,
+    Column("user_id", String, ForeignKey("users.id")),
+    Column("group_id", String, ForeignKey("groups.id"))
+)
+
+role_permissions = Table(
+    "role_permissions",
+    Base.metadata,
+    Column("role_id", String, ForeignKey("roles.id")),
+    Column("permission_id", String, ForeignKey("permissions.id"))
+)
+
+# --- Identity & Security ---
+
+class PermissionModel(Base):
+    __tablename__ = "permissions"
+    id = Column(String, primary_key=True)
+    name = Column(String, unique=True, nullable=False)
+    description = Column(Text)
+
+class RoleModel(Base):
+    __tablename__ = "roles"
+    id = Column(String, primary_key=True)
+    name = Column(String, unique=True, nullable=False)
+
+    permissions = relationship("PermissionModel", secondary=role_permissions)
+
+class GroupModel(Base):
+    __tablename__ = "groups"
+    id = Column(String, primary_key=True)
+    name = Column(String, unique=True, nullable=False)
+
+class UserModel(Base):
+    __tablename__ = "users"
+
+    id = Column(String, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True)
+    hashed_password = Column(String) # Simulation pour MVP
+    role_id = Column(String, ForeignKey("roles.id"))
+
+    # Attributs RLS stockés en JSON: {"region": "Sud", "dept": "Sales"}
+    security_attributes = Column(JSON, default={})
+    is_active = Column(Boolean, default=True)
+
+    role = relationship("RoleModel")
+    groups = relationship("GroupModel", secondary=user_groups)
+
+# --- BI Core Metadata ---
 
 class DatasetModel(Base):
     __tablename__ = "datasets"
@@ -20,8 +74,8 @@ class ColumnModel(Base):
     id = Column(String, primary_key=True)
     dataset_id = Column(String, ForeignKey("datasets.id"), nullable=False)
     name = Column(String, nullable=False)
-    type = Column(String, nullable=False) # 'string', 'number', 'date', 'boolean'
-    expression = Column(Text) # For calculated columns
+    type = Column(String, nullable=False)
+    expression = Column(Text)
     security_scope = Column(String)
     description = Column(Text)
 
@@ -37,6 +91,8 @@ class MetricModel(Base):
     description = Column(Text)
 
     dataset = relationship("DatasetModel", back_populates="metrics")
+
+# --- Dashboards & Charts ---
 
 class DashboardModel(Base):
     __tablename__ = "dashboards"
@@ -56,3 +112,29 @@ class ChartModel(Base):
     x_axis = Column(JSON)
     y_axis = Column(JSON)
     config = Column(JSON)
+
+# --- Proactivity & Scheduling ---
+
+class ScheduledJobModel(Base):
+    __tablename__ = "scheduled_jobs"
+
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    dataset = Column(String, nullable=False)
+    metric = Column(String, nullable=False)
+    threshold = Column(Float, nullable=False)
+    operator = Column(String, nullable=False) # '>', '<', '=='
+    interval_seconds = Column(Integer, nullable=False)
+    last_run = Column(DateTime)
+    is_enabled = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.now)
+
+# --- Caching Configuration (System Policies) ---
+
+class CachePolicyModel(Base):
+    __tablename__ = "cache_policies"
+
+    id = Column(String, primary_key=True)
+    dataset_name = Column(String, unique=True)
+    ttl = Column(Integer, default=300) # seconds
+    is_enabled = Column(Boolean, default=True)

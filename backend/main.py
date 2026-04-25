@@ -55,19 +55,8 @@ async def startup_event():
     plugin_manager.load_plugins()
     init_db()
 
-    # Initialisation du Scheduler d'alertes
+    # Initialisation du Scheduler d'alertes (chargement depuis la Méta DB)
     alert_system = AlertSystem(query_service)
-
-    # Ajout d'un job de démo
-    alert_system.add_job(ScheduledJob(
-        id="alert_sales_drop",
-        name="Alerte Baisse de Ventes",
-        dataset="transactions",
-        metric="sum(amount)",
-        threshold=100.0,
-        operator="<",
-        interval_seconds=60
-    ))
 
     # Lancement du scheduler en tâche de fond
     asyncio.create_task(alert_system.start())

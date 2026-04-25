@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 
 logger = logging.getLogger("BI-Plateforme.Scheduler")
@@ -14,23 +14,19 @@ class ScheduledJob(BaseModel):
     threshold: float
     operator: str # '>', '<', '=='
     interval_seconds: int
-    last_run: datetime = None
+    last_run: Optional[datetime] = None
 
 class AlertSystem:
     def __init__(self, query_service):
         self.query_service = query_service
-        self.jobs: List[ScheduledJob] = []
         self._running = False
 
-    def add_job(self, job: ScheduledJob):
-        self.jobs.append(job)
-        logger.info(f"Added scheduled job: {job.name} (every {job.interval_seconds}s)")
-
     async def _run_job(self, job: ScheduledJob):
+        from app.infrastructure.database.session import SessionLocal
+        from app.infrastructure.database.repository import MetadataRepository
+
         logger.info(f"Running job: {job.name}")
-        # Simulation d'une requête pour vérifier un seuil
-        # Dans un vrai système, on utiliserait query_service.execute_query
-        # Ici on simule pour l'exemple
+
         current_value = 150.0 # Simulation
 
         triggered = False
@@ -41,20 +37,31 @@ class AlertSystem:
 
         if triggered:
             logger.warning(f"🚨 ALERT TRIGGERED: {job.name} - Value {current_value} {job.operator} {job.threshold}")
-            # Ici on enverrait un email/Slack/Webhook
 
-        job.last_run = datetime.now()
+        db = SessionLocal()
+        repo = MetadataRepository(db)
+        repo.update_job_last_run(job.id, datetime.now())
+        db.close()
 
     async def start(self):
+        from app.infrastructure.database.session import SessionLocal
+        from app.infrastructure.database.repository import MetadataRepository
+
         self._running = True
-        logger.info("Scheduler started")
+        logger.info("Scheduler started (Syncing with Metadata Store)")
+
         while self._running:
+            db = SessionLocal()
+            repo = MetadataRepository(db)
+            jobs = repo.get_active_jobs()
+            db.close()
+
             now = datetime.now()
-            for job in self.jobs:
+            for job in jobs:
                 if job.last_run is None or (now - job.last_run).total_seconds() >= job.interval_seconds:
                     asyncio.create_task(self._run_job(job))
 
-            await asyncio.sleep(10) # Tick toutes les 10 secondes
+            await asyncio.sleep(10)
 
     def stop(self):
         self._running = False
