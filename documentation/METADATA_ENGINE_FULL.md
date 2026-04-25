@@ -31,8 +31,8 @@ Le système implémente une sécurité multicouche nativement intégrée au mote
 
 ## 3. Moteur de Sémantique Dynamique
 Les jeux de données ne sont plus des tables brutes mais des entités BI enrichies.
-*   **Calculated Fields** : Définis en SQL dans la Méta DB, compilés à la volée.
-*   **Metrics Engine** : Centralisation des formules de calcul (SUM, AVG, etc.) pour garantir une "Single Source of Truth" (SSOT) à travers toute l'organisation.
+*   **Calculated Fields (SQL-Driven)** : Définis par les experts SQL dans la Méta DB. La complexité technique est encapsulée ici (ex: formules complexes, jointures implicites).
+*   **Metrics Engine (Domain-Driven Interface)** : Exposition de la logique SQL sous forme de labels métiers compréhensibles. Cela garantit une "Single Source of Truth" (SSOT) : l'utilisateur consomme une intelligence validée, sans avoir à gérer la syntaxe SQL.
 
 ---
 
@@ -48,6 +48,23 @@ Les jeux de données ne sont plus des tables brutes mais des entités BI enrichi
 3.  **Security Context** : Les attributs RLS sont extraits du profil utilisateur.
 4.  **Query Generation** : Le QueryBuilder assemble le SQL final en combinant toutes ces sources.
 5.  **Execution** : La requête est exécutée sur la base analytique, avec passage par le Cache Manager.
+
+---
+
+## 6. La Philosophie : "Expert-to-User"
+Le système n'élimine pas le SQL, il le **centralise**.
+
+1.  **L'Expert (Analyste/Data Engineer)** : Utilise toute la puissance du SQL dans la Méta DB pour définir les règles métiers.
+2.  **L'Utilisateur (Manager/Décideur)** : Interagit avec une interface simplifiée qui traduit ses intentions en SQL optimisé.
+
+Cette approche résout le paradoxe entre **liberté d'analyse** et **rigueur de gouvernance**.
+
+### Exemple Concret :
+| Entité | Ce que voit l'Utilisateur | Ce que l'Expert a configuré (SQL) |
+| :--- | :--- | :--- |
+| **Métrique** | "Marge Nette" | `SUM(total_sales * 0.8) - SUM(cost_basis)` |
+| **Dimension** | "Catégorie Premium" | `CASE WHEN price > 1000 THEN 'Luxe' ELSE 'Standard' END` |
+| **Filtre** | "Mes Données" | `WHERE region_id IN (SELECT id FROM regions WHERE manager_id = :user_id)` |
 
 ---
 *Prism Meta : L'intelligence qui structure vos données.*
