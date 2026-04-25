@@ -1,6 +1,22 @@
 import { executeQuery } from '../lib/db';
+import axios from 'axios';
+
+const API_URL = '/api';
 
 export const biService = {
+  async runRawQuery(sql: string) {
+    try {
+      const response = await axios.post(`${API_URL}/query/raw`, { sql }, {
+        headers: { 'X-User': 'admin' }
+      });
+      return response.data;
+    } catch (err) {
+      console.warn('API Query failed, falling back to local WASM execution');
+      const data = await executeQuery(sql);
+      return { data, metadata: { source: 'local-wasm' } };
+    }
+  },
+
   async getDatasets() {
     // Return mock datasets metadata
     return [

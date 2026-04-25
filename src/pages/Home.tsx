@@ -87,17 +87,17 @@ export const Home = () => {
         className="grid grid-cols-1 md:grid-cols-2 gap-8"
       >
         <button
-          onClick={() => navigate('/chart-builder')}
+          onClick={() => navigate('/sql-lab')}
           className="p-12 bg-indigo-600 text-white rounded-[48px] text-left group hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-600/20 relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
             <Sparkles size={120} />
           </div>
           <Sparkles className="mb-6 text-indigo-200" size={40} />
-          <h2 className="text-3xl font-bold mb-2">BI Builder</h2>
-          <p className="text-indigo-100 text-lg opacity-80">Créez des analyses complexes en quelques clics via un flux guidé par l'IA.</p>
+          <h2 className="text-3xl font-bold mb-2">Expert SQL Lab</h2>
+          <p className="text-indigo-100 text-lg opacity-80">MVP: Gardez le contrôle total en écrivant votre SQL. Sécurité RLS injectée automatiquement.</p>
           <div className="mt-8 flex items-center gap-2 font-bold uppercase tracking-widest text-xs">
-            Commencer <ChevronRight size={16} />
+            Lancer l'Editeur <ChevronRight size={16} />
           </div>
         </button>
 

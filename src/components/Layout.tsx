@@ -89,9 +89,9 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
   const navItems = [
     { to: "/", icon: Home, label: "Home" },
     { to: "/dashboards", icon: LayoutDashboard, label: "Dashboards" },
+    { to: "/sql-lab", icon: Terminal, label: "SQL Lab (MVP)" },
     { to: "/dashboard-builder", icon: LayoutDashboard, label: "Dash Builder" },
     { to: "/charts", icon: BarChart3, label: "Charts" },
-    { to: "/sql-lab", icon: Terminal, label: "SQL Lab" },
     { to: "/datasets", icon: Database, label: "Datasets" },
     { to: "/documentation", icon: BookOpen, label: "Documentation" },
   ];

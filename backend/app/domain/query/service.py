@@ -2,8 +2,9 @@ from typing import Dict, Any, Optional
 import pandas as pd
 import sqlite3
 import logging
-from app.domain.schemas import QueryRequest, User, Dataset
+from app.domain.schemas import QueryRequest, RawQueryRequest, User, Dataset
 from app.domain.query.builder import QueryBuilder
+from app.domain.query.securizer import RawQuerySecurizer
 from app.infrastructure.cache.manager import cache_manager
 from app.infrastructure.cache.utils import generate_cache_key
 from app.core.config import settings
@@ -14,7 +15,33 @@ logger = logging.getLogger("BI-Plateforme.QueryService")
 class QueryService:
     def __init__(self, dataset_service: DatasetService):
         self.dataset_service = dataset_service
-        # Le builder sera initialisé dynamiquement par requête ou utilisera le service pour résoudre les datasets
+        self.securizer = RawQuerySecurizer()
+
+    async def execute_raw_sql(self, request: RawQueryRequest, user: User) -> Dict[str, Any]:
+        # En mode RAW, on doit quand même sécuriser.
+        # Pour cet exemple, on suppose que l'utilisateur travaille sur le dataset 'transactions'
+        # Dans un système complet, on parserait le SQL pour identifier les tables.
+        dataset = self.dataset_service.get_by_name("transactions")
+        security_mapping = []
+        if dataset:
+            for col in dataset.columns:
+                if col.security_scope:
+                    security_mapping.append({"column": col.name, "scope": col.security_scope})
+
+        secure_sql = self.securizer.securize(request.sql, user, security_mapping)
+        logger.info(f"Executing RAW SQL: {secure_sql}", extra={"user": user.username})
+
+        try:
+            conn = sqlite3.connect(settings.DB_PATH)
+            df = pd.read_sql_query(secure_sql, conn)
+            conn.close()
+            return {
+                "data": df.to_dict(orient="records"),
+                "metadata": {"source": "database", "sql": secure_sql}
+            }
+        except Exception as e:
+            logger.error(f"RAW Query failed: {str(e)}", extra={"user": user.username})
+            raise e
 
     async def execute_query(self, request: QueryRequest, user: User) -> Dict[str, Any]:
         # 1. Résolution du dataset depuis le Metadata Store

@@ -54,10 +54,24 @@ Les jeux de données ne sont plus des tables brutes mais des entités BI enrichi
 ## 6. La Philosophie : "Expert-to-User"
 Le système n'élimine pas le SQL, il le **centralise**.
 
-1.  **L'Expert (Analyste/Data Engineer)** : Utilise toute la puissance du SQL dans la Méta DB pour définir les règles métiers.
-2.  **L'Utilisateur (Manager/Décideur)** : Interagit avec une interface simplifiée qui traduit ses intentions en SQL optimisé.
+1.  **Mode Guidé (Wizard)** : Pour une analyse rapide et sans erreur.
+2.  **Mode Manuel (Query Builder)** : Pour un contrôle précis des métriques et dimensions.
+3.  **Mode Expert (SQL Lab)** : Pour écrire du SQL brut avec injection de sécurité (RLS) automatique.
 
 Cette approche résout le paradoxe entre **liberté d'analyse** et **rigueur de gouvernance**.
+
+## 7. Sécurité du SQL Manuel (Wrapping)
+Même lorsque l'utilisateur écrit son propre SQL, le système garantit la sécurité via un mécanisme de **Wrapping SQL** :
+```sql
+-- SQL de l'utilisateur
+SELECT category, amount FROM transactions
+
+-- SQL final exécuté (sécurisé par le backend)
+SELECT * FROM (
+    SELECT category, amount FROM transactions
+) AS prism_wrapped
+WHERE region = 'Sud' -- Injection RLS automatique
+```
 
 ### Exemple Concret :
 | Entité | Ce que voit l'Utilisateur | Ce que l'Expert a configuré (SQL) |

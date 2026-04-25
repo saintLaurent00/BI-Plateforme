@@ -10,6 +10,10 @@ class OrderBy(BaseModel):
     field: str
     direction: str = "asc" # "asc" or "desc"
 
+class RawQueryRequest(BaseModel):
+    sql: str
+    params: Optional[Dict[str, Any]] = {}
+
 class QueryRequest(BaseModel):
     dataset: str
     metrics: List[str] # e.g., ["total_amount", "transaction_count"]

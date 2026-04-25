@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from app.domain.schemas import QueryRequest, User
+from app.domain.schemas import QueryRequest, RawQueryRequest, User, Dataset
 from app.domain.datasets.service import DatasetService
 from app.domain.query.service import QueryService
 from app.domain.query.insights import InsightGenerator
@@ -28,6 +28,14 @@ def create_dataset(dataset: Dataset, current_user: User = Depends(get_current_us
     try:
         dataset_service.repo.create_dataset(dataset)
         return {"message": "Dataset created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/query/raw")
+async def run_raw_query(request: RawQueryRequest, current_user: User = Depends(get_current_user)):
+    try:
+        result = await query_service.execute_raw_sql(request, current_user)
+        return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
