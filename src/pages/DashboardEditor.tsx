@@ -42,7 +42,33 @@ import {
 } from '../lib/dashboardLayout';
 import ReactMarkdown from 'react-markdown';
 
-import { animate, onScroll, stagger, createLayout, createDraggable } from 'animejs';
+import anime from 'animejs';
+
+// Simple mocks for non-existent animejs v3 functions to ensure build succeeds
+const onScroll = ({ container, onUpdate }: any) => {
+  if (!container) return;
+  const handler = () => {
+    const progress = container.scrollTop / (container.scrollHeight - container.clientHeight);
+    onUpdate({ progress });
+  };
+  container.addEventListener('scroll', handler);
+  return () => container.removeEventListener('scroll', handler);
+};
+
+const createLayout = (el: HTMLElement, opts: any) => ({
+  record: () => {},
+  animate: () => {
+    anime({
+      targets: opts.children,
+      scale: [0.98, 1],
+      opacity: [0, 1],
+      translateY: [30, 0],
+      delay: anime.stagger(60),
+      duration: 1000,
+      easing: 'easeOutQuart'
+    });
+  }
+});
 
 const ITEM_TYPE = 'DASHBOARD_ITEM';
 
@@ -222,11 +248,12 @@ export const DashboardItem = ({
 
   useEffect(() => {
     if (containerRef.current) {
-      animate(containerRef.current, {
+      anime({
+        targets: containerRef.current,
         opacity: [0, 1],
         translateY: [20, 0],
         duration: 800,
-        ease: 'outQuart',
+        easing: 'easeOutQuart',
         delay: index * 100
       });
     }
@@ -665,12 +692,13 @@ const DashboardEditorInner = () => {
 
   useEffect(() => {
     if (!isLoading) {
-      animate('.dashboard-item-container', {
+      anime({
+        targets: '.dashboard-item-container',
         opacity: [0, 1],
         translateY: [30, 0],
         scale: [0.98, 1],
-        delay: stagger(60),
-        ease: 'outQuart',
+        delay: anime.stagger(60),
+        easing: 'easeOutQuart',
         duration: 1000
       });
     }
@@ -692,10 +720,11 @@ const DashboardEditorInner = () => {
   }, []);
 
   useEffect(() => {
-    animate('.dashboard-item-container', {
+    anime({
+      targets: '.dashboard-item-container',
       scale: [0.98, 1],
       duration: 400,
-      ease: 'outQuart'
+      easing: 'easeOutQuart'
     });
   }, [layout]);
 
@@ -842,11 +871,12 @@ const DashboardEditorInner = () => {
   const [sidebarTab, setSidebarTab] = useState<'charts' | 'elements'>('charts');
 
   useEffect(() => {
-    animate('.sidebar-item', {
+    anime({
+      targets: '.sidebar-item',
       opacity: [0, 1],
       translateX: [20, 0],
-      delay: stagger(40),
-      ease: 'outQuad',
+      delay: anime.stagger(40),
+      easing: 'easeOutQuad',
       duration: 400
     });
   }, [sidebarTab]);

@@ -46,10 +46,31 @@ def init_db():
     conn.close()
 
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
     from app.core.plugins.manager import plugin_manager
+    from app.worker.scheduler import AlertSystem, ScheduledJob
+    from app.api.endpoints import query_service
+    import asyncio
+
     plugin_manager.load_plugins()
     init_db()
+
+    # Initialisation du Scheduler d'alertes
+    alert_system = AlertSystem(query_service)
+
+    # Ajout d'un job de démo
+    alert_system.add_job(ScheduledJob(
+        id="alert_sales_drop",
+        name="Alerte Baisse de Ventes",
+        dataset="transactions",
+        metric="sum(amount)",
+        threshold=100.0,
+        operator="<",
+        interval_seconds=60
+    ))
+
+    # Lancement du scheduler en tâche de fond
+    asyncio.create_task(alert_system.start())
 
 if __name__ == "__main__":
     import uvicorn

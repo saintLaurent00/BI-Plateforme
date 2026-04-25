@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.domain.schemas import QueryRequest, User
 from app.domain.datasets.service import DatasetService
-from app.domain.query.builder import QueryBuilder
+from app.domain.query.service import QueryService
 from app.domain.query.insights import InsightGenerator
 from app.core.security.auth import get_current_user
 from app.core.config import settings
@@ -13,7 +13,7 @@ router = APIRouter()
 logger = logging.getLogger("BI-Plateforme")
 
 dataset_service = DatasetService()
-query_builder = QueryBuilder(dataset_service.datasets)
+query_service = QueryService(dataset_service.datasets)
 insight_generator = InsightGenerator()
 
 @router.get("/datasets")
@@ -26,20 +26,17 @@ async def run_query(request: QueryRequest, current_user: User = Depends(get_curr
         raise HTTPException(status_code=403, detail="Access denied to this dataset")
 
     try:
-        sql = query_builder.build(request, user=current_user)
-        logger.info(f"User {current_user.username} executing SQL", extra={'user': current_user.username})
+        result = await query_service.execute_query(request, current_user)
 
-        conn = sqlite3.connect(settings.DB_PATH)
-        df = pd.read_sql_query(sql, conn)
-        conn.close()
+        data = result["data"]
+        metadata = result["metadata"]
 
-        data = df.to_dict(orient="records")
         insights = insight_generator.generate(request.dataset, data)
 
         return {
-            "sql": sql,
+            "sql": metadata.get("sql"),
             "data": data,
-            "columns": list(df.columns),
+            "metadata": metadata,
             "insights": insights
         }
     except Exception as e:

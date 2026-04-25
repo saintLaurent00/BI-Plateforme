@@ -52,10 +52,13 @@ Une machine de calcul puissante et flexible :
 ---
 
 ## 6. Performance et Proactivité
-*   **Système de Caching Multi-niveaux** :
-    *   *Backend* : Cache Redis basé sur le hash de la requête logique + contexte utilisateur.
-    *   *Frontend* : Cache local pour les manipulations d'UI instantanées.
-*   **Alerting Engine** : Surveillance en temps réel des métriques avec notifications (Slack, Mail, Webhook).
+*   **Système de Caching Intelligent** :
+    *   *Backend* : Implémentation d'un cache (In-Memory/Redis) sécurisé. Les clés de cache sont générées à partir du hash de la requête logicale combiné aux attributs de sécurité de l'utilisateur (RLS context). Cela garantit qu'un utilisateur ne peut jamais accéder au cache d'un autre utilisateur ayant des droits différents.
+    *   *Headers* : Transparence totale via les métadonnées de réponse (`source: cache` ou `source: database`).
+*   **Alerting Engine (Scheduler)** :
+    *   Moteur de tâches de fond asynchrone intégré.
+    *   Surveillance proactive des métriques avec déclenchement d'alertes basées sur des seuils configurables.
+    *   Architecture prête pour l'intégration de webhooks et notifications (Slack/Email).
 *   **Reporting Scheduler** : Génération et envoi automatisé de rapports (PDF/CSV) à intervalles réguliers.
 
 ---
