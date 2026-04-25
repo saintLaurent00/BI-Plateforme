@@ -7,19 +7,25 @@ from app.domain.query.builder import QueryBuilder
 from app.infrastructure.cache.manager import cache_manager
 from app.infrastructure.cache.utils import generate_cache_key
 from app.core.config import settings
+from app.domain.datasets.service import DatasetService
 
 logger = logging.getLogger("BI-Plateforme.QueryService")
 
 class QueryService:
-    def __init__(self, datasets: Dict[str, Dataset]):
-        self.datasets = datasets
-        self.builder = QueryBuilder(datasets=datasets)
+    def __init__(self, dataset_service: DatasetService):
+        self.dataset_service = dataset_service
+        # Le builder sera initialisé dynamiquement par requête ou utilisera le service pour résoudre les datasets
 
     async def execute_query(self, request: QueryRequest, user: User) -> Dict[str, Any]:
-        # 1. Génération de la clé de cache
+        # 1. Résolution du dataset depuis le Metadata Store
+        dataset = self.dataset_service.get_by_name(request.dataset)
+        if not dataset:
+            raise ValueError(f"Dataset {request.dataset} non trouvé")
+
+        # 2. Génération de la clé de cache
         cache_key = generate_cache_key(request, user)
 
-        # 2. Tentative de récupération depuis le cache
+        # 3. Tentative de récupération depuis le cache
         cached_result = await cache_manager.get(cache_key)
         if cached_result:
             logger.info(f"Cache hit for query {cache_key}", extra={"user": user.username})
@@ -31,11 +37,13 @@ class QueryService:
                 }
             }
 
-        # 3. Construction du SQL
-        sql = self.builder.build(request, user)
+        # 4. Construction du SQL avec le QueryBuilder
+        # On passe les datasets connus (ou juste celui nécessaire)
+        builder = QueryBuilder(datasets={dataset.name: dataset})
+        sql = builder.build(request, user)
         logger.info(f"Executing SQL: {sql}", extra={"user": user.username})
 
-        # 4. Exécution (Simulation SQLite pour le moment)
+        # 5. Exécution
         try:
             conn = sqlite3.connect(settings.DB_PATH)
             df = pd.read_sql_query(sql, conn)
@@ -43,7 +51,7 @@ class QueryService:
 
             result_data = df.to_dict(orient="records")
 
-            # 5. Mise en cache du résultat (TTL de 5 minutes par défaut)
+            # 6. Mise en cache
             await cache_manager.set(cache_key, result_data, ttl=300)
 
             return {

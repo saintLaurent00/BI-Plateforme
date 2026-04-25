@@ -13,12 +13,23 @@ router = APIRouter()
 logger = logging.getLogger("BI-Plateforme")
 
 dataset_service = DatasetService()
-query_service = QueryService(dataset_service.datasets)
+query_service = QueryService(dataset_service)
 insight_generator = InsightGenerator()
 
 @router.get("/datasets")
 def get_datasets(current_user: User = Depends(get_current_user)):
     return dataset_service.get_all()
+
+@router.post("/datasets")
+def create_dataset(dataset: Dataset, current_user: User = Depends(get_current_user)):
+    if "admin" not in current_user.role_id:
+        raise HTTPException(status_code=403, detail="Only admins can create datasets")
+
+    try:
+        dataset_service.repo.create_dataset(dataset)
+        return {"message": "Dataset created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/query")
 async def run_query(request: QueryRequest, current_user: User = Depends(get_current_user)):
