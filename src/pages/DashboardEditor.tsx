@@ -42,7 +42,8 @@ import {
 } from '../lib/dashboardLayout';
 import ReactMarkdown from 'react-markdown';
 
-import anime from 'animejs';
+import * as anime from 'animejs';
+const anime_default = (anime as any).default || anime;
 
 // Simple mocks for non-existent animejs v3 functions to ensure build succeeds
 const onScroll = ({ container, onUpdate }: any) => {
@@ -58,12 +59,12 @@ const onScroll = ({ container, onUpdate }: any) => {
 const createLayout = (el: HTMLElement, opts: any) => ({
   record: () => {},
   animate: () => {
-    anime({
+    anime_default({
       targets: opts.children,
       scale: [0.98, 1],
       opacity: [0, 1],
       translateY: [30, 0],
-      delay: anime.stagger(60),
+      delay: anime_default.stagger(60),
       duration: 1000,
       easing: 'easeOutQuart'
     });
@@ -248,7 +249,7 @@ export const DashboardItem = ({
 
   useEffect(() => {
     if (containerRef.current) {
-      anime({
+      anime_default({
         targets: containerRef.current,
         opacity: [0, 1],
         translateY: [20, 0],
@@ -692,12 +693,12 @@ const DashboardEditorInner = () => {
 
   useEffect(() => {
     if (!isLoading) {
-      anime({
+      anime_default({
         targets: '.dashboard-item-container',
         opacity: [0, 1],
         translateY: [30, 0],
         scale: [0.98, 1],
-        delay: anime.stagger(60),
+        delay: anime_default.stagger(60),
         easing: 'easeOutQuart',
         duration: 1000
       });
@@ -720,7 +721,7 @@ const DashboardEditorInner = () => {
   }, []);
 
   useEffect(() => {
-    anime({
+    anime_default({
       targets: '.dashboard-item-container',
       scale: [0.98, 1],
       duration: 400,
@@ -871,11 +872,11 @@ const DashboardEditorInner = () => {
   const [sidebarTab, setSidebarTab] = useState<'charts' | 'elements'>('charts');
 
   useEffect(() => {
-    anime({
+    anime_default({
       targets: '.sidebar-item',
       opacity: [0, 1],
       translateX: [20, 0],
-      delay: anime.stagger(40),
+      delay: anime_default.stagger(40),
       easing: 'easeOutQuad',
       duration: 400
     });

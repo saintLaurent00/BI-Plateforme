@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Filter, List, ArrowDownWideZap, Play, Save, ChevronRight, BarChart2 } from 'lucide-react';
+import { Settings, Filter, List, ArrowDownAZ as ArrowDownWideZap, Play, Save, ChevronRight, BarChart2 } from 'lucide-react';
 import { biService } from '../../services/biService';
 import { toast } from 'sonner';
 

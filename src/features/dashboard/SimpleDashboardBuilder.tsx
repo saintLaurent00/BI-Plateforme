@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import anime from 'animejs';
+import * as anime from 'animejs';
+const anime_default = (anime as any).default || anime;
 import { LayoutDashboard, Plus, Move, Trash2, Save, BarChart3, ChevronRight, Sparkles, Activity } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid } from 'recharts';
 import { getCharts, saveDashboard } from '../../lib/db';
@@ -105,7 +106,7 @@ export const SimpleDashboardBuilder = () => {
     setIsAdding(false);
 
     setTimeout(() => {
-      anime({
+      anime_default({
         targets: `.widget-${newWidget.id}`,
         scale: [0.9, 1],
         opacity: [0, 1],
@@ -119,7 +120,7 @@ export const SimpleDashboardBuilder = () => {
   };
 
   const removeWidget = (id: string) => {
-    anime({
+    anime_default({
       targets: `.widget-${id}`,
       scale: 0.8,
       opacity: 0,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import anime from 'animejs';
+import * as anime from 'animejs';
+const anime_default = (anime as any).default || anime;
 import { biService } from '../../services/biService';
 import {
   Database,
@@ -30,11 +31,11 @@ import { useNavigate } from 'react-router-dom';
 
 const InsightPanel = ({ insights }: { insights: any[] }) => {
   useEffect(() => {
-    anime({
+    anime_default({
       targets: '.insight-card',
       translateX: [100, 0],
       opacity: [0, 1],
-      delay: anime.stagger(100),
+      delay: anime_default.stagger(100),
       easing: 'easeOutExpo'
     });
   }, [insights]);
@@ -80,7 +81,7 @@ export const GuidedChartBuilder = () => {
       handleRunQuery();
     }
 
-    anime({
+    anime_default({
       targets: '.step-content',
       opacity: [0, 1],
       translateX: [20, 0],

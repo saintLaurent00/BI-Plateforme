@@ -85,8 +85,8 @@ class QueryService:
 
             result_data = df.to_dict(orient="records")
 
-            # 6. Mise en cache
-            await cache_manager.set(cache_key, result_data, ttl=300)
+            # 6. Mise en cache (Optimisation performance pour fluidité)
+            await cache_manager.set(cache_key, result_data, ttl=600)
 
             return {
                 "data": result_data,

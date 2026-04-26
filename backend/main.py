@@ -13,11 +13,14 @@ Organisation :
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.api.endpoints import router as api_router
 from app.core.config import settings
 import sqlite3
 import pandas as pd
 import logging
+import os
 
 # Configuration des logs structurés
 logging.basicConfig(
@@ -44,6 +47,16 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Service du Frontend (Fichiers Statiques)
+# On vérifie si le dossier dist existe (après npm run build)
+if os.path.exists("dist"):
+    app.mount("/", StaticFiles(directory="dist", html=True), name="static")
+
+    @app.exception_handler(404)
+    async def spa_fallback(request, exc):
+        # Fallback pour les routes SPA (React Router)
+        return FileResponse("dist/index.html")
 
 def init_db():
     conn = sqlite3.connect(settings.DB_PATH)
