@@ -1,3 +1,16 @@
+"""
+🚀 BI-Plateforme : Point d'Entrée Principal du Backend
+---------------------------------------------------
+Ce fichier orchestre le démarrage de l'application FastAPI, la configuration des middlewares,
+l'initialisation de la base de données analytique (SQLite) et le lancement des services de fond.
+
+Organisation :
+- Configuration des logs structurés (JSON-like avec contexte utilisateur).
+- Initialisation des plugins dynamiques.
+- Initialisation de la base de données analytique de démonstration.
+- Lancement du Scheduler d'alertes asynchrone.
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import router as api_router

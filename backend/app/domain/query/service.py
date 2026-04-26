@@ -1,4 +1,11 @@
 from typing import Dict, Any, Optional
+"""
+🛠️ Query Service (Domain Orchestrator)
+--------------------------------------
+Service de haut niveau coordonnant l'exécution des requêtes analytiques.
+Fait le lien entre le Metadata Store (schémas), le Cache Manager (performance) et le Query Builder (SQL).
+"""
+
 import pandas as pd
 import sqlite3
 import logging

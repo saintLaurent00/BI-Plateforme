@@ -1,3 +1,11 @@
+/**
+ * 🧪 SQL Lab (MVP Expert Interface)
+ * --------------------------------
+ * Interface permettant l'écriture et l'exécution manuelle de SQL brut.
+ * C'est l'outil principal de la MVP, offrant un contrôle total aux experts
+ * tout en bénéficiant de la sécurité automatique du backend (RLS wrapping).
+ */
+
 import React, { useState } from 'react';
 import { Play, Save, Database, Code, ShieldCheck, AlertCircle, Copy } from 'lucide-react';
 import { biService } from '../../services/biService';

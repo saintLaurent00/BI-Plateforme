@@ -1,3 +1,10 @@
+"""
+🐘 Postgres Dialect (Infrastructure)
+---------------------------------
+Implémentation spécifique à PostgreSQL du moteur de traduction SQL.
+Utilise des fonctions natives comme DATE_TRUNC pour une performance maximale.
+"""
+
 from app.infrastructure.drivers.base import BaseDialect
 
 class PostgresDialect(BaseDialect):

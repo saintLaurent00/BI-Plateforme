@@ -1,3 +1,10 @@
+"""
+🔌 Database Session Manager (Infrastructure)
+------------------------------------------
+Gère la connexion et le cycle de vie des sessions SQLAlchemy.
+Définit le point d'accès à la Méta DB (prism_meta.db).
+"""
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings

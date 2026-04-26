@@ -1,3 +1,15 @@
+"""
+📐 Schémas de Données (Domain)
+----------------------------
+Définition des entités métier universelles du système BI.
+Utilise Pydantic pour la validation et le typage des données transitant entre l'API et le moteur.
+
+Contient :
+- Modèles de requête (QueryRequest, RawQueryRequest)
+- Entités BI (Dataset, Column, Metric)
+- Entités d'Identité (User, Role)
+"""
+
 from pydantic import BaseModel
 from typing import List, Any, Optional, Dict
 

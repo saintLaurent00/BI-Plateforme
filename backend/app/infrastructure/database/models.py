@@ -1,3 +1,11 @@
+"""
+🗄️ Modèles de Données SQLAlchemy (Infrastructure)
+-----------------------------------------------
+Définition des tables du Metadata Store (prism_meta.db).
+Ce fichier contient la structure relationnelle pour stocker l'identité,
+la sémantique BI, la sécurité (RLS/RBAC) et le scheduling.
+"""
+
 from sqlalchemy import Column, String, Integer, JSON, ForeignKey, Table, Text, DateTime, Float, Boolean
 from sqlalchemy.orm import relationship, declarative_base
 from datetime import datetime

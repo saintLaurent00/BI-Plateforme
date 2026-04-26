@@ -1,3 +1,10 @@
+"""
+🔐 Security Auth Utilities (Core)
+------------------------------
+Définit les mécanismes d'extraction de l'identité utilisateur à partir des requêtes.
+Fait le pont entre les headers HTTP et le service d'authentification du domaine.
+"""
+
 from typing import Optional, Dict, Any
 from fastapi import Request, HTTPException, Security
 from app.domain.auth.service import AuthService

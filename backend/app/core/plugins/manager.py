@@ -1,3 +1,11 @@
+"""
+🔌 Plugin Manager (Core)
+----------------------
+Permet l'extension dynamique des fonctionnalités de la plateforme.
+Il scanne le répertoire /plugins pour charger des modules Python au démarrage,
+permettant d'ajouter des drivers SQL, des hooks système ou des calculs personnalisés.
+"""
+
 import importlib
 import os
 import sys

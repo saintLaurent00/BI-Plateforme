@@ -1,3 +1,11 @@
+"""
+🏛️ Metadata Repository (Infrastructure)
+--------------------------------------
+Couche d'accès aux données (DAL) pour le Metadata Store.
+Assure la conversion entre les modèles SQLAlchemy et les schémas de domaine Pydantic.
+Centralise toutes les opérations CRUD sur l'identité, le scheduling et la sémantique.
+"""
+
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from app.infrastructure.database.models import (

@@ -1,3 +1,10 @@
+"""
+🔌 Interface de Dialecte SQL (Infrastructure)
+-------------------------------------------
+Classe abstraite définissant les opérations SQL spécifiques à chaque moteur (Postgres, SQLite, Snowflake).
+Assure que le Query Engine génère un code compatible avec la base de données cible.
+"""
+
 from abc import ABC, abstractmethod
 from typing import List, Optional
 

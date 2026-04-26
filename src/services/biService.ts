@@ -1,3 +1,14 @@
+/**
+ * 🛰️ BI Service (Frontend)
+ * -----------------------
+ * Point de contact unique entre le frontend et le backend BI-Plateforme.
+ * Gère l'exécution des requêtes SQL (Raw et Logical) ainsi que la résolution
+ * des métadonnées des datasets.
+ *
+ * Note : En mode démo (GitHub Pages), bascule automatiquement sur une
+ * exécution SQL locale via SQL.js (WASM).
+ */
+
 import { executeQuery } from '../lib/db';
 import axios from 'axios';
 

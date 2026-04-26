@@ -1,3 +1,10 @@
+"""
+🔏 Cache Utilities (Infrastructure)
+----------------------------------
+Fonctions utilitaires pour la gestion des clés de cache.
+Génère des hashes sécurisés incluant le contexte RLS pour garantir l'isolation des données.
+"""
+
 import hashlib
 import json
 from typing import Any, Dict

@@ -1,3 +1,10 @@
+"""
+👥 Auth Service (Domain)
+----------------------
+Gère la validation des identités et la résolution des permissions.
+S'appuie sur le Metadata Repository pour accéder aux données utilisateurs en SQL.
+"""
+
 from app.domain.schemas import User, Role
 from app.infrastructure.database.session import SessionLocal
 from app.infrastructure.database.repository import MetadataRepository

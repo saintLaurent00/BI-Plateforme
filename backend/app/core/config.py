@@ -1,3 +1,10 @@
+"""
+⚙️ Configuration Globale (Core)
+----------------------------
+Gère les variables d'environnement et les paramètres par défaut de l'application.
+Utilise Pydantic Settings pour une validation stricte des types.
+"""
+
 import os
 from pydantic_settings import BaseSettings
 

@@ -1,3 +1,11 @@
+"""
+🛡️ Raw Query Securizer (Domain)
+----------------------------
+Composant critique assurant la sécurité du SQL manuel (Expert Mode).
+Utilise une technique de "SQL Wrapping" pour injecter les clauses RLS
+sans altérer la structure de la requête originale de l'utilisateur.
+"""
+
 from app.domain.schemas import User
 from app.infrastructure.drivers.base import BaseDialect
 from app.infrastructure.drivers.sqlite import SQLiteDialect

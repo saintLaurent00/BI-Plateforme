@@ -1,3 +1,10 @@
+"""
+⚡ Cache Manager (Infrastructure)
+-------------------------------
+Implémentation concrète de la couche de mise en cache.
+Par défaut, utilise un cache en mémoire avec TTL (Time-To-Live).
+"""
+
 import time
 from typing import Any, Optional, Dict, Tuple
 from app.infrastructure.cache.base import BaseCache

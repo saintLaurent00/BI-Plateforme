@@ -1,3 +1,16 @@
+"""
+🧠 Query Builder Engine (Domain)
+------------------------------
+Le cœur algorithmique de la plateforme. Traduit une requête logique (métriques, dimensions)
+en un SQL optimisé et sécurisé pour un dialecte donné.
+
+Responsabilités :
+- Résolution des expressions calculées (Jinja2).
+- Gestion des agrégations et groupements.
+- Injection automatique du RLS (Row Level Security).
+- Formatage des dates selon le moteur SQL.
+"""
+
 from app.domain.schemas import QueryRequest, Dataset, User
 from app.infrastructure.drivers.base import BaseDialect
 from app.infrastructure.drivers.sqlite import SQLiteDialect

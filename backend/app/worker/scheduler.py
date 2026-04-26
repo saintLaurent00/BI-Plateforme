@@ -1,3 +1,11 @@
+"""
+⏰ Alert & Task Scheduler (Background Worker)
+-------------------------------------------
+Moteur de tâches asynchrones piloté par la base de données.
+Il synchronise périodiquement les 'ScheduledJobs' depuis la Méta DB et les exécute.
+Supporte la surveillance de métriques et le déclenchement d'alertes.
+"""
+
 import asyncio
 import logging
 from datetime import datetime

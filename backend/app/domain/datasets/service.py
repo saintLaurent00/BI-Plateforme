@@ -1,3 +1,11 @@
+"""
+📂 Dataset Service (Domain)
+-------------------------
+Gère l'accès et la résolution des jeux de données BI.
+Communique avec le Metadata Repository pour récupérer les définitions persistées (SQL).
+Gère également le contrôle d'accès au niveau des datasets.
+"""
+
 from app.domain.schemas import Dataset
 from app.infrastructure.database.repository import MetadataRepository
 from app.infrastructure.database.session import SessionLocal

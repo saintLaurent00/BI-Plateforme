@@ -1,3 +1,10 @@
+"""
+💾 SQLite Dialect (Infrastructure)
+-------------------------------
+Implémentation spécifique à SQLite du moteur de traduction SQL.
+Gère les particularités de formatage de date (strftime) et le quoting des identifiants.
+"""
+
 from app.infrastructure.drivers.base import BaseDialect
 
 class SQLiteDialect(BaseDialect):

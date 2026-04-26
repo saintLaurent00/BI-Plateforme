@@ -1,3 +1,10 @@
+"""
+🌐 Endpoints API (Presentation Layer)
+-----------------------------------
+Définit les routes HTTP exposées par la plateforme.
+Gère l'authentification, les permissions et la délégation aux services de domaine.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.domain.schemas import QueryRequest, RawQueryRequest, User, Dataset
 from app.domain.datasets.service import DatasetService
