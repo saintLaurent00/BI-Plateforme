@@ -4,41 +4,58 @@ import sqlWasm from 'sql.js/dist/sql-wasm.wasm?url';
 let dbInstance: Database | null = null;
 let SQL: any = null;
 
-const DB_NAME = 'PrismOfflineDB';
-const STORE_NAME = 'database';
-const DB_KEY = 'sqlite_db';
+const CONFIG = {
+  DB_NAME: 'PrismOfflineDB',
+  STORE_NAME: 'database',
+  DB_KEY: 'sqlite_db',
+  JSON_COLUMNS: ['x_axis', 'y_axis', 'config', 'layout'],
+} as const;
 
-async function getIndexedDB() {
+async function getIndexedDB(): Promise<IDBDatabase> {
   return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(CONFIG.DB_NAME, 1);
     request.onupgradeneeded = () => {
-      request.result.createObjectStore(STORE_NAME);
+      request.result.createObjectStore(CONFIG.STORE_NAME);
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
 
-async function saveToIndexedDB(data: Uint8Array) {
+async function saveToIndexedDB(data: Uint8Array): Promise<void> {
   const idb = await getIndexedDB();
   return new Promise<void>((resolve, reject) => {
-    const transaction = idb.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.put(data, DB_KEY);
+    const transaction = idb.transaction(CONFIG.STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(CONFIG.STORE_NAME);
+    const request = store.put(data, CONFIG.DB_KEY);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
 }
 
-async function loadFromIndexedDB() {
+async function loadFromIndexedDB(): Promise<Uint8Array | null> {
   const idb = await getIndexedDB();
   return new Promise<Uint8Array | null>((resolve, reject) => {
-    const transaction = idb.transaction(STORE_NAME, 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.get(DB_KEY);
+    const transaction = idb.transaction(CONFIG.STORE_NAME, 'readonly');
+    const store = transaction.objectStore(CONFIG.STORE_NAME);
+    const request = store.get(CONFIG.DB_KEY);
     request.onsuccess = () => resolve(request.result || null);
     request.onerror = () => reject(request.error);
   });
+}
+
+function rowToObject(columns: string[], row: any[]): Record<string, any> {
+  const obj: Record<string, any> = {};
+  columns.forEach((col, i) => {
+    if (CONFIG.JSON_COLUMNS.includes(col)) {
+      obj[col] = JSON.parse(row[i] as string);
+    } else if (col === 'background_color') {
+      obj['backgroundColor'] = row[i];
+    } else {
+      obj[col] = row[i];
+    }
+  });
+  return obj;
 }
 
 export const initDatabase = async () => {
@@ -149,60 +166,39 @@ export const saveChart = async (chart: any) => {
   await saveToIndexedDB(binaryData);
 };
 
-export const getCharts = async () => {
+export const getCharts = async (): Promise<any[]> => {
   const { db } = await initDatabase();
   const res = db.exec("SELECT * FROM charts ORDER BY created_at DESC");
   if (res.length === 0) return [];
-  
+
   const { columns, values } = res[0];
-  return values.map(row => {
-    const obj: any = {};
-    columns.forEach((col, i) => {
-      if (['x_axis', 'y_axis', 'config'].includes(col)) {
-        obj[col] = JSON.parse(row[i] as string);
-      } else {
-        obj[col] = row[i];
-      }
-    });
-    return obj;
-  });
+  return values.map(row => rowToObject(columns, row));
 };
 
-export const getChart = async (id: string) => {
+export const getChart = async (id: string): Promise<any | null> => {
   const { db } = await initDatabase();
-  const res = db.exec(`SELECT * FROM charts WHERE id = '${id}'`);
-  if (res.length === 0) return null;
-  
-  const { columns, values } = res[0];
-  const row = values[0];
-  const obj: any = {};
-  columns.forEach((col, i) => {
-    if (['x_axis', 'y_axis', 'config'].includes(col)) {
-      obj[col] = JSON.parse(row[i] as string);
-    } else {
-      obj[col] = row[i];
-    }
-  });
-  return obj;
+  const stmt = db.prepare("SELECT * FROM charts WHERE id = ?");
+  stmt.bind([id]);
+
+  if (!stmt.step()) {
+    stmt.free();
+    return null;
+  }
+
+  const columns = stmt.getColumnNames();
+  const values = stmt.get();
+  stmt.free();
+
+  return rowToObject(columns, values);
 };
 
-export const getDashboards = async () => {
+export const getDashboards = async (): Promise<any[]> => {
   const { db } = await initDatabase();
   const res = db.exec("SELECT * FROM dashboards ORDER BY created_at DESC");
   if (res.length === 0) return [];
-  
+
   const { columns, values } = res[0];
-  return values.map(row => {
-    const obj: any = {};
-    columns.forEach((col, i) => {
-      if (col === 'layout') {
-        obj[col] = JSON.parse(row[i] as string);
-      } else {
-        obj[col] = row[i];
-      }
-    });
-    return obj;
-  });
+  return values.map(row => rowToObject(columns, row));
 };
 
 export const saveDashboard = async (dashboard: any) => {
@@ -224,30 +220,30 @@ export const saveDashboard = async (dashboard: any) => {
   await saveToIndexedDB(binaryData);
 };
 
-export const getDashboard = async (id: string) => {
+export const getDashboard = async (id: string): Promise<any | null> => {
   const { db } = await initDatabase();
-  const res = db.exec(`SELECT * FROM dashboards WHERE id = '${id}'`);
-  if (res.length === 0) return null;
-  
-  const { columns, values } = res[0];
-  const row = values[0];
-  const obj: any = {};
-  columns.forEach((col, i) => {
-    if (col === 'layout') {
-      obj[col] = JSON.parse(row[i] as string);
-    } else if (col === 'background_color') {
-      obj['backgroundColor'] = row[i];
-    } else {
-      obj[col] = row[i];
-    }
-  });
-  return obj;
+  const stmt = db.prepare("SELECT * FROM dashboards WHERE id = ?");
+  stmt.bind([id]);
+
+  if (!stmt.step()) {
+    stmt.free();
+    return null;
+  }
+
+  const columns = stmt.getColumnNames();
+  const values = stmt.get();
+  stmt.free();
+
+  return rowToObject(columns, values);
 };
 
-export const deleteDashboard = async (id: string) => {
+export const deleteDashboard = async (id: string): Promise<void> => {
   const { db } = await initDatabase();
-  db.run(`DELETE FROM dashboards WHERE id = '${id}'`);
-  
+  const stmt = db.prepare("DELETE FROM dashboards WHERE id = ?");
+  stmt.bind([id]);
+  stmt.step();
+  stmt.free();
+
   const binaryData = db.export();
   await saveToIndexedDB(binaryData);
 };
@@ -270,19 +266,13 @@ export const saveQuery = async (query: any) => {
   await saveToIndexedDB(binaryData);
 };
 
-export const getSavedQueries = async () => {
+export const getSavedQueries = async (): Promise<any[]> => {
   const { db } = await initDatabase();
   const res = db.exec("SELECT * FROM saved_queries ORDER BY created_at DESC");
   if (res.length === 0) return [];
-  
+
   const { columns, values } = res[0];
-  return values.map(row => {
-    const obj: any = {};
-    columns.forEach((col, i) => {
-      obj[col] = row[i];
-    });
-    return obj;
-  });
+  return values.map(row => rowToObject(columns, row));
 };
 
 export const getDatabase = () => {
@@ -292,22 +282,16 @@ export const getDatabase = () => {
   return { db: dbInstance, SQL };
 };
 
-export const executeQuery = async (sql: string) => {
+export const executeQuery = async (sql: string): Promise<any[]> => {
   const { db } = await initDatabase();
   try {
     const results = db.exec(sql);
     if (results.length === 0) return [];
-    
+
     const { columns, values } = results[0];
-    return values.map((row) => {
-      const obj: any = {};
-      columns.forEach((col, i) => {
-        obj[col] = row[i];
-      });
-      return obj;
-    });
+    return values.map(row => rowToObject(columns, row));
   } catch (error) {
-    console.error('SQL Error:', error);
+    console.error('SQL execution failed:', error);
     throw error;
   }
 };
@@ -337,14 +321,14 @@ export const importCSV = async (tableName: string, csvData: any[]) => {
   await saveToIndexedDB(binaryData);
 };
 
-export const getTables = async () => {
+export const getTables = async (): Promise<string[]> => {
   const { db } = await initDatabase();
   const res = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
   if (res.length === 0) return [];
   return res[0].values.map(row => row[0] as string);
 };
 
-export const getTableSchema = async (tableName: string) => {
+export const getTableSchema = async (tableName: string): Promise<any[]> => {
   const { db } = await initDatabase();
   const res = db.exec(`PRAGMA table_info("${tableName}")`);
   if (res.length === 0) return [];
