@@ -6,13 +6,21 @@
  * tout en bénéficiant de la sécurité automatique du backend (RLS wrapping).
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, Save, Database, Code, ShieldCheck, AlertCircle, Copy } from 'lucide-react';
 import { biService } from '../../services/biService';
 import { toast } from 'sonner';
+import { useLocation } from 'react-router-dom';
 
 export const SQLLab = () => {
+  const location = useLocation();
   const [sql, setSql] = useState("SELECT category, SUM(amount) as total FROM transactions GROUP BY category");
+
+  useEffect(() => {
+    if (location.state && (location.state as any).sql) {
+        setSql((location.state as any).sql);
+    }
+  }, [location.state]);
   const [results, setResults] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

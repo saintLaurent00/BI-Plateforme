@@ -10,6 +10,7 @@ from app.domain.schemas import QueryRequest, RawQueryRequest, User, Dataset
 from app.domain.datasets.service import DatasetService
 from app.domain.query.service import QueryService
 from app.domain.query.insights import InsightGenerator
+from app.infrastructure.database.introspector import Introspector
 from app.core.security.auth import get_current_user
 from app.core.config import settings
 import sqlite3
@@ -22,10 +23,29 @@ logger = logging.getLogger("BI-Plateforme")
 dataset_service = DatasetService()
 query_service = QueryService(dataset_service)
 insight_generator = InsightGenerator()
+introspector = Introspector()
 
 @router.get("/datasets")
 def get_datasets(current_user: User = Depends(get_current_user)):
     return dataset_service.get_all()
+
+@router.get("/database/tables")
+def get_db_tables(current_user: User = Depends(get_current_user)):
+    if "admin" not in current_user.role_id:
+        raise HTTPException(status_code=403)
+    return introspector.get_tables()
+
+@router.get("/database/columns/{table_name}")
+def get_db_columns(table_name: str, current_user: User = Depends(get_current_user)):
+    if "admin" not in current_user.role_id:
+        raise HTTPException(status_code=403)
+    return introspector.get_columns(table_name)
+
+@router.post("/database/discover-joins")
+def discover_joins(tables: List[str], current_user: User = Depends(get_current_user)):
+    if "admin" not in current_user.role_id:
+        raise HTTPException(status_code=403)
+    return introspector.discover_joins(tables)
 
 @router.post("/datasets")
 def create_dataset(dataset: Dataset, current_user: User = Depends(get_current_user)):

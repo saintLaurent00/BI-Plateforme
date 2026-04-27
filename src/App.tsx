@@ -17,6 +17,7 @@ import { ChartSelector } from './pages/ChartSelector';
 import { SimpleDashboardBuilder } from './features/dashboard/SimpleDashboardBuilder';
 import { SQLLab } from './features/sql-lab/SQLLab';
 import { ManualQueryBuilder } from './features/chart-builder/ManualQueryBuilder';
+import { DatasetManager } from './features/datasets/DatasetManager';
 import { DashboardDetail } from './pages/DashboardDetail';
 import { DashboardEditor } from './pages/DashboardEditor';
 import { Admin } from './pages/Admin';
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="/dashboard-builder" element={<SimpleDashboardBuilder />} />
           <Route path="/sql-lab" element={<SQLLab />} />
           <Route path="/manual-builder" element={<ManualQueryBuilder />} />
+          <Route path="/dataset-config" element={<DatasetManager />} />
           <Route path="/dashboards/:id" element={<DashboardDetail />} />
           <Route path="/dashboard-editor" element={<DashboardEditor />} />
           <Route path="/dashboard-editor/:id" element={<DashboardEditor />} />

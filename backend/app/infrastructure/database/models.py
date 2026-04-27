@@ -70,8 +70,10 @@ class DatasetModel(Base):
 
     id = Column(String, primary_key=True)
     name = Column(String, unique=True, nullable=False)
-    table_name = Column(String, nullable=False)
+    table_name = Column(String, nullable=False) # For physical, table name; for virtual, could be null
     description = Column(Text)
+    kind = Column(String, default="physical") # 'physical' or 'virtual'
+    sql = Column(Text) # For virtual datasets
 
     columns = relationship("ColumnModel", back_populates="dataset", cascade="all, delete-orphan")
     metrics = relationship("MetricModel", back_populates="dataset", cascade="all, delete-orphan")
@@ -82,8 +84,10 @@ class ColumnModel(Base):
     id = Column(String, primary_key=True)
     dataset_id = Column(String, ForeignKey("datasets.id"), nullable=False)
     name = Column(String, nullable=False)
+    label = Column(String) # For renaming
     type = Column(String, nullable=False)
     expression = Column(Text)
+    is_visible = Column(Boolean, default=True)
     security_scope = Column(String)
     description = Column(Text)
 

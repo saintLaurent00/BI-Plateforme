@@ -39,8 +39,10 @@ class QueryRequest(BaseModel):
 
 class DatasetColumn(BaseModel):
     name: str
+    label: Optional[str] = None
     type: str # 'string', 'number', 'date', 'boolean'
     expression: Optional[str] = None # For calculated columns
+    is_visible: bool = True
     security_scope: Optional[str] = None # e.g., 'region', 'department'
     description: Optional[str] = None
 
@@ -51,7 +53,9 @@ class DatasetMetric(BaseModel):
 
 class Dataset(BaseModel):
     name: str
-    table_name: str
+    table_name: Optional[str] = None
+    kind: str = "physical" # 'physical' or 'virtual'
+    sql: Optional[str] = None
     columns: List[DatasetColumn]
     metrics: List[DatasetMetric]
 

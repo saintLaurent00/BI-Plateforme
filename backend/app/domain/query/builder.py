@@ -75,7 +75,10 @@ class QueryBuilder:
         select_clause = "SELECT " + ", ".join(select_parts)
 
         # From clause
-        from_clause = f'FROM {self.dialect.quote_identifier(dataset.table_name)}'
+        if dataset.kind == "virtual" and dataset.sql:
+            from_clause = f'FROM ({dataset.sql}) AS {self.dialect.quote_identifier(dataset.name)}'
+        else:
+            from_clause = f'FROM {self.dialect.quote_identifier(dataset.table_name)}'
 
         # Where clause
         where_parts = []

@@ -28,10 +28,17 @@ class MetadataRepository:
         return Dataset(
             name=db_dataset.name,
             table_name=db_dataset.table_name,
+            kind=db_dataset.kind,
+            sql=db_dataset.sql,
             columns=[
                 DatasetColumn(
-                    name=c.name, type=c.type, expression=c.expression,
-                    security_scope=c.security_scope, description=c.description
+                    name=c.name,
+                    label=c.label or c.name,
+                    type=c.type,
+                    expression=c.expression,
+                    is_visible=c.is_visible,
+                    security_scope=c.security_scope,
+                    description=c.description
                 ) for c in db_dataset.columns
             ],
             metrics=[
@@ -45,20 +52,27 @@ class MetadataRepository:
         return [self.get_dataset_by_name(ds.name) for ds in db_datasets]
 
     def create_dataset(self, dataset: Dataset):
+        # Delete existing if any to allow updates (MVP style)
+        self.db.query(DatasetModel).filter(DatasetModel.name == dataset.name).delete()
+
         db_dataset = DatasetModel(
             id=dataset.name,
             name=dataset.name,
-            table_name=dataset.table_name
+            table_name=dataset.table_name,
+            kind=dataset.kind,
+            sql=dataset.sql
         )
         self.db.add(db_dataset)
 
         for col in dataset.columns:
             db_col = ColumnModel(
-                id=f"{dataset.name}_{col.name}",
+                id=f"{dataset.name}_{col.name}_{len(db_dataset.columns)}", # Unique ID
                 dataset_id=db_dataset.id,
                 name=col.name,
+                label=col.label,
                 type=col.type,
                 expression=col.expression,
+                is_visible=col.is_visible,
                 security_scope=col.security_scope
             )
             self.db.add(db_col)
