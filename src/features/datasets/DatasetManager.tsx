@@ -11,6 +11,7 @@ export const DatasetManager = () => {
   const [joins, setJoins] = useState<any[]>([]);
   const [columns, setColumns] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any[]>([]);
+  const [defaultFilters, setDefaultFilters] = useState("");
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [datasetName, setDatasetName] = useState("");
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export const DatasetManager = () => {
   };
 
   const discoverJoins = async () => {
-    if (selectedTables.length < 2) {
+    if (selectedTables.length === 1) {
       loadColumns();
       return;
     }
@@ -77,6 +78,7 @@ export const DatasetManager = () => {
         name: datasetName,
         kind: selectedTables.length > 1 ? "virtual" : "physical",
         table_name: selectedTables[0],
+        default_filters: defaultFilters,
         columns: columns.map(c => ({
             name: c.name,
             label: c.label,
@@ -227,9 +229,18 @@ export const DatasetManager = () => {
                 <div className="p-12 space-y-8 flex-1">
                     <div className="flex items-center justify-between">
                         <h2 className="text-2xl font-black text-slate-900">Dictionnaire de Données</h2>
-                        <div className="flex gap-4">
+                    <div className="flex gap-4 items-center">
                             <button onClick={addCalculatedField} className="px-6 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold border border-indigo-100">+ Ajouter un champ calculé</button>
                             <button onClick={addMetric} className="px-6 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold border border-emerald-100">+ Ajouter une métrique</button>
+                        <div className="flex-1 ml-8 relative group">
+                            <label className="absolute -top-6 left-2 text-[8px] font-black uppercase tracking-widest text-slate-400">Filtre par Défaut (Jinja2)</label>
+                            <input
+                                className="w-full px-6 py-3 bg-slate-900 text-indigo-300 font-mono text-xs rounded-2xl border border-slate-800 outline-none focus:border-indigo-500"
+                                placeholder="ex: category = '{{ params.cat }}'"
+                                value={defaultFilters}
+                                onChange={(e) => setDefaultFilters(e.target.value)}
+                            />
+                        </div>
                         </div>
                     </div>
 

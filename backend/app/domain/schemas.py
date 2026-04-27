@@ -56,6 +56,7 @@ class Dataset(BaseModel):
     table_name: Optional[str] = None
     kind: str = "physical" # 'physical' or 'virtual'
     sql: Optional[str] = None
+    default_filters: Optional[str] = None # Jinja2 clause
     columns: List[DatasetColumn]
     metrics: List[DatasetMetric]
 

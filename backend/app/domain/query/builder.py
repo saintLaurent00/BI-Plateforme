@@ -102,6 +102,13 @@ class QueryBuilder:
                         # Single value: EQ clause
                         where_parts.append(f'{quoted_col} = {self._sanitize_value(val)}')
 
+        # --- Default Jinja2 Filters ---
+        if dataset.default_filters:
+            template_context = {"user": user, "params": request.params or {}}
+            compiled_default_filter = self._compile_expression(dataset.default_filters, template_context)
+            if compiled_default_filter.strip():
+                where_parts.append(f"({compiled_default_filter})")
+
         if request.filters:
             for f in request.filters:
                 quoted_field = self.dialect.quote_identifier(f.field)

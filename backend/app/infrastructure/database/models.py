@@ -74,6 +74,7 @@ class DatasetModel(Base):
     description = Column(Text)
     kind = Column(String, default="physical") # 'physical' or 'virtual'
     sql = Column(Text) # For virtual datasets
+    default_filters = Column(Text) # Jinja2 WHERE clause
 
     columns = relationship("ColumnModel", back_populates="dataset", cascade="all, delete-orphan")
     metrics = relationship("MetricModel", back_populates="dataset", cascade="all, delete-orphan")

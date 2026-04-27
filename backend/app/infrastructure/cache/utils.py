@@ -22,6 +22,7 @@ def generate_cache_key(request: QueryRequest, user: User) -> str:
         "dimensions": sorted(request.dimensions),
         "filters": [f.dict() for f in request.filters or []],
         "granularity": request.granularity,
+        "params": request.params,
         "limit": request.limit,
         "offset": request.offset,
         # Sécurité : On inclut les attributs RLS de l'utilisateur

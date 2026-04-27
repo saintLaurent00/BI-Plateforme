@@ -30,6 +30,7 @@ class MetadataRepository:
             table_name=db_dataset.table_name,
             kind=db_dataset.kind,
             sql=db_dataset.sql,
+            default_filters=db_dataset.default_filters,
             columns=[
                 DatasetColumn(
                     name=c.name,
@@ -53,20 +54,26 @@ class MetadataRepository:
 
     def create_dataset(self, dataset: Dataset):
         # Delete existing if any to allow updates (MVP style)
-        self.db.query(DatasetModel).filter(DatasetModel.name == dataset.name).delete()
+        db_ds = self.db.query(DatasetModel).filter(DatasetModel.name == dataset.name).first()
+        if db_ds:
+            self.db.query(ColumnModel).filter(ColumnModel.dataset_id == db_ds.id).delete()
+            self.db.query(MetricModel).filter(MetricModel.dataset_id == db_ds.id).delete()
+            self.db.delete(db_ds)
+            self.db.commit()
 
         db_dataset = DatasetModel(
             id=dataset.name,
             name=dataset.name,
             table_name=dataset.table_name,
             kind=dataset.kind,
-            sql=dataset.sql
+            sql=dataset.sql,
+            default_filters=dataset.default_filters
         )
         self.db.add(db_dataset)
 
-        for col in dataset.columns:
+        for i, col in enumerate(dataset.columns):
             db_col = ColumnModel(
-                id=f"{dataset.name}_{col.name}_{len(db_dataset.columns)}", # Unique ID
+                id=f"{dataset.name}_{col.name}_{i}", # Unique ID
                 dataset_id=db_dataset.id,
                 name=col.name,
                 label=col.label,
