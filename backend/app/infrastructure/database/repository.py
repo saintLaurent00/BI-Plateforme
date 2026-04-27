@@ -95,6 +95,24 @@ class MetadataRepository:
 
         self.db.commit()
 
+    def save_dashboard(self, dash_data: Dict[str, Any]):
+        dash_id = dash_data.get('id')
+        db_dash = self.db.query(DashboardModel).filter(DashboardModel.id == dash_id).first()
+        if not db_dash:
+            db_dash = DashboardModel(id=dash_id)
+            self.db.add(db_dash)
+
+        db_dash.name = dash_data.get('name', 'Untitled')
+        db_dash.dashboard_title = dash_data.get('name', 'Untitled')
+        db_dash.layout = dash_data.get('layout')
+        db_dash.position_json = dash_data.get('position_json')
+        db_dash.json_metadata = dash_data.get('json_metadata')
+        db_dash.background_color = dash_data.get('backgroundColor', '#f8fafc')
+        db_dash.published = dash_data.get('published', True)
+
+        self.db.commit()
+        return db_dash
+
     # --- User & Security Methods ---
     def get_user_by_username(self, username: str) -> Optional[User]:
         db_user = self.db.query(UserModel).filter(UserModel.username == username).first()
@@ -113,6 +131,35 @@ class MetadataRepository:
         if not db_role:
             return []
         return [p.id for p in db_role.permissions]
+
+    # --- Dashboard & Chart Methods ---
+    def get_dashboards(self) -> List[Dict[str, Any]]:
+        db_dashboards = self.db.query(DashboardModel).all()
+        return [
+            {
+                "id": d.id,
+                "dashboard_title": d.dashboard_title or d.name,
+                "published": d.published,
+                "json_metadata": d.json_metadata,
+                "position_json": d.position_json,
+                "layout": d.layout,
+                "changed_on_delta_humanized": "just now", # Logic à enrichir
+                "owners": [{"first_name": "Admin", "last_name": "Prism"}]
+            } for d in db_dashboards
+        ]
+
+    def get_charts(self) -> List[Dict[str, Any]]:
+        db_charts = self.db.query(ChartModel).all()
+        return [
+            {
+                "id": c.id,
+                "slice_name": c.slice_name or c.name,
+                "viz_type": c.viz_type or c.chart_type,
+                "datasource_name": c.dataset_name,
+                "changed_on_delta_humanized": "just now",
+                "owners": [{"first_name": "Admin", "last_name": "Prism"}]
+            } for c in db_charts
+        ]
 
     # --- Scheduling Methods ---
     def get_active_jobs(self) -> List[Any]:

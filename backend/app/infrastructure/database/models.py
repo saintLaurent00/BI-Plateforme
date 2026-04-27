@@ -112,19 +112,29 @@ class DashboardModel(Base):
 
     id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
-    layout = Column(JSON)
+    dashboard_title = Column(String)
+    published = Column(Boolean, default=False)
+    json_metadata = Column(Text)
+    position_json = Column(Text)
+    layout = Column(JSON) # Internal layout format
     background_color = Column(String, default="#f8fafc")
+    changed_on = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 class ChartModel(Base):
     __tablename__ = "charts"
 
     id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
+    slice_name = Column(String)
     dataset_name = Column(String, nullable=False)
+    datasource_id = Column(Integer)
     chart_type = Column(String, nullable=False)
+    viz_type = Column(String)
     x_axis = Column(JSON)
     y_axis = Column(JSON)
     config = Column(JSON)
+    params = Column(Text)
+    changed_on = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 # --- Proactivity & Scheduling ---
 

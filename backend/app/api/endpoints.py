@@ -6,6 +6,7 @@ Gère l'authentification, les permissions et la délégation aux services de dom
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from typing import List, Dict, Any, Optional
 from app.domain.schemas import QueryRequest, RawQueryRequest, User, Dataset
 from app.domain.datasets.service import DatasetService
 from app.domain.query.service import QueryService
@@ -105,8 +106,18 @@ async def run_query(request: QueryRequest, current_user: User = Depends(get_curr
 
 # --- Couche de compatibilité Superset (pour le frontend branche main) ---
 
+@router.post("/v1/dashboard/")
+def save_dashboard_api(request: Request, current_user: User = Depends(get_current_user)):
+    # Reçoit le JSON complexe du frontend
+    import asyncio
+    data = asyncio.run(request.json())
+    dataset_service.repo.save_dashboard(data)
+    return {"message": "Dashboard saved"}
+
 @router.get("/v1/me/")
 def get_me(current_user: User = Depends(get_current_user)):
+    from app.domain.auth.service import auth_service
+    permissions = auth_service.get_user_permissions(current_user)
     return {
         "result": {
             "username": current_user.username,
@@ -114,40 +125,25 @@ def get_me(current_user: User = Depends(get_current_user)):
             "first_name": "Laurent",
             "last_name": "O.",
             "roles": [current_user.role_id],
+            "permissions": permissions,
             "security_attributes": current_user.security_attributes
         }
     }
 
 @router.get("/v1/dashboard/")
 def get_dashboards(current_user: User = Depends(get_current_user)):
-    # Simulation de liste de dashboards depuis le repo
+    dashboards = dataset_service.repo.get_dashboards()
     return {
-        "result": [
-            {
-                "id": "dash_1",
-                "dashboard_title": "Overview Stratégique",
-                "published": True,
-                "changed_on_delta_humanized": "2h ago",
-                "owners": [{"first_name": "Laurent", "last_name": "O."}]
-            }
-        ],
-        "count": 1
+        "result": dashboards,
+        "count": len(dashboards)
     }
 
 @router.get("/v1/chart/")
 def get_charts(current_user: User = Depends(get_current_user)):
+    charts = dataset_service.repo.get_charts()
     return {
-        "result": [
-            {
-                "id": 1,
-                "slice_name": "Ventes par Catégorie",
-                "viz_type": "bar",
-                "datasource_name": "transactions",
-                "owners": [{"first_name": "Laurent", "last_name": "O."}],
-                "changed_on_delta_humanized": "1h ago"
-            }
-        ],
-        "count": 1
+        "result": charts,
+        "count": len(charts)
     }
 
 @router.get("/v1/dataset/")
