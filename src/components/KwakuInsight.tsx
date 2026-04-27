@@ -4,12 +4,13 @@ import { Sparkles, Brain, ArrowUpRight, Loader2 } from 'lucide-react';
 import { kwakuService } from '../services/kwakuService';
 
 interface KwakuInsightProps {
-  data: any[];
+  data?: any[];
   title?: string;
+  insight?: string;
 }
 
-export const KwakuInsight = ({ data, title = "Intelligence Insight" }: KwakuInsightProps) => {
-  const [insight, setInsight] = React.useState<string | null>(null);
+export const KwakuInsight = ({ data, title = "Intelligence Insight", insight: staticInsight }: KwakuInsightProps) => {
+  const [insight, setInsight] = React.useState<string | null>(staticInsight || null);
   const [isLoading, setIsLoading] = React.useState(false);
 
   const getInsight = async () => {
@@ -26,12 +27,14 @@ export const KwakuInsight = ({ data, title = "Intelligence Insight" }: KwakuInsi
   };
 
   React.useEffect(() => {
-    if (data && data.length > 0) {
+    if (staticInsight) {
+        setInsight(staticInsight);
+    } else if (data && data.length > 0) {
       getInsight();
     }
-  }, [data]);
+  }, [data, staticInsight]);
 
-  if (!data || data.length === 0) return null;
+  if (!staticInsight && (!data || data.length === 0)) return null;
 
   return (
     <motion.div 

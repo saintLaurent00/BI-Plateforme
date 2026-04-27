@@ -45,20 +45,40 @@ export interface Chart {
   params?: string;
 }
 
+export interface DatasetColumn {
+  name: string;
+  type: string;
+  displayName?: string;
+  description?: string;
+  isCalculated?: boolean;
+  expression?: string;
+  isFiltered?: boolean;
+  isGroupable?: boolean;
+}
+
+export interface DatasetMetric {
+  name: string;
+  expression: string;
+  displayName?: string;
+  description?: string;
+}
+
 export interface Dataset {
   id: number | string;
   table_name: string;
-  name?: string; // Alias
+  name?: string; 
   kind: 'physical' | 'virtual';
-  type?: 'Physical' | 'Virtual'; // Alias
+  schema?: string;
+  sql?: string;
   database: {
     id: number;
     database_name: string;
   };
   healthScore?: number;
-  columns?: any[];
-  metrics?: any[];
+  columns: DatasetColumn[];
+  metrics: DatasetMetric[];
   owner?: string;
+  lastModified?: string;
 }
 
 export interface DatabaseConnection {

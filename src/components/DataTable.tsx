@@ -30,9 +30,9 @@ export const DataTable: React.FC<DataTableProps> = ({ data, columns }) => {
       <table className="w-full text-left border-collapse min-w-max">
         <thead className="sticky top-0 bg-slate-50 z-10">
           <tr>
-            {columns.map((col) => (
+            {columns.map((col, index) => (
               <th 
-                key={col}
+                key={`${col}-${index}`}
                 onClick={() => requestSort(col)}
                 className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors"
               >
@@ -49,8 +49,8 @@ export const DataTable: React.FC<DataTableProps> = ({ data, columns }) => {
         <tbody className="divide-y divide-slate-100">
           {sortedData.map((row, i) => (
             <tr key={i} className="hover:bg-slate-50 transition-colors">
-              {columns.map((col) => (
-                <td key={col} className="px-4 py-2.5 text-sm text-slate-600 border-b border-slate-100">
+              {columns.map((col, index) => (
+                <td key={`${col}-${index}`} className="px-4 py-2.5 text-sm text-slate-600 border-b border-slate-100">
                   {typeof row[col] === 'object' ? JSON.stringify(row[col]) : String(row[col])}
                 </td>
               ))}

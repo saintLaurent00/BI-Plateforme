@@ -91,9 +91,10 @@ export const FormTextarea = React.forwardRef<HTMLTextAreaElement, React.Textarea
   )
 );
 
-export const FormSection = ({ label, children, className }: { label?: string; children: React.ReactNode; className?: string }) => (
+export const FormSection = ({ label, description, children, className }: { label?: string; description?: string; children: React.ReactNode; className?: string }) => (
   <div className={localCn("space-y-2", className)}>
     {label && <FormLabel>{label}</FormLabel>}
+    {description && <p className="text-[10px] text-muted-foreground px-1 pb-1">{description}</p>}
     {children}
   </div>
 );

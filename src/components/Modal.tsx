@@ -7,9 +7,24 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  maxWidth?: string;
 }
 
-export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
+export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'lg' }: ModalProps) => {
+  const maxWidthClass = {
+    'sm': 'max-w-sm',
+    'md': 'max-w-md',
+    'lg': 'max-w-lg',
+    'xl': 'max-w-xl',
+    '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
+    '4xl': 'max-w-4xl',
+    '5xl': 'max-w-5xl',
+    '6xl': 'max-w-6xl',
+    '7xl': 'max-w-7xl',
+    'full': 'max-w-full'
+  }[maxWidth] || 'max-w-lg';
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -29,7 +44,7 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-lg bg-white rounded-3xl shadow-2xl shadow-slate-900/20 overflow-hidden pointer-events-auto"
+              className={`w-full ${maxWidthClass} bg-white rounded-3xl shadow-2xl shadow-slate-900/20 overflow-hidden pointer-events-auto`}
             >
               {/* Header */}
               <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">

@@ -1,12 +1,10 @@
-import axios, { AxiosInstance } from 'axios';
+import axios from 'axios';
 
 const SUPERSET_BASE_URL = import.meta.env.VITE_SUPERSET_BASE_URL || '';
-const CSRF_TOKEN_ENDPOINT = '/api/v1/security/csrf_token/';
-const MUTATING_METHODS = ['post', 'put', 'delete', 'patch'];
 
 export const isConfigured = !!SUPERSET_BASE_URL && SUPERSET_BASE_URL.startsWith('http');
 
-export const supersetClient: AxiosInstance = axios.create({
+export const supersetClient = axios.create({
   baseURL: SUPERSET_BASE_URL,
   withCredentials: true,
   headers: {
@@ -16,21 +14,20 @@ export const supersetClient: AxiosInstance = axios.create({
 
 let csrfToken: string | null = null;
 
-export const fetchCsrfToken = async (): Promise<string | null> => {
+export const fetchCsrfToken = async () => {
   try {
-    const response = await supersetClient.get(CSRF_TOKEN_ENDPOINT);
+    const response = await supersetClient.get('/api/v1/security/csrf_token/');
     csrfToken = response.data.result;
     return csrfToken;
   } catch (error) {
-    console.error('CSRF token fetch failed:', error);
+    console.error('Failed to fetch CSRF token:', error);
     return null;
   }
 };
 
 supersetClient.interceptors.request.use(async (config) => {
-  const method = config.method?.toLowerCase() || '';
-
-  if (MUTATING_METHODS.includes(method)) {
+  // Only add CSRF token for mutating requests
+  if (['post', 'put', 'delete', 'patch'].includes(config.method?.toLowerCase() || '')) {
     if (!csrfToken) {
       await fetchCsrfToken();
     }
@@ -39,13 +36,16 @@ supersetClient.interceptors.request.use(async (config) => {
     }
   }
   return config;
-}, (error) => Promise.reject(error));
+}, (error) => {
+  return Promise.reject(error);
+});
 
 supersetClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-
+    
+    // Handle CSRF token expiration (usually 401 or 403 depending on config)
     if (error.response?.status === 403 && !originalRequest._retry) {
       originalRequest._retry = true;
       const newToken = await fetchCsrfToken();
@@ -54,7 +54,7 @@ supersetClient.interceptors.response.use(
         return supersetClient(originalRequest);
       }
     }
-
+    
     return Promise.reject(error);
   }
 );

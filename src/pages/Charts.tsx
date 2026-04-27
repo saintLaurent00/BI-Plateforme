@@ -17,9 +17,14 @@ import {
   PieChart,
   LineChart,
   Map as MapIcon,
-  Activity
+  Activity,
+  Trash2,
+  Download,
+  Copy,
+  Share2
 } from 'lucide-react';
-import { getCharts as getLocalCharts, getChart as getLocalChart } from '../lib/db';
+import { getCharts as getLocalCharts, getChart as getLocalChart, executeQuery } from '../lib/db';
+import Papa from 'papaparse';
 import { supersetService } from '../services/supersetService';
 import { isConfigured as isSupersetConfigured } from '../lib/supersetClient';
 import { ChartCard } from '../components/cards/ChartCard';
@@ -27,6 +32,7 @@ import { Badge } from '../components/Badge';
 import { MiniChart } from '../components/cards/MiniChart';
 import { cn } from '../lib/utils';
 import { AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 
 const FilterSection = ({ title, options }: any) => (
   <div className="space-y-4">
@@ -85,27 +91,68 @@ export const Charts = () => {
     }
   };
 
-  const handleChartClick = async (chart: any) => {
+  const handleChartClick = (chart: any) => {
+    navigate(`/chart-editor/${chart.id}`);
+  };
+
+  const handleChartSelect = async (chart: any) => {
     setSelectedChart(chart);
     setIsDetailsLoading(true);
     try {
-      // Fetch full details if it's a Superset chart and configured
-      if (typeof chart.id === 'number' && isSupersetConfigured) {
-        const fullChart = await supersetService.getChart(chart.id);
+      const fullId = typeof chart.id === 'number' ? String(chart.id) : chart.id;
+      const fullChart = await getLocalChart(fullId);
+      if (fullChart) {
         setSelectedChart(fullChart);
-      } else {
-        const fullId = typeof chart.id === 'number' ? String(chart.id) : chart.id;
-        try {
-          const fullChart = await getLocalChart(fullId);
-          setSelectedChart(fullChart);
-        } catch (e) {
-          // Keep the shallow chart data if local not found
-        }
       }
     } catch (err) {
-      // Quietly continue with existing data
+      console.error('Failed to load full chart details:', err);
     } finally {
       setIsDetailsLoading(false);
+    }
+  };
+
+  const handleExportCSV = async (chart: any) => {
+    try {
+      toast.loading("Extraction des données...", { id: 'export-csv' });
+      const xAxis = chart.x_axis?.[0];
+      const yAxes = chart.y_axis?.map((y: any) => y.column);
+      
+      if (!xAxis || !yAxes) {
+        toast.error("Données insuffisantes pour l'exportation", { id: 'export-csv' });
+        return;
+      }
+
+      const sql = `SELECT "${xAxis}", ${yAxes.map((y: string) => `SUM("${y}") as "${y}"`).join(', ')} FROM "${chart.table_name}" GROUP BY "${xAxis}" LIMIT 5000`;
+      const data = await executeQuery(sql);
+      
+      const csv = Papa.unparse(data);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `${chart.name || 'chart'}_data.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("Données exportées avec succès", { id: 'export-csv' });
+    } catch (err) {
+      console.error('CSV Export failed:', err);
+      toast.error("L'exportation CSV a échoué", { id: 'export-csv' });
+    }
+  };
+
+  const handleDeleteChart = async (id: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette visualisation stratégique ?')) return;
+    
+    try {
+      const { initDatabase } = await import('../lib/db');
+      const { db } = await initDatabase();
+      db.run(`DELETE FROM charts WHERE id = ?`, [id]);
+      toast.success("Graphique supprimé");
+      setSelectedChart(null);
+      loadCharts();
+    } catch (err) {
+      toast.error("Erreur lors de la suppression");
     }
   };
 
@@ -230,7 +277,7 @@ export const Charts = () => {
                   key={chart.id} 
                   chart={chart} 
                   view={view} 
-                  onClick={() => handleChartClick(chart)}
+                  onClick={() => handleChartSelect(chart)}
                 />
               ))}
             </div>
@@ -256,7 +303,7 @@ export const Charts = () => {
                     <h3 className="font-bold text-lg tracking-tight truncate max-w-[280px]">
                       {selectedChart.slice_name || selectedChart.name || selectedChart.title}
                     </h3>
-                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">Asset Metadata</p>
+                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em]">Métadonnées de l'Atout</p>
                   </div>
                 </div>
                 <button 
@@ -279,9 +326,15 @@ export const Charts = () => {
                 ) : (
                   <>
                     {/* Visual Preview */}
-                    <div className="h-64 bg-muted/30 rounded-3xl border border-border/50 flex items-center justify-center relative group overflow-hidden">
+                    <div className="h-64 bg-muted/30 rounded-3xl border border-border/50 flex items-center justify-center relative group overflow-hidden cursor-pointer" onClick={() => handleChartClick(selectedChart)}>
                       <div className="w-full h-full p-8 opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
                         <MiniChart type={selectedChart.viz_type || selectedChart.chart_type} />
+                      </div>
+                      <div className="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="bg-background/90 backdrop-blur-md px-4 py-2 rounded-xl border border-accent/20 shadow-xl flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform">
+                          <ExternalLink className="w-4 h-4 text-accent" />
+                          <span className="text-xs font-bold text-accent">Ouvrir l'éditeur</span>
+                        </div>
                       </div>
                       <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-background to-transparent">
                         <Badge variant="info" className="bg-accent/10 text-accent border-accent/20 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
@@ -298,13 +351,13 @@ export const Charts = () => {
                           <span className="text-[10px] font-black uppercase tracking-widest">Dataset</span>
                         </div>
                         <p className="font-bold text-sm tracking-tight text-foreground/90 break-words">
-                          {selectedChart.datasource_name || selectedChart.table_name || selectedChart.dataset || 'Unknown'}
+                          {selectedChart.datasource_name || selectedChart.table_name || selectedChart.dataset || 'Dataset par défaut'}
                         </p>
                       </div>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Calendar className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-black uppercase tracking-widest">Modified</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest">Modifié</span>
                         </div>
                         <p className="font-bold text-sm tracking-tight text-foreground/90">
                           {selectedChart.changed_on_delta_humanized || (selectedChart.created_at ? new Date(selectedChart.created_at).toLocaleDateString() : 'N/A')}
@@ -313,7 +366,7 @@ export const Charts = () => {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <UserIcon className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-black uppercase tracking-widest">Owner</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest">Propriétaire</span>
                         </div>
                         <p className="font-bold text-sm tracking-tight text-foreground/90">
                           {selectedChart.owner || 'System'}
@@ -330,28 +383,76 @@ export const Charts = () => {
                       </div>
                     </div>
 
+                    {/* Axes Configuration */}
+                    {(selectedChart.x_axis || selectedChart.y_axis) && (
+                      <div className="space-y-6 pt-10 border-t border-border">
+                        <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Structure des Données</h4>
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="p-4 bg-muted/30 rounded-2xl border border-border/50">
+                            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Axe Horizontal (X)</span>
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-accent/10 text-accent border-accent/20">Dimension</Badge>
+                              <span className="text-sm font-bold">{selectedChart.x_axis?.[0] || 'N/A'}</span>
+                            </div>
+                          </div>
+                          <div className="p-4 bg-muted/30 rounded-2xl border border-border/50">
+                            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest block mb-2">Métriques (Y)</span>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedChart.y_axis?.map((y: any, idx: number) => (
+                                <Badge key={idx} variant="outline" className="border-accent/40 text-accent font-bold">
+                                  {y.agg}({y.column})
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Description or Comments */}
                     <div className="space-y-4 pt-10 border-t border-border">
-                      <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Context & Intelligence</h4>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Contexte & Intelligence</h4>
+                        <button className="text-[9px] font-bold text-accent px-2 py-1 bg-accent/10 rounded-md">AI Insights</button>
+                      </div>
                       <p className="text-sm text-muted-foreground leading-relaxed font-light italic">
-                        {selectedChart.description || "No strategic description provided for this visualization. Use the editor to add context for better team collaboration."}
+                        {selectedChart.description || "Aucune description stratégique fournie pour cette visualisation. Utilisez l'éditeur pour ajouter du contexte et améliorer la collaboration."}
                       </p>
                     </div>
 
                     {/* Quick Actions */}
-                    <div className="space-y-4 pt-10 border-t border-border">
-                      <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Actions</h4>
-                      <div className="grid grid-cols-1 gap-3">
+                    <div className="space-y-4 pt-10 border-t border-border mb-8">
+                      <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Actions de Workflow</h4>
+                      <div className="grid grid-cols-2 gap-3">
                         <button 
-                          onClick={() => navigate(`/chart/edit/${selectedChart.id}`)}
-                          className="w-full flex items-center justify-between p-4 bg-muted hover:bg-accent hover:text-accent-foreground rounded-2xl transition-all group"
+                          onClick={() => navigate(`/chart-editor/${selectedChart.id}`)}
+                          className="flex items-center gap-3 p-4 bg-accent text-accent-foreground rounded-2xl transition-all hover:shadow-lg hover:shadow-accent/20 grow"
                         >
-                          <span className="text-sm font-bold tracking-tight">Open in Editor</span>
-                          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                          <Copy className="w-4 h-4" />
+                          <span className="text-xs font-bold">Éditer</span>
                         </button>
-                        <button className="w-full flex items-center justify-between p-4 bg-muted hover:bg-accent hover:text-accent-foreground rounded-2xl transition-all group">
-                          <span className="text-sm font-bold tracking-tight">Export Visual Asset</span>
-                          <ExternalLink className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                        <button 
+                          onClick={() => handleExportCSV(selectedChart)}
+                          className="flex items-center gap-3 p-4 bg-muted hover:bg-muted/80 rounded-2xl transition-all"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span className="text-xs font-bold">CSV</span>
+                        </button>
+                        <button 
+                          onClick={() => {
+                            toast.success("Publication...", { description: "Le graphique est en cours de déploiement sur le CDN de production." });
+                          }}
+                          className="flex items-center gap-3 p-4 bg-muted hover:bg-muted/80 rounded-2xl transition-all"
+                        >
+                          <Share2 className="w-4 h-4" />
+                          <span className="text-xs font-bold">Partager</span>
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteChart(selectedChart.id)}
+                          className="flex items-center gap-3 p-4 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-2xl transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span className="text-xs font-bold">Supprimer</span>
                         </button>
                       </div>
                     </div>

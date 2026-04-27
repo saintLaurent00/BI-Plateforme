@@ -96,6 +96,7 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
   ];
 
   const adminItems = [
+    { to: "/admin?section=overview", icon: Activity, label: "Overview" },
     { to: "/admin?section=users", icon: Users, label: "Users" },
     { to: "/admin?section=groups", icon: Users2, label: "Groups" },
     { to: "/admin?section=roles", icon: ShieldCheck, label: "Roles" },
@@ -104,7 +105,7 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
     { to: "/admin?section=audit", icon: Activity, label: "Governance & Screening" },
     { to: "/admin?section=auth", icon: Key, label: "Authentication" },
     { to: "/admin?section=screening", icon: ShieldCheck, label: "Screening Dashboard" },
-    { to: "/admin?section=sources", icon: Database, label: "Data Sources" },
+    { to: "/admin?section=sources", icon: Database, label: "Infrastructure" },
     { to: "/admin?section=security", icon: ShieldAlert, label: "Security" },
     { to: "/admin?section=reports", icon: Bell, label: "Alerts & Reports" },
     { to: "/admin?section=settings", icon: Settings, label: "Settings" },

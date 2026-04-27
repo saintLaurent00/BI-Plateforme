@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ChevronLeft, 
+  ChevronRight,
   Save, 
   Plus, 
   Layout as LayoutIcon, 
@@ -36,6 +37,8 @@ import {
   createItem
 } from '../lib/dashboardLayout';
 import { cn } from '../lib/utils';
+
+import { Stepper } from '../components/Stepper';
 
 const ITEM_TYPE = 'DASHBOARD_ITEM';
 
@@ -113,26 +116,15 @@ const DropZone = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className={cn(
-              "absolute inset-0 transition-colors duration-200 rounded-full",
-              isOver 
-                ? (canDrop ? "bg-accent/30" : "bg-rose-500/20") 
-                : (canDrop ? "bg-accent/5" : "transparent")
+              "absolute inset-0 transition-all duration-200 rounded-2xl border-2 border-dashed border-accent/40 bg-accent/5",
+              isOver ? "bg-accent/10 border-accent scale-[0.98]" : "transparent"
             )}
           >
             {isOver && canDrop && (
-              <motion.div 
-                layoutId="drop-indicator"
-                className={cn(
-                  "absolute bg-accent shadow-[0_0_15px_rgba(0,0,0,0.1)]",
-                  horizontal 
-                    ? "left-1/2 -translate-x-1/2 top-4 bottom-4 w-1 rounded-full" 
-                    : "top-1/2 -translate-y-1/2 left-4 right-4 h-1 rounded-full"
-                )}
-              />
-            )}
-            {isOver && !canDrop && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <X className="w-3 h-3 text-rose-500 opacity-50" />
+                <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center animate-pulse">
+                  <Plus className="w-5 h-5 text-accent" />
+                </div>
               </div>
             )}
           </motion.div>
@@ -243,36 +235,38 @@ const DashboardItem = ({
       />
       
       <div className={cn(
-        "group relative flex-1 border transition-all duration-300",
+        "group relative flex-1 border transition-all duration-300 backdrop-blur-xl",
         item.type === 'row' || item.type === 'column' || item.type === 'tabs' 
-          ? "bg-muted/30 border-border p-4 rounded-xl" 
-          : "bg-background border-border p-6 rounded-xl hover:border-accent hover:shadow-xl hover:shadow-accent/5",
+          ? "bg-muted/10 border-border/40 p-4 rounded-3xl" 
+          : "bg-background/60 border-border/50 p-6 rounded-[32px] hover:border-accent hover:shadow-2xl hover:shadow-accent/10 hover:-translate-y-0.5",
       )}
-      style={{ height: (item.type === 'chart' || item.type === 'row' || item.type === 'column') ? (item.meta?.height || 300) : undefined }}
+      style={{ 
+        height: (item.type === 'chart' || item.type === 'row' || item.type === 'column') ? (item.meta?.height || 300) : undefined,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.05)'
+      }}
       >
+        {/* Design Accents from BI code */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent/50 via-accent/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-t-full" />
+
         {/* Controls */}
-        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
-          <button ref={drag as any} className="p-1.5 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing bg-background border border-border rounded-lg shadow-sm">
-            <GripVertical className="w-3.5 h-3.5" />
+        <div className="absolute top-4 right-4 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all z-50">
+          <button ref={drag as any} className="p-2 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing bg-background/80 backdrop-blur-md border border-border/50 rounded-xl shadow-lg ring-1 ring-black/5">
+            <GripVertical className="w-4 h-4" />
           </button>
-          <button onClick={() => onRemove(item.id)} className="p-1.5 text-muted-foreground hover:text-rose-500 bg-background border border-border rounded-lg shadow-sm">
-            <Trash2 className="w-3.5 h-3.5" />
+          <button onClick={() => onRemove(item.id)} className="p-2 text-muted-foreground hover:text-rose-500 bg-background/80 backdrop-blur-md border border-border/50 rounded-xl shadow-lg ring-1 ring-black/5">
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Resize Handles */}
-        <div 
-          className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize opacity-0 group-hover:opacity-100 hover:bg-accent/10 transition-all z-40"
-          onMouseDown={(e) => handleResizeStart(e, 'h')}
-        />
-        <div 
-          className="absolute bottom-0 left-0 right-0 h-1.5 cursor-row-resize opacity-0 group-hover:opacity-100 hover:bg-accent/10 transition-all z-40"
-          onMouseDown={(e) => handleResizeStart(e, 'v')}
-        />
-        <div 
-          className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize opacity-0 group-hover:opacity-100 z-50"
-          onMouseDown={(e) => handleResizeStart(e, 'v')} // Using v for now, or could implement dual
-        />
+        {/* Resize Handle - Professional SE style */}
+        {(item.type === 'chart' || item.type === 'row' || item.type === 'column') && (
+          <div 
+            className="absolute bottom-2 right-2 w-6 h-6 cursor-se-resize flex items-end justify-end p-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-50"
+            onMouseDown={(e) => handleResizeStart(e, 'v')}
+          >
+            <div className="w-3 h-3 border-r-2 border-b-2 border-muted-foreground/30 rounded-br-sm group-hover:border-accent/50 transition-colors" />
+          </div>
+        )}
 
         {/* Content */}
         {item.type === 'header' && (
@@ -426,6 +420,12 @@ const DashboardEditorInner = () => {
   const [dashboardName, setDashboardName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'elements' | 'charts'>('elements');
+  const [step, setStep] = useState(1);
+
+  const steps = [
+    { id: 1, label: 'Informations' },
+    { id: 2, label: 'Design' }
+  ];
 
   useEffect(() => {
     loadData();
@@ -501,114 +501,211 @@ const DashboardEditorInner = () => {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden text-foreground">
-      {/* Sidebar */}
-      <aside className="w-72 bg-background border-r border-border flex flex-col shadow-sm">
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-8">
-            <button onClick={() => navigate('/dashboards')} className="p-2 hover:bg-muted rounded-lg transition-colors">
-              <ChevronLeft className="w-5 h-5 text-muted-foreground" />
-            </button>
-            <h1 className="text-xl font-bold text-foreground">Éditeur</h1>
-          </div>
-
-          <div className="flex p-1 bg-muted/30 rounded-xl mb-6 border border-border">
-            <button 
-              onClick={() => setSidebarTab('elements')}
-              className={cn(
-                "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
-                sidebarTab === 'elements' ? "bg-background text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Éléments
-            </button>
-            <button 
-              onClick={() => setSidebarTab('charts')}
-              className={cn(
-                "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
-                sidebarTab === 'charts' ? "bg-background text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Graphiques
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
-          {sidebarTab === 'elements' ? (
-            <div className="grid grid-cols-2 gap-3">
-              {ELEMENT_TYPES.map((el) => (
-                <SidebarItem key={el.type} type={el.type} label={el.label} icon={el.icon} />
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {charts.map((chart) => (
-                <SidebarChartItem key={chart.id} chart={chart} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="p-6 border-t border-border">
-          <button 
-            onClick={handleSave}
-            disabled={isSaving || !dashboardName}
-            className="btn-primary w-full py-3.5"
+      {/* Sidebar - Only visible in Design Step */}
+      <AnimatePresence>
+        {step === 2 && (
+          <motion.aside 
+            initial={{ x: -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -300, opacity: 0 }}
+            className="w-72 bg-background border-r border-border flex flex-col shadow-sm z-20"
           >
-            <Save className="w-4 h-4" />
-            {isSaving ? 'Enregistrement...' : 'Enregistrer'}
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Canvas */}
-      <main className="flex-1 flex flex-col min-w-0 bg-muted/10 overflow-hidden relative">
-        <header className="h-16 bg-background border-b border-border flex items-center justify-between px-8 shrink-0">
-          <input 
-            type="text" 
-            value={dashboardName}
-            onChange={(e) => setDashboardName(e.target.value)}
-            className="text-lg font-bold bg-transparent border-none focus:ring-0 p-0 text-foreground w-96"
-            placeholder="Nom du tableau de bord..."
-          />
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] font-bold text-muted-foreground h-auto bg-muted px-2 py-1 rounded border border-border">V2.0 ALPHA</span>
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
-          <div className="max-w-6xl mx-auto pb-64">
-            {layout[DASHBOARD_GRID_ID]?.children.length === 0 ? (
-              <div className="min-h-[400px] border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center text-muted-foreground gap-4 bg-background/50">
-                <Plus className="w-12 h-12 opacity-20" />
-                <p className="text-sm font-medium">Déposez des éléments ici pour commencer</p>
-                <DropZone parentId={DASHBOARD_GRID_ID} index={0} onDrop={handleMoveItem} layout={layout} />
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-8">
+                <button onClick={() => setStep(1)} className="p-2 hover:bg-muted rounded-lg transition-colors">
+                  <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+                </button>
+                <h1 className="text-xl font-bold text-foreground">Éditeur</h1>
               </div>
+
+              <div className="flex p-1 bg-muted/30 rounded-xl mb-6 border border-border">
+                <button 
+                  onClick={() => setSidebarTab('elements')}
+                  className={cn(
+                    "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
+                    sidebarTab === 'elements' ? "bg-background text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Éléments
+                </button>
+                <button 
+                  onClick={() => setSidebarTab('charts')}
+                  className={cn(
+                    "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
+                    sidebarTab === 'charts' ? "bg-background text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Graphiques
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
+              {sidebarTab === 'elements' ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {ELEMENT_TYPES.map((el) => (
+                    <SidebarItem key={el.type} type={el.type} label={el.label} icon={el.icon} />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {charts.map((chart) => (
+                    <SidebarChartItem key={chart.id} chart={chart} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-border">
+              <button 
+                onClick={handleSave}
+                disabled={isSaving || !dashboardName}
+                className="btn-primary w-full py-3.5"
+              >
+                <Save className="w-4 h-4" />
+                {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+              </button>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col min-w-0 bg-muted/10 overflow-hidden relative">
+        <header className="h-16 bg-background border-b border-border flex items-center justify-between px-8 shrink-0 z-30">
+          <div className="flex items-center gap-4">
+            {step === 2 && (
+              <h1 className="text-sm font-bold text-foreground truncate max-w-[200px]">{dashboardName}</h1>
+            )}
+            {step === 1 && (
+               <button onClick={() => navigate('/dashboards')} className="p-2 hover:bg-muted rounded-lg transition-colors">
+                <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+
+          <Stepper steps={steps} currentStep={step} className="max-w-md hidden lg:block" />
+
+          <div className="flex items-center gap-4">
+            {step === 1 ? (
+              <button 
+                disabled={!dashboardName}
+                onClick={() => setStep(2)}
+                className="btn-primary px-6 py-2"
+              >
+                Passer au Design
+              </button>
             ) : (
-              <div className="flex flex-col gap-2">
-                {layout[DASHBOARD_GRID_ID]?.children.map((childId, index) => (
-                  <DashboardItem 
-                    key={childId}
-                    id={childId}
-                    index={index}
-                    layout={layout}
-                    onDrop={handleMoveItem}
-                    onRemove={removeElement}
-                    onUpdate={updateElement}
-                    onUpdateMeta={updateElementMeta}
-                  />
-                ))}
-                <DropZone parentId={DASHBOARD_GRID_ID} index={layout[DASHBOARD_GRID_ID]?.children.length || 0} onDrop={handleMoveItem} layout={layout} />
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-bold text-muted-foreground h-auto bg-muted px-2 py-1 rounded border border-border">MODE DESIGN</span>
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </div>
             )}
           </div>
-        </div>
+        </header>
 
-        {/* Brand Overlay */}
-        <div className="absolute bottom-10 right-10 flex flex-col items-end pointer-events-none opacity-5">
-          <span className="text-6xl font-black text-foreground leading-none">KWAKU</span>
-          <span className="text-[10px] font-mono tracking-[0.5em] text-foreground mt-2 italic">INTELLIGENCE_ENGINE</span>
+        <div className="flex-1 overflow-y-auto relative custom-scrollbar bg-muted/10">
+          <AnimatePresence mode="wait">
+            {step === 1 ? (
+              <motion.div 
+                key="step1"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.05 }}
+                className="h-full flex items-center justify-center p-12"
+              >
+                <div className="max-w-xl w-full bg-background border border-border shadow-2xl rounded-[48px] p-16 space-y-12 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 rounded-full -translate-y-32 translate-x-32 blur-3xl group-hover:bg-accent/10 transition-colors" />
+                  
+                  <div className="space-y-4 relative z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-accent/10 flex items-center justify-center">
+                        <LayoutIcon className="w-5 h-5 text-accent" />
+                      </div>
+                      <Badge variant="info" className="text-[10px] uppercase font-black tracking-widest px-3">Initialisation</Badge>
+                    </div>
+                    <h2 className="text-4xl font-black text-foreground tracking-tight leading-[0.9]">Identité du Rapport</h2>
+                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">Définissez le nom de votre tableau de bord stratégique pour commencer la phase de conception.</p>
+                  </div>
+
+                  <div className="space-y-6 relative z-10">
+                    <div className="group">
+                      <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] block mb-3 ml-1 transition-colors group-focus-within:text-accent">Désignation</label>
+                      <input 
+                        type="text" 
+                        value={dashboardName}
+                        onChange={(e) => setDashboardName(e.target.value)}
+                        className="w-full text-2xl font-bold bg-muted border border-border rounded-3xl px-8 py-5 focus:bg-background focus:ring-8 focus:ring-accent/5 focus:border-accent outline-none transition-all placeholder:text-muted-foreground/20"
+                        placeholder="Ex: Analyse Executive Q1..."
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 relative z-10">
+                    <button 
+                      disabled={!dashboardName}
+                      onClick={() => setStep(2)}
+                      className="w-full btn-primary py-5 text-sm font-black uppercase tracking-[0.2em] shadow-2xl shadow-accent/20 transition-all active:scale-95 disabled:opacity-30 flex items-center justify-center gap-3"
+                    >
+                      Configurer le Design
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <p className="text-[10px] text-center text-muted-foreground/40 font-bold uppercase tracking-widest mt-6">Propulsé par le moteur de rendu Prism D3</p>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="p-12 min-h-full"
+              >
+                <div className="max-w-7xl mx-auto pb-64">
+                  {layout[DASHBOARD_GRID_ID]?.children.length === 0 ? (
+                    <div className="min-h-[500px] border-2 border-dashed border-border/40 rounded-[48px] flex flex-col items-center justify-center text-muted-foreground gap-6 bg-background shadow-inner transition-all hover:bg-muted/5 group">
+                      <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                        <Plus className="w-10 h-10 opacity-10" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-black uppercase tracking-[0.3em] opacity-40">Espace de travail vide</p>
+                        <p className="text-xs text-muted-foreground/60 mt-2 font-medium">Glissez des éléments depuis la barre latérale</p>
+                      </div>
+                      <DropZone parentId={DASHBOARD_GRID_ID} index={0} onDrop={handleMoveItem} layout={layout} />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-4 relative">
+                      {/* Vertical Grid Lines for visual rhythm */}
+                      <div className="absolute inset-y-0 left-0 right-0 grid grid-cols-12 gap-4 pointer-events-none opacity-[0.02]">
+                        {[...Array(12)].map((_, i) => <div key={i} className="border-x border-foreground" />)}
+                      </div>
+                      
+                      {layout[DASHBOARD_GRID_ID]?.children.map((childId, index) => (
+                        <DashboardItem 
+                          key={childId}
+                          id={childId}
+                          index={index}
+                          layout={layout}
+                          onDrop={handleMoveItem}
+                          onRemove={removeElement}
+                          onUpdate={updateElement}
+                          onUpdateMeta={updateElementMeta}
+                        />
+                      ))}
+                      <DropZone parentId={DASHBOARD_GRID_ID} index={layout[DASHBOARD_GRID_ID]?.children.length || 0} onDrop={handleMoveItem} layout={layout} />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Brand Overlay */}
+          <div className="absolute bottom-10 right-10 flex flex-col items-end pointer-events-none opacity-[0.03]">
+            <span className="text-8xl font-black text-foreground leading-none">KWAKU</span>
+            <span className="text-xs font-mono tracking-[1em] text-foreground mt-4 italic">SYSTEM_CORE_V2</span>
+          </div>
         </div>
       </main>
     </div>

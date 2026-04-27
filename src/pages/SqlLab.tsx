@@ -28,6 +28,7 @@ import {
   FormLabel,
   FormButtonGroup
 } from '../components/FormElements';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { executeQuery, getTables, getTableSchema, saveQuery, getSavedQueries } from '../lib/db';
 import { supersetService } from '../services/supersetService';
 import { isConfigured as isSupersetConfigured } from '../lib/supersetClient';
@@ -68,12 +69,16 @@ const SchemaFolder = ({ title, children, defaultOpen = false }: any) => {
 };
 
 export const SqlLab = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isCreateMode = searchParams.get('mode') === 'create_dataset';
+  
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [saveType, setSaveType] = React.useState<'query' | 'dataset'>('query');
+  const [saveType, setSaveType] = React.useState<'query' | 'dataset'>(isCreateMode ? 'dataset' : 'query');
   const [queryInfo, setQueryInfo] = React.useState({ name: '', description: '' });
   const [activeTab, setActiveTab] = React.useState<'results' | 'history'>('results');
   const [history, setHistory] = React.useState<any[]>([]);
-  const [sql, setSql] = React.useState("SELECT * FROM sqlite_master;");
+  const [sql, setSql] = React.useState(isCreateMode ? "-- Écrivez votre requête de dataset ici\nSELECT * FROM sales_data LIMIT 100;" : "SELECT * FROM sqlite_master;");
   const [results, setResults] = React.useState<any[]>([]);
   const [tables, setTables] = React.useState<string[]>([]);
   const [savedQueries, setSavedQueries] = React.useState<any[]>([]);
@@ -229,15 +234,28 @@ export const SqlLab = () => {
 
     try {
       const id = activeQueryId || crypto.randomUUID();
-      await saveQuery({
-        id,
-        name: queryInfo.name,
-        description: queryInfo.description,
-        sql
-      });
+      if (saveType === 'dataset') {
+          // In a real app, this would call Superset API
+          await supersetService.createDataset({
+              table_name: queryInfo.name,
+              database: selectedDatabase.id === 'local' ? 1 : selectedDatabase.id,
+              sql: sql
+          });
+      } else {
+          await saveQuery({
+            id,
+            name: queryInfo.name,
+            description: queryInfo.description,
+            sql
+          });
+      }
       setIsModalOpen(false);
       loadSavedQueries();
-      setActiveQueryId(id);
+      if (saveType === 'dataset') {
+          navigate('/datasets');
+      } else {
+          setActiveQueryId(id);
+      }
     } catch (err) {
       console.error('Failed to save query:', err);
     }
@@ -364,28 +382,41 @@ export const SqlLab = () => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {isCreateMode && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-accent/10 border border-accent/20 rounded-lg mr-4 animate-pulse">
+                    <span className="text-[10px] font-black uppercase text-accent tracking-widest">Mode Création Dataset</span>
+                </div>
+            )}
             <button 
               onClick={() => handleRun()}
               disabled={isExecuting}
               className="btn-primary flex items-center gap-2 px-8 py-2.5 shadow-lg shadow-accent/20"
             >
               <Play className={cn("w-4 h-4", isExecuting && "animate-spin")} />
-              {isExecuting ? 'Exécution...' : 'Exécuter'}
+              {isExecuting ? 'Exécution' : 'Exécuter'}
             </button>
             <div className="h-8 w-px bg-border mx-2"></div>
-            <button 
-              onClick={() => { setSaveType('query'); setIsModalOpen(true); }}
-              className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
-              title="Sauvegarder"
-            >
-              <Save className="w-4.5 h-4.5" />
-            </button>
+            {!isCreateMode && (
+                <button 
+                onClick={() => { setSaveType('query'); setIsModalOpen(true); }}
+                className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
+                title="Sauvegarder"
+                >
+                <Save className="w-4.5 h-4.5" />
+                </button>
+            )}
             <button 
               onClick={() => { setSaveType('dataset'); setIsModalOpen(true); }}
-              className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all",
+                isCreateMode 
+                    ? "bg-accent text-accent-foreground font-bold shadow-lg shadow-accent/20" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )}
               title="Publier en Dataset"
             >
               <Database className="w-4.5 h-4.5" />
+              {isCreateMode && <span className="text-[10px] font-black uppercase tracking-widest">Finaliser le Dataset</span>}
             </button>
           </div>
         </div>
@@ -531,12 +562,14 @@ export const SqlLab = () => {
         title={saveType === 'query' ? "Save Intelligence Query" : "Publish as Virtual Dataset"}
       >
         <form onSubmit={handleSave} className="space-y-8">
-          <FormButtonGroup 
-            options={['query', 'dataset']}
-            value={saveType}
-            onChange={(type) => setSaveType(type as any)}
-            className="p-1 bg-muted/30 border border-border rounded-2xl"
-          />
+          {!isCreateMode && (
+            <FormButtonGroup 
+                options={['query', 'dataset']}
+                value={saveType}
+                onChange={(type) => setSaveType(type as any)}
+                className="p-1 bg-muted/30 border border-border rounded-2xl"
+            />
+          )}
 
           <FormSection label="Identifier">
             <FormInput 

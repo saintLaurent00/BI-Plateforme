@@ -12,6 +12,9 @@ import { Charts } from './pages/Charts';
 import { SqlLab } from './pages/SqlLab';
 import { DatasetsExplorer } from './pages/DatasetsExplorer';
 import { Datasets as DatasetDetail } from './pages/Datasets';
+import { DatasetWizard } from './pages/DatasetWizard';
+import { PhysicalDatasetWizard } from './pages/PhysicalDatasetWizard';
+import { PhysicalDatasetEdit } from './pages/PhysicalDatasetEdit';
 import { ChartEditor } from './pages/ChartEditor';
 import { ChartSelector } from './pages/ChartSelector';
 import { DashboardDetail } from './pages/DashboardDetail';
@@ -52,9 +55,13 @@ export default function App() {
           <Route path="/charts" element={<Charts />} />
           <Route path="/sql-lab" element={<SqlLab />} />
           <Route path="/datasets" element={<DatasetsExplorer />} />
+          <Route path="/datasets/new" element={<DatasetWizard />} />
+          <Route path="/datasets/new/physical" element={<PhysicalDatasetWizard />} />
           <Route path="/datasets/:id" element={<DatasetDetail />} />
+          <Route path="/datasets/edit/:id" element={<PhysicalDatasetEdit />} />
           <Route path="/chart/add" element={<ChartSelector />} />
           <Route path="/chart-editor" element={<ChartEditor />} />
+          <Route path="/chart-editor/:id" element={<ChartEditor />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/documentation" element={<Documentation />} />
           <Route path="*" element={<Navigate to="/" replace />} />

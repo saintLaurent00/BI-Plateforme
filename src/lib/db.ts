@@ -4,58 +4,41 @@ import sqlWasm from 'sql.js/dist/sql-wasm.wasm?url';
 let dbInstance: Database | null = null;
 let SQL: any = null;
 
-const CONFIG = {
-  DB_NAME: 'PrismOfflineDB',
-  STORE_NAME: 'database',
-  DB_KEY: 'sqlite_db',
-  JSON_COLUMNS: ['x_axis', 'y_axis', 'config', 'layout'],
-} as const;
+const DB_NAME = 'PrismOfflineDB';
+const STORE_NAME = 'database';
+const DB_KEY = 'sqlite_db';
 
-async function getIndexedDB(): Promise<IDBDatabase> {
+async function getIndexedDB() {
   return new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open(CONFIG.DB_NAME, 1);
+    const request = indexedDB.open(DB_NAME, 1);
     request.onupgradeneeded = () => {
-      request.result.createObjectStore(CONFIG.STORE_NAME);
+      request.result.createObjectStore(STORE_NAME);
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
 
-async function saveToIndexedDB(data: Uint8Array): Promise<void> {
+async function saveToIndexedDB(data: Uint8Array) {
   const idb = await getIndexedDB();
   return new Promise<void>((resolve, reject) => {
-    const transaction = idb.transaction(CONFIG.STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(CONFIG.STORE_NAME);
-    const request = store.put(data, CONFIG.DB_KEY);
+    const transaction = idb.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.put(data, DB_KEY);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
 }
 
-async function loadFromIndexedDB(): Promise<Uint8Array | null> {
+async function loadFromIndexedDB() {
   const idb = await getIndexedDB();
   return new Promise<Uint8Array | null>((resolve, reject) => {
-    const transaction = idb.transaction(CONFIG.STORE_NAME, 'readonly');
-    const store = transaction.objectStore(CONFIG.STORE_NAME);
-    const request = store.get(CONFIG.DB_KEY);
+    const transaction = idb.transaction(STORE_NAME, 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.get(DB_KEY);
     request.onsuccess = () => resolve(request.result || null);
     request.onerror = () => reject(request.error);
   });
-}
-
-function rowToObject(columns: string[], row: any[]): Record<string, any> {
-  const obj: Record<string, any> = {};
-  columns.forEach((col, i) => {
-    if (CONFIG.JSON_COLUMNS.includes(col)) {
-      obj[col] = JSON.parse(row[i] as string);
-    } else if (col === 'background_color') {
-      obj['backgroundColor'] = row[i];
-    } else {
-      obj[col] = row[i];
-    }
-  });
-  return obj;
 }
 
 export const initDatabase = async () => {
@@ -100,11 +83,67 @@ export const initDatabase = async () => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
+    -- Ensure admin tables exist
+    CREATE TABLE IF NOT EXISTS roles (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS permissions (
+      id TEXT PRIMARY KEY,
+      role_id TEXT NOT NULL,
+      permission_name TEXT NOT NULL,
+      FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS data_sources (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      engine TEXT NOT NULL,
+      host TEXT,
+      port TEXT,
+      database TEXT,
+      username TEXT,
+      password TEXT,
+      use_ssl INTEGER DEFAULT 0,
+      use_ssh_tunnel INTEGER DEFAULT 0,
+      ssh_host TEXT,
+      ssh_user TEXT,
+      max_connections INTEGER DEFAULT 5,
+      timeout INTEGER DEFAULT 30,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     -- Ensure sample data tables exist
     CREATE TABLE IF NOT EXISTS sales_data (region TEXT, sales NUMBER);
     CREATE TABLE IF NOT EXISTS users (created_at TEXT, id NUMBER);
     CREATE TABLE IF NOT EXISTS finance (category TEXT, amount NUMBER);
   `);
+
+  // Seed default roles if empty
+  try {
+    const rolesCount = dbInstance.exec("SELECT COUNT(*) FROM roles")[0].values[0][0] as number;
+    if (rolesCount === 0) {
+      const adminId = crypto.randomUUID();
+      const editorId = crypto.randomUUID();
+      const viewerId = crypto.randomUUID();
+
+      dbInstance.run(`
+        INSERT INTO roles (id, name, description) VALUES 
+        ('${adminId}', 'Admin', 'Accès total à la plateforme Prism'),
+        ('${editorId}', 'Editeur', 'Peut créer et modifier des graphiques et dashboards'),
+        ('${viewerId}', 'Lecteur', 'Accès en lecture seule aux analyses');
+
+        INSERT INTO permissions (id, role_id, permission_name) VALUES
+        ('${crypto.randomUUID()}', '${adminId}', 'ALL'),
+        ('${crypto.randomUUID()}', '${editorId}', 'READ'),
+        ('${crypto.randomUUID()}', '${editorId}', 'WRITE'),
+        ('${crypto.randomUUID()}', '${viewerId}', 'READ');
+      `);
+    }
+  } catch (e) {
+    console.error("Failed to seed roles:", e);
+  }
 
   // Check if sample tables are empty and seed them if needed
   const checkSeeded = (tableName: string) => {
@@ -166,39 +205,60 @@ export const saveChart = async (chart: any) => {
   await saveToIndexedDB(binaryData);
 };
 
-export const getCharts = async (): Promise<any[]> => {
+export const getCharts = async () => {
   const { db } = await initDatabase();
   const res = db.exec("SELECT * FROM charts ORDER BY created_at DESC");
   if (res.length === 0) return [];
-
+  
   const { columns, values } = res[0];
-  return values.map(row => rowToObject(columns, row));
+  return values.map(row => {
+    const obj: any = {};
+    columns.forEach((col, i) => {
+      if (['x_axis', 'y_axis', 'config'].includes(col)) {
+        obj[col] = JSON.parse(row[i] as string);
+      } else {
+        obj[col] = row[i];
+      }
+    });
+    return obj;
+  });
 };
 
-export const getChart = async (id: string): Promise<any | null> => {
+export const getChart = async (id: string) => {
   const { db } = await initDatabase();
-  const stmt = db.prepare("SELECT * FROM charts WHERE id = ?");
-  stmt.bind([id]);
-
-  if (!stmt.step()) {
-    stmt.free();
-    return null;
-  }
-
-  const columns = stmt.getColumnNames();
-  const values = stmt.get();
-  stmt.free();
-
-  return rowToObject(columns, values);
+  const res = db.exec(`SELECT * FROM charts WHERE id = '${id}'`);
+  if (res.length === 0) return null;
+  
+  const { columns, values } = res[0];
+  const row = values[0];
+  const obj: any = {};
+  columns.forEach((col, i) => {
+    if (['x_axis', 'y_axis', 'config'].includes(col)) {
+      obj[col] = JSON.parse(row[i] as string);
+    } else {
+      obj[col] = row[i];
+    }
+  });
+  return obj;
 };
 
-export const getDashboards = async (): Promise<any[]> => {
+export const getDashboards = async () => {
   const { db } = await initDatabase();
   const res = db.exec("SELECT * FROM dashboards ORDER BY created_at DESC");
   if (res.length === 0) return [];
-
+  
   const { columns, values } = res[0];
-  return values.map(row => rowToObject(columns, row));
+  return values.map(row => {
+    const obj: any = {};
+    columns.forEach((col, i) => {
+      if (col === 'layout') {
+        obj[col] = JSON.parse(row[i] as string);
+      } else {
+        obj[col] = row[i];
+      }
+    });
+    return obj;
+  });
 };
 
 export const saveDashboard = async (dashboard: any) => {
@@ -220,30 +280,30 @@ export const saveDashboard = async (dashboard: any) => {
   await saveToIndexedDB(binaryData);
 };
 
-export const getDashboard = async (id: string): Promise<any | null> => {
+export const getDashboard = async (id: string) => {
   const { db } = await initDatabase();
-  const stmt = db.prepare("SELECT * FROM dashboards WHERE id = ?");
-  stmt.bind([id]);
-
-  if (!stmt.step()) {
-    stmt.free();
-    return null;
-  }
-
-  const columns = stmt.getColumnNames();
-  const values = stmt.get();
-  stmt.free();
-
-  return rowToObject(columns, values);
+  const res = db.exec(`SELECT * FROM dashboards WHERE id = '${id}'`);
+  if (res.length === 0) return null;
+  
+  const { columns, values } = res[0];
+  const row = values[0];
+  const obj: any = {};
+  columns.forEach((col, i) => {
+    if (col === 'layout') {
+      obj[col] = JSON.parse(row[i] as string);
+    } else if (col === 'background_color') {
+      obj['backgroundColor'] = row[i];
+    } else {
+      obj[col] = row[i];
+    }
+  });
+  return obj;
 };
 
-export const deleteDashboard = async (id: string): Promise<void> => {
+export const deleteDashboard = async (id: string) => {
   const { db } = await initDatabase();
-  const stmt = db.prepare("DELETE FROM dashboards WHERE id = ?");
-  stmt.bind([id]);
-  stmt.step();
-  stmt.free();
-
+  db.run(`DELETE FROM dashboards WHERE id = '${id}'`);
+  
   const binaryData = db.export();
   await saveToIndexedDB(binaryData);
 };
@@ -266,13 +326,19 @@ export const saveQuery = async (query: any) => {
   await saveToIndexedDB(binaryData);
 };
 
-export const getSavedQueries = async (): Promise<any[]> => {
+export const getSavedQueries = async () => {
   const { db } = await initDatabase();
   const res = db.exec("SELECT * FROM saved_queries ORDER BY created_at DESC");
   if (res.length === 0) return [];
-
+  
   const { columns, values } = res[0];
-  return values.map(row => rowToObject(columns, row));
+  return values.map(row => {
+    const obj: any = {};
+    columns.forEach((col, i) => {
+      obj[col] = row[i];
+    });
+    return obj;
+  });
 };
 
 export const getDatabase = () => {
@@ -282,16 +348,138 @@ export const getDatabase = () => {
   return { db: dbInstance, SQL };
 };
 
-export const executeQuery = async (sql: string): Promise<any[]> => {
+export const getRoles = async () => {
+  const { db } = await initDatabase();
+  const res = db.exec(`
+    SELECT r.*, GROUP_CONCAT(p.permission_name) as permissions 
+    FROM roles r 
+    LEFT JOIN permissions p ON r.id = p.role_id 
+    GROUP BY r.id 
+    ORDER BY r.name ASC
+  `);
+  if (res.length === 0) return [];
+  
+  const { columns, values } = res[0];
+  return values.map(row => {
+    const obj: any = {};
+    columns.forEach((col, i) => {
+      if (col === 'permissions') {
+        obj[col] = row[i] ? (row[i] as string).split(',') : [];
+      } else {
+        obj[col] = row[i];
+      }
+    });
+    return obj;
+  });
+};
+
+export const saveRole = async (role: any) => {
+  const { db } = await initDatabase();
+  const id = role.id || crypto.randomUUID();
+  
+  db.run("INSERT OR REPLACE INTO roles (id, name, description) VALUES (?, ?, ?)", [
+    id,
+    role.name,
+    role.description
+  ]);
+
+  // Handle permissions
+  db.run("DELETE FROM permissions WHERE role_id = ?", [id]);
+  if (role.permissions && role.permissions.length > 0) {
+    role.permissions.forEach((p: string) => {
+      db.run("INSERT INTO permissions (id, role_id, permission_name) VALUES (?, ?, ?)", [
+        crypto.randomUUID(),
+        id,
+        p
+      ]);
+    });
+  }
+
+  const binaryData = db.export();
+  await saveToIndexedDB(binaryData);
+};
+
+export const deleteRole = async (id: string) => {
+  const { db } = await initDatabase();
+  db.run("DELETE FROM roles WHERE id = ?", [id]);
+  const binaryData = db.export();
+  await saveToIndexedDB(binaryData);
+};
+
+export const getDataSources = async () => {
+  const { db } = await initDatabase();
+  const res = db.exec("SELECT * FROM data_sources ORDER BY created_at DESC");
+  if (res.length === 0) return [];
+  
+  const { columns, values } = res[0];
+  return values.map(row => {
+    const obj: any = {};
+    columns.forEach((col, i) => {
+      // Map snake_case to camelCase for the frontend
+      const key = col.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+      if (['useSsl', 'useSshTunnel'].includes(key)) {
+        obj[key] = row[i] === 1;
+      } else {
+        obj[key] = row[i];
+      }
+    });
+    return obj;
+  });
+};
+
+export const saveDataSource = async (ds: any) => {
+  const { db } = await initDatabase();
+  const id = ds.id || crypto.randomUUID();
+  
+  db.run(`
+    INSERT OR REPLACE INTO data_sources (
+      id, name, engine, host, port, database, username, password, 
+      use_ssl, use_ssh_tunnel, ssh_host, ssh_user, max_connections, timeout
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+    id,
+    ds.name,
+    ds.engine,
+    ds.host,
+    ds.port,
+    ds.database,
+    ds.username,
+    ds.password,
+    ds.useSsl ? 1 : 0,
+    ds.useSshTunnel ? 1 : 0,
+    ds.sshHost || null,
+    ds.sshUser || null,
+    ds.maxConnections || 5,
+    ds.timeout || 30
+  ]);
+
+  const binaryData = db.export();
+  await saveToIndexedDB(binaryData);
+  return id;
+};
+
+export const deleteDataSource = async (id: string) => {
+  const { db } = await initDatabase();
+  db.run("DELETE FROM data_sources WHERE id = ?", [id]);
+  const binaryData = db.export();
+  await saveToIndexedDB(binaryData);
+};
+
+export const executeQuery = async (sql: string) => {
   const { db } = await initDatabase();
   try {
     const results = db.exec(sql);
     if (results.length === 0) return [];
-
+    
     const { columns, values } = results[0];
-    return values.map(row => rowToObject(columns, row));
+    return values.map((row) => {
+      const obj: any = {};
+      columns.forEach((col, i) => {
+        obj[col] = row[i];
+      });
+      return obj;
+    });
   } catch (error) {
-    console.error('SQL execution failed:', error);
+    console.error('SQL Error:', error);
     throw error;
   }
 };
@@ -321,14 +509,14 @@ export const importCSV = async (tableName: string, csvData: any[]) => {
   await saveToIndexedDB(binaryData);
 };
 
-export const getTables = async (): Promise<string[]> => {
+export const getTables = async () => {
   const { db } = await initDatabase();
   const res = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
   if (res.length === 0) return [];
   return res[0].values.map(row => row[0] as string);
 };
 
-export const getTableSchema = async (tableName: string): Promise<any[]> => {
+export const getTableSchema = async (tableName: string) => {
   const { db } = await initDatabase();
   const res = db.exec(`PRAGMA table_info("${tableName}")`);
   if (res.length === 0) return [];

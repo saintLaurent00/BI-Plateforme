@@ -34,12 +34,9 @@ export const AIChat = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
     setIsLoading(true);
 
     try {
-      const response = await ai.models.generateContent({
+      const response = await ai.models.generateContent({ 
         model: "gemini-3-flash-preview",
-        contents: [...messages, { role: 'user', text: userMessage }].map(m => ({
-          role: m.role,
-          parts: [{ text: m.text }]
-        })),
+        contents: userMessage,
         config: {
           systemInstruction: "Tu es Kwaku, l'assistant IA de Prism, une plateforme d'analyse de données d'entreprise. Sois professionnel, serviable et concis. Réponds en français. Tu as accès aux outils de gouvernance et de screening dans le panneau d'administration pour surveiller la santé de la plateforme et la sécurité des données.",
         }
@@ -90,7 +87,7 @@ export const AIChat = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
           >
             {messages.map((msg, i) => (
               <div 
-                key={i}
+                key={`${msg.role}-${i}-${msg.text.substring(0, 20)}`}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div className={`flex gap-2 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>

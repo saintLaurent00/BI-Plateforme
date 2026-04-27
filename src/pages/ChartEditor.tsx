@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Database, 
   ChevronLeft, 
+  ChevronRight,
   Play, 
   Save, 
   Plus, 
@@ -27,7 +28,8 @@ import {
   Check,
   Palette,
   Sparkles,
-  Loader2
+  Loader2,
+  Search
 } from 'lucide-react';
 import { Badge } from '../components/Badge';
 import { 
@@ -40,7 +42,7 @@ import {
   FormLabel
 } from '../components/FormElements';
 import { executeQuery, getTables, getTableSchema, saveChart } from '../lib/db';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { Modal } from '../components/Modal';
 import { D3Chart } from '../components/D3Chart';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -52,18 +54,30 @@ const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 
 const FieldItem = ({ id, name, type, index }: any) => (
   <Draggable draggableId={id} index={index}>
-    {(provided) => (
+    {(provided, snapshot) => (
       <div 
         ref={provided.innerRef}
         {...provided.draggableProps}
         {...provided.dragHandleProps}
-        className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-background border border-border hover:border-accent hover:shadow-xl hover:shadow-accent/5 cursor-grab active:cursor-grabbing group transition-all mb-3"
+        className={cn(
+          "flex items-center gap-2.5 px-3 py-2 rounded-xl border border-border shadow-sm cursor-grab active:cursor-grabbing group transition-all mb-2",
+          snapshot.isDragging ? "bg-accent text-accent-foreground border-accent shadow-lg ring-4 ring-accent/10" : "bg-background hover:border-accent hover:shadow-md hover:bg-muted/30"
+        )}
       >
-        <GripVertical className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-muted-foreground" />
-        <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center text-[8px] font-black text-muted-foreground uppercase tracking-tighter group-hover:bg-accent group-hover:text-accent-foreground transition-all">
+        <GripVertical className={cn(
+          "w-3 h-3 transition-colors",
+          snapshot.isDragging ? "text-accent-foreground/60" : "text-muted-foreground/30 group-hover:text-muted-foreground"
+        )} />
+        <div className={cn(
+          "w-6 h-6 rounded flex items-center justify-center text-[8px] font-black uppercase tracking-tighter transition-all shrink-0",
+          snapshot.isDragging ? "bg-white/20 text-white" : "bg-muted text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground"
+        )}>
           {type.substring(0, 3)}
         </div>
-        <span className="text-xs text-muted-foreground font-bold truncate flex-1 group-hover:text-foreground">{name}</span>
+        <span className={cn(
+          "text-xs font-semibold truncate flex-1 tracking-tight",
+          snapshot.isDragging ? "text-white" : "text-muted-foreground group-hover:text-foreground"
+        )}>{name}</span>
       </div>
     )}
   </Draggable>
@@ -76,11 +90,11 @@ interface Metric {
 }
 
 const MetricItem = ({ metric, onRemove, onUpdateAgg }: { metric: Metric, onRemove: () => void, onUpdateAgg: (agg: string) => void }) => (
-  <div className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border rounded-xl shadow-sm group hover:border-accent transition-all">
+  <div className="flex items-center gap-2 px-2.5 py-1.5 bg-background border border-border rounded-xl shadow-sm group hover:border-accent transition-all animate-in fade-in slide-in-from-left-2 duration-300">
     <select 
       value={metric.agg}
       onChange={(e) => onUpdateAgg(e.target.value)}
-      className="text-[9px] font-black text-accent bg-accent/5 border-none outline-none rounded-lg px-2 py-0.5 cursor-pointer uppercase tracking-widest"
+      className="text-[9px] font-black text-accent bg-accent/5 border-none outline-none rounded-lg px-1.5 py-0.5 cursor-pointer uppercase tracking-widest hover:bg-accent/10 transition-colors"
     >
       <option value="SUM">SUM</option>
       <option value="AVG">AVG</option>
@@ -89,7 +103,7 @@ const MetricItem = ({ metric, onRemove, onUpdateAgg }: { metric: Metric, onRemov
       <option value="MAX">MAX</option>
       <option value="NONE">NONE</option>
     </select>
-    <span className="text-xs font-bold text-foreground truncate max-w-[100px]">{metric.column}</span>
+    <span className="text-[11px] font-bold text-foreground truncate max-w-[120px]">{metric.column}</span>
     <button onClick={onRemove} className="p-1 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-full transition-all">
       <X className="w-3 h-3" />
     </button>
@@ -97,11 +111,13 @@ const MetricItem = ({ metric, onRemove, onUpdateAgg }: { metric: Metric, onRemov
 );
 
 const DropZone = ({ id, label, icon: Icon, items = [], onRemove, onUpdateAgg, isMetric = false }: any) => (
-  <div className="space-y-3">
+  <div className="space-y-2">
     <div className="flex items-center justify-between px-1">
       <div className="flex items-center gap-2">
-        <Icon className="w-3.5 h-3.5 text-slate-400" />
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{label}</span>
+        <div className="w-5 h-5 rounded bg-muted/50 flex items-center justify-center">
+          <Icon className="w-2.5 h-2.5 text-muted-foreground/60" />
+        </div>
+        <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-widest">{label}</span>
       </div>
     </div>
     <Droppable droppableId={id}>
@@ -110,36 +126,40 @@ const DropZone = ({ id, label, icon: Icon, items = [], onRemove, onUpdateAgg, is
           ref={provided.innerRef}
           {...provided.droppableProps}
           className={cn(
-            "min-h-[80px] p-3 border-2 border-dashed rounded-[24px] flex flex-wrap gap-2 transition-all duration-500",
+            "min-h-[72px] p-2.5 border-2 border-dashed rounded-2xl flex flex-wrap gap-2 transition-all duration-300",
             snapshot.isDraggingOver 
-              ? "bg-accent/5 border-accent ring-8 ring-accent/5 scale-[1.02]" 
-              : "bg-muted/30 border-border hover:border-border/80"
+              ? "bg-accent/5 border-accent ring-4 ring-accent/5" 
+              : "bg-muted/10 border-border/40 hover:border-border/80"
           )}
         >
-          {items.length === 0 ? (
-            <div className="m-auto flex flex-col items-center gap-2 opacity-20">
-              <Plus className="w-5 h-5 text-muted-foreground" />
-              <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Drop Zone</span>
-            </div>
-          ) : (
-            items.map((item: any, i: number) => (
-              isMetric ? (
-                <MetricItem 
-                  key={item.alias} 
-                  metric={item} 
-                  onRemove={() => onRemove(item)} 
-                  onUpdateAgg={(agg) => onUpdateAgg(item, agg)} 
-                />
-              ) : (
-                <div key={item} className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border rounded-xl shadow-sm group hover:border-accent transition-all">
-                  <span className="text-xs font-bold text-foreground">{item}</span>
-                  <button onClick={() => onRemove(item)} className="p-1 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-full transition-all">
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              )
-            ))
-          )}
+            {items.length === 0 ? (
+              <div key="empty-zone" className="m-auto flex flex-col items-center gap-1.5 py-2 opacity-10">
+                <Plus className="w-4 h-4 text-muted-foreground" />
+                <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Drop Zone</span>
+              </div>
+            ) : (
+              items.map((item: any, i: number) => {
+                const itemKey = isMetric 
+                  ? `${item.column}-${item.agg}-${item.alias}-${i}`
+                  : `${item}-${i}`;
+                
+                return isMetric ? (
+                  <MetricItem 
+                    key={itemKey} 
+                    metric={item} 
+                    onRemove={() => onRemove(item)} 
+                    onUpdateAgg={(agg) => onUpdateAgg(item, agg)} 
+                  />
+                ) : (
+                  <div key={itemKey} className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border rounded-xl shadow-sm group hover:border-accent transition-all animate-in fade-in slide-in-from-left-2 duration-300">
+                    <span className="text-[11px] font-bold text-foreground">{item}</span>
+                    <button onClick={() => onRemove(item)} className="p-1 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-full transition-all">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                );
+              })
+            )}
           {provided.placeholder}
         </div>
       )}
@@ -197,18 +217,91 @@ const CollapsibleSection = ({ title, icon: Icon, children, defaultOpen = false }
   );
 };
 
+const CHART_CATEGORIES = [
+  { name: 'Évolution', icon: TrendingUp },
+  { name: 'Distribution', icon: BarChartIcon },
+  { name: 'Classement', icon: BarChartIcon },
+  { name: 'Part du tout', icon: PieChartIcon },
+  { name: 'Flux', icon: Activity },
+  { name: 'Corrélation', icon: Activity },
+  { name: 'Hiérarchie', icon: Layers },
+  { name: 'Indicateurs', icon: Hash },
+  { name: 'Cartographie', icon: LayoutIcon },
+  { name: 'Tables', icon: TableIcon },
+];
+
+const CHART_TYPES = [
+  // Évolution
+  { label: 'Ligne', type: 'Line', category: 'Évolution', icon: LineChartIcon },
+  { label: 'Surface (Area)', type: 'Area', category: 'Évolution', icon: TrendingUp },
+  { label: 'Timeline', type: 'Timeline', category: 'Évolution', icon: TrendingUp },
+  { label: 'Stacked Area', type: 'StackedArea', category: 'Évolution', icon: TrendingUp },
+  
+  // Distribution
+  { label: 'Histogramme', type: 'Bar', category: 'Distribution', icon: BarChartIcon },
+  { label: 'Boîte à moustaches', type: 'BoxPlot', category: 'Distribution', icon: BarChartIcon },
+  { label: 'Nuage de mots', type: 'WordCloud', category: 'Distribution', icon: Layers },
+  
+  // Classement
+  { label: 'Barres', type: 'Bar', category: 'Classement', icon: BarChartIcon },
+  { label: 'Barres Horizontales', type: 'HorizontalBar', category: 'Classement', icon: BarChartIcon },
+  { label: 'Ranking Bar', type: 'Bar', category: 'Classement', icon: BarChartIcon },
+  
+  // Part du tout
+  { label: 'Secteur (Pie)', type: 'Pie', category: 'Part du tout', icon: PieChartIcon },
+  { label: 'Donut', type: 'Donut', category: 'Part du tout', icon: PieChartIcon },
+  { label: 'Treemap', type: 'Treemap', category: 'Part du tout', icon: LayoutIcon },
+  { label: 'Sunburst', type: 'Sunburst', category: 'Part du tout', icon: PieChartIcon },
+  
+  // Flux
+  { label: 'Sankey', type: 'Sankey', category: 'Flux', icon: Activity },
+  { label: 'Cascade (Waterfall)', type: 'Waterfall', category: 'Flux', icon: BarChartIcon },
+  { label: 'Entonnoir (Funnel)', type: 'Funnel', category: 'Flux', icon: Activity },
+  
+  // Corrélation
+  { label: 'Nuage de points', type: 'Scatter', category: 'Corrélation', icon: Activity },
+  { label: 'Bulles (Bubble)', type: 'Bubble', category: 'Corrélation', icon: Activity },
+  { label: 'Heatmap', type: 'Heatmap', category: 'Corrélation', icon: LayoutIcon },
+  
+  // Hiérarchie
+  { label: 'Arbre (Tree)', type: 'Tree', category: 'Hiérarchie', icon: Layers },
+  { label: 'Dendrogramme', type: 'Dendrogram', category: 'Hiérarchie', icon: Layers },
+  { label: 'Radial Tree', type: 'RadialTree', category: 'Hiérarchie', icon: Layers },
+  
+  // Indicateurs
+  { label: 'KPI Big Number', type: 'Bar', category: 'Indicateurs', icon: Hash },
+  { label: 'Jauge (Gauge)', type: 'Gauge', category: 'Indicateurs', icon: Activity },
+  { label: 'Bullet Chart', type: 'Bullet', category: 'Indicateurs', icon: BarChartIcon },
+];
+
 export const ChartEditor = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { id } = useParams();
   const [activeConfigTab, setActiveConfigTab] = React.useState<'data' | 'customize'>('data');
   const [activePreviewTab, setActivePreviewTab] = React.useState<'preview' | 'data' | 'sql'>('preview');
+  const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
+  const [chartSearch, setChartSearch] = React.useState('');
+  const [selectedCategory, setSelectedCategory] = React.useState('Évolution');
   
-  const [tables, setTables] = React.useState<string[]>([]);
-  const [selectedTable, setSelectedTable] = React.useState<string>(searchParams.get('table') || '');
+  const [datasets, setDatasets] = React.useState<any[]>([]);
+  const [selectedDataset, setSelectedDataset] = React.useState<{ name: string, id: string | number, source: 'local' | 'superset' }>({
+    name: searchParams.get('dataset') || searchParams.get('table') || '',
+    id: searchParams.get('datasetId') || searchParams.get('table') || '',
+    source: (searchParams.get('source') as any) || 'local'
+  });
   const [schema, setSchema] = React.useState<any[]>([]);
-  const [xAxis, setXAxis] = React.useState<string[]>([]);
-  const [yAxis, setYAxis] = React.useState<Metric[]>([]);
+  const [xAxis, setXAxis] = React.useState<string[]>(() => {
+    const val = searchParams.get('xAxis');
+    return val ? [val] : [];
+  });
+  const [yAxis, setYAxis] = React.useState<Metric[]>(() => {
+    const val = searchParams.get('yAxis');
+    if (!val) return [];
+    return val.split(',').map(v => ({ column: v, agg: 'SUM', alias: v }));
+  });
   const [chartType, setChartType] = React.useState<any>(searchParams.get('type') || 'Bar');
+  const [chartLabel, setChartLabel] = React.useState<string>(searchParams.get('label') || searchParams.get('type') || 'Bar');
   const [results, setResults] = React.useState<any[]>([]);
   const [sampleRows, setSampleRows] = React.useState<any[]>([]);
   const [isExecuting, setIsExecuting] = React.useState(false);
@@ -293,14 +386,41 @@ g.selectAll('rect')
   });
 
   React.useEffect(() => {
-    loadTables();
-  }, []);
+    if (id) {
+      loadChartData(id);
+    } else {
+      loadData();
+    }
+  }, [id]);
+
+  const loadChartData = async (chartId: string) => {
+    try {
+      const { getChart } = await import('../lib/db');
+      const chart = await getChart(chartId);
+      if (chart) {
+        setChartName(chart.name || '');
+        setSelectedDataset({
+            name: chart.table_name,
+            id: chart.table_name,
+            source: 'local'
+        });
+        setChartType(chart.chart_type);
+        setXAxis(chart.x_axis || []);
+        setYAxis(chart.y_axis || []);
+        setCustomConfig(prev => ({ ...prev, ...(chart.config || {}) }));
+        setChartLabel(chart.name || chart.chart_type);
+      }
+    } catch (err) {
+      console.error('Failed to load chart data:', err);
+      toast.error('Impossible de charger les données du graphique.');
+    }
+  };
 
   React.useEffect(() => {
-    if (selectedTable) {
-      loadSchema(selectedTable);
+    if (selectedDataset.name) {
+      loadSchema(selectedDataset);
     }
-  }, [selectedTable]);
+  }, [selectedDataset.id]);
 
   // Auto-run query when axes change
   React.useEffect(() => {
@@ -311,32 +431,42 @@ g.selectAll('rect')
     }
   }, [xAxis, yAxis, chartType]);
 
-  const loadTables = async () => {
+  const loadData = async () => {
     const t = await getTables();
-    setTables(t);
-    if (!selectedTable && t.length > 0) {
-      setSelectedTable(t[0]);
-    }
+    const ds = t.map(name => ({ name, id: name, source: 'local' as const }));
+    setDatasets(ds);
   };
 
-  const loadSchema = async (tableName: string) => {
-    const s = await getTableSchema(tableName);
-    setSchema(s);
-    
-    // Fetch sample rows
-    try {
-      const sample = await executeQuery(`SELECT * FROM "${tableName}" LIMIT 100;`);
-      setSampleRows(sample);
-    } catch (err) {
-      setSampleRows([]);
+  const loadSchema = async (ds: any) => {
+    if (ds.source === 'local') {
+        const s = await getTableSchema(ds.id);
+        setSchema(s);
+        
+        // Fetch sample rows
+        try {
+          const sample = await executeQuery(`SELECT * FROM "${ds.id}" LIMIT 100;`);
+          setSampleRows(sample);
+        } catch (err) {
+          setSampleRows([]);
+        }
+    } else {
+        // Mock schema for remote
+        setSchema([
+          { name: 'date', type: 'TIMESTAMP' },
+          { name: 'sales', type: 'FLOAT' },
+          { name: 'quantity', type: 'INT' },
+          { name: 'category', type: 'VARCHAR' }
+        ]);
+        setSampleRows([]);
     }
   };
 
   const generateSql = () => {
-    if (!selectedTable || xAxis.length === 0 || yAxis.length === 0) return '';
+    if (!selectedDataset.name || xAxis.length === 0 || yAxis.length === 0) return '';
     const x = xAxis[0];
     const y = yAxis.map(m => {
-      const colExpr = m.column.startsWith('__calc__') 
+      const isCalc = m?.column?.startsWith?.('__calc__');
+      const colExpr = isCalc 
         ? schema.find(s => s.name === m.column)?.sql 
         : `"${m.column}"`;
       
@@ -345,13 +475,14 @@ g.selectAll('rect')
     }).join(', ');
     
     const groupBy = xAxis.map(col => {
-      const colExpr = col.startsWith('__calc__') 
+      const isCalc = col?.startsWith?.('__calc__');
+      const colExpr = isCalc 
         ? schema.find(s => s.name === col)?.sql 
         : `"${col}"`;
       return colExpr;
     }).join(', ');
 
-    return `SELECT ${groupBy}, ${y} FROM "${selectedTable}" GROUP BY ${groupBy} LIMIT 1000;`;
+    return `SELECT ${groupBy}, ${y} FROM "${selectedDataset.name}" GROUP BY ${groupBy} LIMIT 1000;`;
   };
 
   const handleRun = async () => {
@@ -381,9 +512,9 @@ g.selectAll('rect')
 
     try {
       await saveChart({
-        id: crypto.randomUUID(),
+        id: id || crypto.randomUUID(),
         name: chartName,
-        tableName: selectedTable,
+        tableName: selectedDataset.name,
         chartType,
         xAxis,
         yAxis,
@@ -429,42 +560,65 @@ g.selectAll('rect')
     setIsCalcModalOpen(false);
   };
 
+  const getChartImageUrl = (label: string, width: number, height: number) => {
+    const seed = label.toLowerCase().replace(/\s+/g, '-');
+    const tags = `data-visualization,chart,graph,dashboard,${seed}`;
+    return `https://loremflickr.com/${width}/${height}/${tags}?lock=${label.length}`;
+  };
+
+  const filteredGalleryTypes = CHART_TYPES.filter(t => 
+    (t.category === selectedCategory) &&
+    (t.label.toLowerCase().includes(chartSearch.toLowerCase()))
+  );
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex h-full bg-background overflow-hidden">
+      <div className="flex h-screen bg-background overflow-hidden font-sans text-foreground">
         {/* Left Sidebar: Source & Fields */}
-        <aside className="w-64 bg-background border-r border-border flex flex-col shrink-0">
-          <div className="p-4 border-b border-border space-y-4">
+        <aside className="w-72 bg-muted/20 border-r border-border flex flex-col shrink-0 z-30">
+          <div className="p-6 border-b border-border space-y-5 bg-background">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Chart Source</label>
-              <button className="p-1 text-muted-foreground hover:text-foreground">
-                <Info className="w-3.5 h-3.5" />
-              </button>
+              <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Source de Données</label>
+              <Badge variant="success" className="text-[8px] px-1.5 py-0">LIVE</Badge>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border">
-              <Database className="w-4 h-4 text-accent" />
-              <span className="text-sm font-bold text-foreground truncate">{selectedTable}</span>
+            <div className="flex items-center gap-3 p-3 bg-muted border border-border/50 rounded-2xl group hover:border-accent/30 transition-all cursor-default shadow-sm shadow-black/5">
+              <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center">
+                <Database className="w-4 h-4 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-wider mb-0.5">Dataset Actif</p>
+                <span className="text-sm font-bold text-foreground truncate block">{selectedDataset.name}</span>
+              </div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-8">
+          <div className="flex-1 overflow-y-auto p-6 space-y-10 custom-scrollbar">
             {/* Metrics Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between px-1">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Metrics</label>
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Mesures Calculées</label>
+                </div>
                 <button 
                   onClick={() => setIsCalcModalOpen(true)}
-                  className="p-1 text-accent hover:bg-accent/10 rounded transition-colors"
+                  className="w-6 h-6 flex items-center justify-center bg-accent/5 text-accent hover:bg-accent hover:text-accent-foreground rounded-lg transition-all shadow-sm shadow-accent/10"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-3 h-3" />
                 </button>
               </div>
               <div className="space-y-1">
                 {schema.filter(s => s.type === 'number' || s.type === 'calculated').map((col, i) => (
-                  <div key={col.name} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/30 group cursor-default">
-                    <div className="w-5 h-5 rounded bg-accent/10 flex items-center justify-center text-[8px] font-bold text-accent uppercase">fx</div>
-                    <span className="text-xs font-medium text-muted-foreground truncate flex-1">{col.displayName || col.name}</span>
-                  </div>
+                  <motion.div 
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    key={`${col.name}-${i}`} 
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-background hover:shadow-md hover:border-border/60 border border-transparent group cursor-default transition-all"
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-accent/5 flex items-center justify-center text-[7px] font-black text-accent uppercase tracking-tighter border border-accent/20">fx</div>
+                    <span className="text-xs font-semibold text-muted-foreground truncate flex-1 group-hover:text-foreground transition-colors">{col.displayName || col.name}</span>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -477,12 +631,15 @@ g.selectAll('rect')
                   {...provided.droppableProps}
                   className="space-y-4"
                 >
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Columns</label>
-                  <div className="space-y-0.5">
+                  <div className="flex items-center gap-2 px-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Champs Disponibles</label>
+                  </div>
+                  <div className="space-y-1">
                     {schema.map((col, index) => (
                       <FieldItem 
-                        key={col.name} 
-                        id={col.name}
+                        key={`${col.name}-${index}`} 
+                        id={`${col.name}-${index}`}
                         name={col.displayName || col.name} 
                         type={col.type} 
                         index={index}
@@ -497,45 +654,57 @@ g.selectAll('rect')
         </aside>
 
         {/* Middle Panel: Configuration */}
-        <aside className="w-80 bg-background border-r border-border flex flex-col shrink-0">
-          <div className="flex p-2 bg-muted/30 m-4 rounded-2xl border border-border">
-            <button 
-              onClick={() => setActiveConfigTab('data')}
-              className={cn(
-                "flex-1 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-xl",
-                activeConfigTab === 'data' ? "bg-background text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Data
-            </button>
-            <button 
-              onClick={() => setActiveConfigTab('customize')}
-              className={cn(
-                "flex-1 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all rounded-xl",
-                activeConfigTab === 'customize' ? "bg-background text-foreground shadow-sm border border-border" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Style
-            </button>
+        <aside className="w-80 bg-background border-r border-border flex flex-col shrink-0 z-20">
+          <div className="px-6 py-5 border-b border-border flex items-center justify-between bg-muted/5">
+            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-foreground">Paramètres</h2>
+            <div className="flex p-0.5 bg-muted rounded-lg border border-border">
+              <button 
+                onClick={() => setActiveConfigTab('data')}
+                className={cn(
+                  "p-2 rounded-md transition-all",
+                  activeConfigTab === 'data' ? "bg-background text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Layers className="w-3.5 h-3.5" />
+              </button>
+              <button 
+                onClick={() => setActiveConfigTab('customize')}
+                className={cn(
+                  "p-2 rounded-md transition-all",
+                  activeConfigTab === 'customize' ? "bg-background text-accent shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Palette className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
             {activeConfigTab === 'data' ? (
-              <>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-8"
+              >
                 {/* Visualization Type */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Type de Visualisation</label>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl border border-border">
-                    <div className="w-8 h-8 rounded-lg bg-accent text-accent-foreground flex items-center justify-center">
-                      <BarChartIcon className="w-5 h-5" />
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] px-1">Visualisation</label>
+                  <button 
+                    onClick={() => setIsGalleryOpen(true)}
+                    className="w-full flex items-center gap-4 p-4 bg-muted/20 border border-border rounded-2xl hover:border-accent hover:shadow-xl hover:shadow-accent/5 transition-all text-left group relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full -translate-y-12 translate-x-12 blur-2xl group-hover:bg-accent/10 transition-colors" />
+                    <div className="w-12 h-12 rounded-2xl bg-white border border-border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-sm">
+                      <BarChartIcon className="w-6 h-6 text-accent" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-bold text-foreground">{chartType} Chart</h4>
-                      <p className="text-[10px] text-muted-foreground">D3.js Rendering</p>
+                    <div className="flex-1 min-w-0 z-10">
+                      <h4 className="text-sm font-black text-foreground tracking-tight flex items-center gap-2">
+                        {chartLabel}
+                        <ChevronRight className="w-3 h-3 text-muted-foreground/40 group-hover:translate-x-1 transition-transform" />
+                      </h4>
+                      <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">D3.js Core Library</p>
                     </div>
-                  </div>
+                  </button>
                 </div>
 
                 {/* Time Section */}
@@ -545,8 +714,8 @@ g.selectAll('rect')
                     <FormSection label="Time Column">
                       <FormSelect className="py-2.5 px-4 h-auto text-xs">
                         <option>No filter</option>
-                        {schema.filter(s => s.type === 'date' || s.type === 'timestamp').map(s => (
-                          <option key={s.name} value={s.name}>{s.name}</option>
+                        {schema.filter(s => s.type === 'date' || s.type === 'timestamp').map((s, i) => (
+                          <option key={`${s.name}-${i}`} value={s.name}>{s.name}</option>
                         ))}
                       </FormSelect>
                     </FormSection>
@@ -578,7 +747,7 @@ g.selectAll('rect')
 
                   <DropZone 
                     id="xAxis"
-                    label="X-Axis (Dimension)" 
+                    label="Axe X (Dimension / Temps)" 
                     icon={Activity} 
                     items={xAxis} 
                     onRemove={() => setXAxis([])} 
@@ -586,7 +755,7 @@ g.selectAll('rect')
                   
                   <DropZone 
                     id="yAxis"
-                    label="Metrics" 
+                    label="Métriques (Valeurs)" 
                     icon={TrendingUp} 
                     items={yAxis} 
                     isMetric={true}
@@ -611,7 +780,7 @@ g.selectAll('rect')
                     </FormSelect>
                   </FormSection>
                 </div>
-              </>
+              </motion.div>
             ) : (
               <div className="flex-1 overflow-y-auto p-4">
                 <CollapsibleSection title="General" icon={Settings2} defaultOpen={true}>
@@ -709,168 +878,294 @@ g.selectAll('rect')
               </div>
             )}
           </div>
-
-          <div className="p-6 border-t border-border bg-muted/30">
-            <button 
-              onClick={handleRun}
-              disabled={isExecuting || xAxis.length === 0 || yAxis.length === 0}
-              className="btn-primary w-full py-3 shadow-lg shadow-accent/20 disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2"
-            >
-              <Play className={cn("w-4 h-4", isExecuting && "animate-spin")} />
-              Update Chart
-            </button>
-          </div>
         </aside>
 
-        {/* Main Panel: Preview & Results */}
-        <main className="flex-1 flex flex-col min-w-0 bg-background">
-          {/* Topbar */}
-          <header className="h-16 bg-background/80 backdrop-blur-md border-b border-border px-8 flex items-center justify-between sticky top-0 z-30">
+        {/* Main Content: Preview & Tools */}
+        <main className="flex-1 flex flex-col min-w-0 bg-muted/5 relative">
+          {/* Top Navbar */}
+          <header className="h-16 bg-background border-b border-border flex items-center justify-between px-8 shrink-0 z-10">
             <div className="flex items-center gap-6">
               <button 
                 onClick={() => navigate('/charts')}
-                className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all active:scale-90"
+                className="group flex items-center gap-2 text-muted-foreground hover:text-foreground transition-all"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <div className="p-2 rounded-xl group-hover:bg-muted transition-colors">
+                  <ChevronLeft className="w-5 h-5" />
+                </div>
+                <span className="text-sm font-bold tracking-tight">Retour</span>
               </button>
+              <div className="h-6 w-px bg-border" />
               <div className="flex flex-col">
-                <h2 className="text-base font-bold text-foreground tracking-tight">{chartName || 'Untitled Intelligence'}</h2>
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em]">Draft Visualization</span>
-                  <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                <input 
+                  value={chartName}
+                  onChange={(e) => setChartName(e.target.value)}
+                  placeholder="Nom du graphique sans titre"
+                  className="bg-transparent border-none focus:ring-0 p-0 text-sm font-black tracking-tight text-foreground placeholder:text-muted-foreground/30 min-w-[200px]"
+                />
+                <div className="flex items-center gap-1.5 opacity-60">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Draft Mode</span>
+                  <div className="w-1 h-1 rounded-full bg-slate-400" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Auto-saving</span>
                 </div>
               </div>
             </div>
+
             <div className="flex items-center gap-4">
               <button 
-                onClick={() => navigate('/sql-lab')}
-                className="px-4 py-2 text-muted-foreground text-xs font-bold hover:text-foreground transition-all flex items-center gap-2"
+                onClick={handleRecommend}
+                disabled={isRecommending}
+                className="flex items-center gap-2 px-4 py-2 bg-accent/5 text-accent hover:bg-accent hover:text-accent-foreground rounded-xl text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50 group border border-accent/20"
               >
-                <Database className="w-3.5 h-3.5" />
-                SQL Lab
+                {isRecommending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />}
+                IA Suggest
               </button>
-              <div className="h-6 w-px bg-border mx-1"></div>
-              <button 
-                onClick={() => handleSave()}
-                className="btn-primary px-8 py-2.5 shadow-xl shadow-accent/10"
-              >
+              <div className="h-6 w-px bg-border" />
+              <FormButton variant="primary" onClick={handleSave} className="px-6 py-2.5 rounded-2xl text-[10px] uppercase font-black tracking-widest shadow-lg shadow-accent/20">
                 <Save className="w-4 h-4" />
-                Publish
-              </button>
+                Sauvegarder
+              </FormButton>
             </div>
           </header>
 
-          {/* Content */}
-          <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-muted/10">
-            <div className="flex-1 p-6 overflow-hidden flex flex-col">
-              <div className="bg-background rounded-2xl shadow-sm border border-border flex-1 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                  <div className="flex items-center gap-6">
-                    <button 
-                      onClick={() => setActivePreviewTab('preview')}
-                      className={cn(
-                        "text-[11px] font-bold uppercase tracking-widest transition-all pb-4 -mb-4 border-b-2",
-                        activePreviewTab === 'preview' ? "border-accent text-accent" : "border-transparent text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      Résultats
-                    </button>
-                    <button 
-                      onClick={() => setActivePreviewTab('data')}
-                      className={cn(
-                        "text-[11px] font-bold uppercase tracking-widest transition-all pb-4 -mb-4 border-b-2",
-                        activePreviewTab === 'data' ? "border-accent text-accent" : "border-transparent text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      Échantillons
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{results.length} lignes</span>
-                  </div>
-                </div>
+          <div className="flex-1 overflow-hidden flex flex-col p-8 gap-8">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between shrink-0">
+              <div className="flex p-1 bg-background rounded-2xl border border-border shadow-sm">
+                <button 
+                  onClick={() => setActivePreviewTab('preview')}
+                  className={cn(
+                    "px-6 py-2 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all",
+                    activePreviewTab === 'preview' ? "bg-accent text-accent-foreground shadow-lg shadow-accent/20" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Visualisation
+                </button>
+                <button 
+                  onClick={() => setActivePreviewTab('data')}
+                  className={cn(
+                    "px-6 py-2 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all",
+                    activePreviewTab === 'data' ? "bg-accent text-accent-foreground shadow-lg shadow-accent/20" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Données de Sortie
+                </button>
+                <button 
+                  onClick={() => setActivePreviewTab('sql')}
+                  className={cn(
+                    "px-6 py-2 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all",
+                    activePreviewTab === 'sql' ? "bg-accent text-accent-foreground shadow-lg shadow-accent/20" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Requête SQL
+                </button>
+              </div>
 
-                <div className="flex-1 min-h-0 p-6">
-                  {activePreviewTab === 'preview' ? (
-                    <div className="w-full h-full">
-                      {error ? (
-                        <div className="h-full flex flex-col items-center justify-center text-center">
-                          <AlertCircle className="w-12 h-12 text-rose-500 mb-4" />
-                          <h4 className="font-bold text-foreground">Query Error</h4>
-                          <p className="text-sm text-muted-foreground max-w-md mt-2">{error}</p>
-                        </div>
-                      ) : results.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-center gap-4">
-                          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
-                            <BarChartIcon className="w-8 h-8 text-muted-foreground/30" />
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-bold text-foreground">No data to display</h4>
-                            <p className="text-xs text-muted-foreground mt-1">Configure your query and click "Update Chart"</p>
-                          </div>
-                        </div>
-                      ) : (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted px-3 py-1.5 rounded-lg border border-border/50">
+                  <Activity className="w-3 h-3 text-emerald-500" />
+                  {results.length} lignes extraites
+                </div>
+                <button 
+                  onClick={handleRun}
+                  disabled={isExecuting}
+                  className="p-2.5 bg-background text-accent hover:bg-accent hover:text-white rounded-xl transition-all border border-border shadow-sm group active:scale-95"
+                >
+                  <Play className={cn("w-4 h-4 transition-transform group-hover:scale-110", isExecuting && "animate-spin")} />
+                </button>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3 text-rose-600"
+              >
+                <AlertCircle className="w-5 h-5 shrink-0" />
+                <p className="text-sm font-medium tracking-tight leading-relaxed">{error}</p>
+              </motion.div>
+            )}
+
+            {/* Main Preview Container */}
+            <div className="flex-1 bg-background border border-border rounded-[40px] shadow-2xl shadow-slate-200/50 overflow-hidden flex flex-col relative group">
+              <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.2]" />
+              
+              <div className="flex-1 overflow-hidden p-12 z-10">
+                <AnimatePresence mode="wait">
+                  {activePreviewTab === 'preview' && (
+                    <motion.div 
+                      key="preview"
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 1.02 }}
+                      className="w-full h-full"
+                    >
+                      {results.length > 0 ? (
                         <D3Chart 
+                          type={chartType}
                           data={results}
-                          type={chartType === 'Custom D3' ? 'CustomD3' : chartType}
                           xAxis={xAxis[0]}
                           yAxis={yAxis.map(m => m.alias)}
-                          config={customConfig}
+                          config={{
+                            ...customConfig,
+                            margin: { top: 40, right: 40, bottom: 60, left: 60 }
+                          }}
                         />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-6">
+                          <div className="w-24 h-24 rounded-full bg-accent/5 flex items-center justify-center animate-pulse">
+                            <Layers className="w-10 h-10 text-accent/20" />
+                          </div>
+                          <div className="text-center space-y-2">
+                            <h3 className="text-lg font-black text-foreground tracking-tight">En attente de données</h3>
+                            <p className="text-sm text-muted-foreground/60 max-w-[280px]">Ajoutez des métriques et des dimensions pour générer votre visualisation dynamique.</p>
+                          </div>
+                        </div>
                       )}
-                    </div>
-                  ) : (
-                    <div className="w-full h-full overflow-auto border border-border rounded-xl">
-                      <table className="w-full text-left border-collapse">
-                        <thead className="sticky top-0 bg-muted z-10">
-                          <tr>
-                            {schema.map(col => (
-                              <th key={col.name} className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest border-b border-border">
-                                {col.name}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(activePreviewTab === 'data' ? sampleRows : results).map((row, i) => (
-                            <tr key={i} className="hover:bg-muted/30 transition-colors">
-                              {schema.map(col => (
-                                <td key={col.name} className="px-4 py-3 text-xs text-foreground/80 border-b border-border/50">
-                                  {String(row[col.name])}
-                                </td>
+                    </motion.div>
+                  )}
+
+                  {activePreviewTab === 'data' && (
+                    <motion.div 
+                      key="data"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="w-full h-full overflow-auto custom-scrollbar"
+                    >
+                      {results.length > 0 ? (
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr>
+                              {Object.keys(results[0]).map(key => (
+                                <th key={key} className="p-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest border-b border-border sticky top-0 bg-background/80 backdrop-blur-md">{key}</th>
                               ))}
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody className="divide-y divide-border/50">
+                            {results.map((row, i) => (
+                              <tr key={i} className="hover:bg-muted/30 transition-colors">
+                                {Object.values(row).map((val: any, j) => (
+                                  <td key={j} className="p-4 text-xs font-medium text-foreground/80">{String(val)}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground italic text-sm">No data results yet. Run the query to see output.</div>
+                      )}
+                    </motion.div>
                   )}
-                </div>
 
-                {/* Bottom Action Bar */}
-                <div className="px-6 py-4 bg-muted/30 border-t border-border flex items-center justify-center">
-                  <button 
-                    onClick={handleRun}
-                    disabled={isExecuting || xAxis.length === 0 || yAxis.length === 0}
-                    className="btn-primary"
-                  >
-                    {isExecuting ? (
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <TrendingUp className="w-4 h-4" />
-                    )}
-                    Update Chart
-                  </button>
-                </div>
+                  {activePreviewTab === 'sql' && (
+                    <motion.div 
+                      key="sql"
+                      initial={{ opacity: 0, scale: 1.05 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="w-full h-full p-8 font-mono text-sm leading-relaxed text-accent bg-accent/5 rounded-[32px] overflow-auto select-all"
+                    >
+                      <div className="flex items-center gap-2 text-accent/40 mb-6 pb-4 border-b border-accent/10">
+                        <Database className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Query Generator Engine</span>
+                      </div>
+                      <pre className="whitespace-pre-wrap">{generateSql() || '-- No query defined yet. Add axes to generate SQL.'}</pre>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
         </main>
       </div>
 
-      {/* Save Chart Modal */}
-      <Modal 
-        isOpen={isSaveModalOpen} 
+        <Modal 
+          isOpen={isGalleryOpen} 
+          onClose={() => setIsGalleryOpen(false)}
+          title="Sélectionner une visualisation technique"
+          maxWidth="6xl"
+        >
+          <div className="flex h-[70vh] -m-6 divide-x divide-border">
+            {/* Sidebar Categories */}
+            <div className="w-64 flex flex-col bg-muted/10">
+              <div className="p-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input 
+                    type="text" 
+                    placeholder="Filtrer..." 
+                    className="w-full pl-9 pr-4 py-2 bg-background border border-border rounded-xl text-xs outline-none focus:border-accent"
+                    value={chartSearch}
+                    onChange={(e) => setChartSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto px-2 space-y-1 pb-4">
+                {CHART_CATEGORIES.map(cat => (
+                  <button 
+                    key={cat.name}
+                    onClick={() => setSelectedCategory(cat.name)}
+                    className={cn(
+                      "w-full text-left px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-3 transition-all",
+                      selectedCategory === cat.name ? "bg-accent text-accent-foreground shadow-lg shadow-accent/20" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <cat.icon className="w-4 h-4 shrink-0" />
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Content Gallery */}
+            <div className="flex-1 overflow-y-auto p-8 bg-background">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredGalleryTypes.map(t => (
+                  <button 
+                    key={t.label}
+                    onClick={() => {
+                      setChartType(t.type);
+                      setChartLabel(t.label);
+                      setIsGalleryOpen(false);
+                    }}
+                    className={cn(
+                      "group p-4 rounded-3xl border-2 transition-all text-left space-y-4 hover:shadow-2xl hover:shadow-accent/10 active:scale-95",
+                      chartType === t.type ? "border-accent bg-accent/5" : "border-border bg-background hover:border-accent/40"
+                    )}
+                  >
+                    <div className="aspect-[16/10] bg-muted rounded-2xl overflow-hidden border border-border relative">
+                      <img 
+                        src={getChartImageUrl(t.label, 400, 250)} 
+                        alt={t.label}
+                        className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
+                        referrerPolicy="no-referrer"
+                      />
+                      {chartType === t.type && (
+                        <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow-xl scale-110">
+                          <Check className="w-4 h-4" />
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-foreground tracking-tight">{t.label}</h4>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-60 tracking-wider">D3.js</span>
+                        <div className="w-0.5 h-0.5 rounded-full bg-border"></div>
+                        <span className="text-[10px] font-bold text-accent uppercase tracking-widest">{t.category}</span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Modal>
+
+        {/* Save Chart Modal */}
+        <Modal 
+          isOpen={isSaveModalOpen} 
         onClose={() => setIsSaveModalOpen(false)} 
         title="Save Chart"
       >

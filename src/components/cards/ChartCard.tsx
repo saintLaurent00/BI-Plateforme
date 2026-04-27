@@ -42,9 +42,15 @@ export const ChartCard: React.FC<ChartCardProps> = ({ chart, view = 'grid', onCl
     return (
       <div 
         onClick={onClick}
-        className="glass-panel p-5 flex items-center gap-8 group cursor-pointer hover:border-accent/30 transition-all duration-500"
+        className="glass-panel p-5 flex items-center gap-8 group cursor-pointer hover:border-accent/30 hover:shadow-xl hover:shadow-accent/5 transition-all duration-500"
       >
-        <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center shrink-0 border border-border group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-accent/20 transition-all">
+        <div 
+          onClick={(e) => {
+            e.stopPropagation();
+            if (onClick) onClick();
+          }}
+          className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center shrink-0 border border-border group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-accent/20 transition-all"
+        >
           <Icon className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
@@ -77,10 +83,12 @@ export const ChartCard: React.FC<ChartCardProps> = ({ chart, view = 'grid', onCl
       layout
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      onClick={onClick}
-      className="glass-panel group cursor-pointer overflow-hidden hover:border-accent/30 transition-all duration-500"
+      className="glass-panel group cursor-pointer overflow-hidden hover:border-accent/30 hover:shadow-2xl hover:shadow-accent/5 transition-all duration-500"
     >
-      <div className="h-32 bg-muted/30 relative overflow-hidden flex items-center justify-center p-4">
+      <div 
+        onClick={onClick}
+        className="h-32 bg-muted/30 relative overflow-hidden flex items-center justify-center p-4"
+      >
         <div className="w-full h-full opacity-60 group-hover:opacity-100 transition-all duration-500">
           <MiniChart type={type} />
         </div>
@@ -99,7 +107,10 @@ export const ChartCard: React.FC<ChartCardProps> = ({ chart, view = 'grid', onCl
           </div>
         </div>
       </div>
-      <div className="p-4">
+      <div className="p-4" onClick={(e) => {
+        // Optionnel: On peut choisir de n'ouvrir les détails que sur le clic du texte ou garder le comportement global
+        if (onClick) onClick();
+      }}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h4 className="font-bold text-sm text-foreground tracking-tight truncate group-hover:text-accent transition-colors">{title}</h4>

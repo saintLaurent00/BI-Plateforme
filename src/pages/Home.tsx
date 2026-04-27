@@ -114,6 +114,44 @@ export const Home = () => {
         </div>
       </motion.div>
 
+      {/* Kwaku AI Briefing */}
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.2 }}
+        className="prism-card p-8 bg-accent/5 border-accent/20 relative overflow-hidden group"
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl -mr-32 -mt-32 transition-all group-hover:bg-accent/20" />
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-8">
+          <div className="shrink-0">
+             <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center shadow-xl shadow-accent/20 border border-accent-foreground/10">
+                <Sparkles className="w-8 h-8 text-white" />
+             </div>
+          </div>
+          <div className="space-y-4 flex-1">
+             <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-accent uppercase tracking-[0.2em]">Intelligence Assistant</span>
+                <Badge variant="success" className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest">Kwaku Active</Badge>
+             </div>
+             <h2 className="text-2xl font-bold tracking-tight italic">"Bonjour Laurent, votre infrastructure est à 99.9% de santé opérationnelle. J'ai détecté une optimisation possible sur le pool de connexion PostgreSQL."</h2>
+             <div className="flex flex-wrap gap-4 pt-2">
+                <div className="flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded-xl border border-border/50">
+                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                   <span className="text-xs font-bold text-muted-foreground italic">Sécurité: Optimale</span>
+                </div>
+                <div className="flex items-center gap-2 bg-background/50 px-3 py-1.5 rounded-xl border border-border/50">
+                   <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                   <span className="text-xs font-bold text-muted-foreground italic">Performance: +12% vs hier</span>
+                </div>
+                <button onClick={() => navigate('/admin?section=sources')} className="flex items-center gap-2 text-xs font-black text-accent uppercase tracking-widest hover:translate-x-1 transition-all ml-auto">
+                   Voir l'infrastructure
+                   <ArrowUpRight className="w-4 h-4" />
+                </button>
+             </div>
+          </div>
+        </div>
+      </motion.div>
+
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard label="Active Users" value="1,284" trend="+4.2%" icon={Users} />
