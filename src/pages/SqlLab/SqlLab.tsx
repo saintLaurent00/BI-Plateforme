@@ -29,10 +29,9 @@ import {
   FormButtonGroup
 } from '../../components/ui/FormElements';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { executeQuery, getTables, getTableSchema, saveQuery, getSavedQueries } from '../../core/utils/db';
-import { supersetService } from '../../lib/superset-service';
-import { isConfigured as isSupersetConfigured } from '../../lib/supersetClient';
+import { executeQuery, getTables, getTableSchema, saveQuery, getSavedQueries, saveDatasetMetadata } from '../../core/utils/db';
 import { cn } from '../../core/utils/utils';
+import { toast } from 'sonner';
 
 const SchemaItem = ({ name, type, icon: Icon, onClick }: any) => (
   <div 
@@ -100,17 +99,7 @@ export const SqlLab = () => {
   }, []);
 
   const loadDatabases = async () => {
-    if (!isSupersetConfigured) {
-      setDatabases([{ id: 'local', database_name: 'Local_SQLite' }]);
-      return;
-    }
-
-    try {
-      const { result } = await supersetService.getDatabases();
-      setDatabases([{ id: 'local', database_name: 'Local_SQLite' }, ...(result || [])]);
-    } catch (err) {
-      setDatabases([{ id: 'local', database_name: 'Local_SQLite' }]);
-    }
+    setDatabases([{ id: 'local', database_name: 'Local_SQLite' }]);
   };
 
   const loadSchema = async () => {
@@ -189,21 +178,10 @@ export const SqlLab = () => {
       let finalizedSql = sql;
       Object.entries(params).forEach(([key, value]) => {
         // Simple string replacement for now. 
-        // Note: For real security, we should ideally use prepared statements if the backend supports it,
-        // but since we are executing arbitrary SQL, we at least sanitize the value to prevent common breaks.
-        const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\1*`, 'g');
-        // If it's a number-like value, don't wrap in quotes, otherwise wrap if needed
-        // For simplicity and safety in this demo, we assume the user might need quotes if it's a string
         finalizedSql = finalizedSql.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g'), value);
       });
 
-      let res;
-      if (selectedDatabase.id === 'local') {
-        res = await executeQuery(finalizedSql);
-      } else {
-        const supersetRes = await supersetService.executeSql(finalizedSql, selectedDatabase.id);
-        res = supersetRes.data || [];
-      }
+      const res = await executeQuery(finalizedSql);
       setResults(res);
       const time = Math.round(performance.now() - start);
       setExecutionTime(time);
@@ -232,11 +210,12 @@ export const SqlLab = () => {
     try {
       const id = activeQueryId || crypto.randomUUID();
       if (saveType === 'dataset') {
-          // In a real app, this would call Superset API
-          await supersetService.createDataset({
+          await saveDatasetMetadata({
               table_name: queryInfo.name,
-              database: selectedDatabase.id === 'local' ? 1 : selectedDatabase.id,
-              sql: sql
+              name: queryInfo.name,
+              sql: sql,
+              columns: [], // Will be auto-populated on first load
+              metrics: []
           });
       } else {
           await saveQuery({
@@ -246,15 +225,27 @@ export const SqlLab = () => {
             sql
           });
       }
+      setSavedQueries(prev => {
+        const index = prev.findIndex(q => q.id === id);
+        if (index >= 0) {
+          const newQueries = [...prev];
+          newQueries[index] = { ...newQueries[index], name: queryInfo.name, description: queryInfo.description, sql };
+          return newQueries;
+        }
+        return [...prev, { id, name: queryInfo.name, description: queryInfo.description, sql }];
+      });
       setIsModalOpen(false);
       loadSavedQueries();
       if (saveType === 'dataset') {
+          toast.success("Dataset enregistré avec succès");
           navigate('/datasets');
       } else {
+          toast.success("Requête enregistrée avec succès");
           setActiveQueryId(id);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save query:', err);
+      toast.error(`Erreur lors de l'enregistrement : ${err.message || 'Erreur réseau'}`);
     }
   };
 
@@ -427,7 +418,7 @@ export const SqlLab = () => {
             spellCheck={false}
           />
           <div className="absolute bottom-4 right-6 flex items-center gap-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            <span>{selectedDatabase.id === 'local' ? 'SQLite WASM' : 'Superset Backend'}</span>
+            <span>SQLite WASM</span>
             <span>UTF-8</span>
           </div>
         </div>

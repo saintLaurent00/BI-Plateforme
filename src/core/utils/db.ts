@@ -113,6 +113,15 @@ export const initDatabase = async () => {
       timeout INTEGER DEFAULT 30,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS dataset_metadata (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      table_name TEXT,
+      sql TEXT,
+      columns TEXT,
+      metrics TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
 
     -- Ensure sample data tables exist
     CREATE TABLE IF NOT EXISTS sales_data (region TEXT, sales NUMBER);
@@ -526,4 +535,75 @@ export const getTableSchema = async (tableName: string) => {
     notnull: row[3] as number,
     pk: row[5] as number
   }));
+};
+
+export const getDataset = async (id: string) => {
+  const { db } = await initDatabase();
+  const res = db.exec(`SELECT * FROM dataset_metadata WHERE id = '${id}' OR table_name = '${id}'`);
+  
+  let metadata: any = null;
+  if (res.length > 0) {
+    const { columns, values } = res[0];
+    const row = values[0];
+    metadata = {};
+    columns.forEach((col, i) => {
+      if (['columns', 'metrics'].includes(col)) {
+        metadata[col] = JSON.parse(row[i] as string);
+      } else {
+        metadata[col] = row[i];
+      }
+    });
+  }
+
+  const tableName = metadata?.table_name || id;
+  const schema = await getTableSchema(tableName);
+  
+  if (schema.length === 0 && !metadata) return null;
+
+  return {
+    id: metadata?.id || tableName,
+    table_name: tableName,
+    name: metadata?.name || tableName,
+    kind: metadata?.sql ? 'virtual' : 'physical',
+    sql: metadata?.sql || `SELECT * FROM "${tableName}"`,
+    database: {
+      id: 1,
+      database_name: 'Local SQLite'
+    },
+    columns: metadata?.columns || schema.map(c => ({
+      name: c.name,
+      type: c.type,
+      displayName: c.name
+    })),
+    metrics: metadata?.metrics || [
+      { name: 'count', expression: 'COUNT(*)', displayName: 'Total Count' }
+    ]
+  };
+};
+
+export const saveDatasetMetadata = async (ds: any) => {
+  const { db } = await initDatabase();
+  const stmt = db.prepare(`
+    INSERT OR REPLACE INTO dataset_metadata (id, name, table_name, sql, columns, metrics)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  stmt.run([
+    ds.id || ds.table_name,
+    ds.name || ds.table_name,
+    ds.table_name,
+    ds.sql || '',
+    JSON.stringify(ds.columns || []),
+    JSON.stringify(ds.metrics || [])
+  ]);
+  stmt.free();
+  
+  const binaryData = db.export();
+  await saveToIndexedDB(binaryData);
+};
+
+export const deleteDataset = async (id: string) => {
+  const { db } = await initDatabase();
+  db.run(`DELETE FROM dataset_metadata WHERE id = '${id}' OR table_name = '${id}'`);
+  const binaryData = db.export();
+  await saveToIndexedDB(binaryData);
 };

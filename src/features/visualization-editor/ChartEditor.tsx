@@ -49,6 +49,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { AIInsight } from '../../components/dashboard/AIInsight';
 import { aiService } from '../../lib/ai-service';
 import { toast } from 'sonner';
+import { getChartPlugin, chartPlugins } from '../../../plugins';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -217,65 +218,35 @@ const CollapsibleSection = ({ title, icon: Icon, children, defaultOpen = false }
   );
 };
 
-const CHART_CATEGORIES = [
-  { name: 'Évolution', icon: TrendingUp },
-  { name: 'Distribution', icon: BarChartIcon },
-  { name: 'Classement', icon: BarChartIcon },
-  { name: 'Part du tout', icon: PieChartIcon },
-  { name: 'Flux', icon: Activity },
-  { name: 'Corrélation', icon: Activity },
-  { name: 'Hiérarchie', icon: Layers },
-  { name: 'Indicateurs', icon: Hash },
-  { name: 'Cartographie', icon: LayoutIcon },
-  { name: 'Tables', icon: TableIcon },
-];
+const CATEGORY_ICONS: Record<string, any> = {
+  'Evolution': TrendingUp,
+  'Distribution': BarChartIcon,
+  'Classement': BarChartIcon,
+  'Part-to-whole': PieChartIcon,
+  'Flow': Activity,
+  'Correlation': Activity,
+  'Correlation ': Activity,
+  'Ranking': BarChartIcon,
+  'Part du tout': PieChartIcon,
+  'Hiérarchie': Layers,
+  'Indicateurs': Hash,
+  'Carte': LayoutIcon,
+  'KPIs': Hash,
+};
 
-const CHART_TYPES = [
-  // Évolution
-  { label: 'Ligne', type: 'Line', category: 'Évolution', icon: LineChartIcon },
-  { label: 'Surface (Area)', type: 'Area', category: 'Évolution', icon: TrendingUp },
-  { label: 'Timeline', type: 'Timeline', category: 'Évolution', icon: TrendingUp },
-  { label: 'Stacked Area', type: 'StackedArea', category: 'Évolution', icon: TrendingUp },
-  
-  // Distribution
-  { label: 'Histogramme', type: 'Bar', category: 'Distribution', icon: BarChartIcon },
-  { label: 'Boîte à moustaches', type: 'BoxPlot', category: 'Distribution', icon: BarChartIcon },
-  { label: 'Nuage de mots', type: 'WordCloud', category: 'Distribution', icon: Layers },
-  
-  // Classement
-  { label: 'Barres', type: 'Bar', category: 'Classement', icon: BarChartIcon },
-  { label: 'Barres Horizontales', type: 'HorizontalBar', category: 'Classement', icon: BarChartIcon },
-  { label: 'Ranking Bar', type: 'Bar', category: 'Classement', icon: BarChartIcon },
-  
-  // Part du tout
-  { label: 'Secteur (Pie)', type: 'Pie', category: 'Part du tout', icon: PieChartIcon },
-  { label: 'Donut', type: 'Donut', category: 'Part du tout', icon: PieChartIcon },
-  { label: 'Treemap', type: 'Treemap', category: 'Part du tout', icon: LayoutIcon },
-  { label: 'Sunburst', type: 'Sunburst', category: 'Part du tout', icon: PieChartIcon },
-  { label: 'Marimekko', type: 'Marimekko', category: 'Part du tout', icon: BarChartIcon },
-  
-  // Flux
-  { label: 'Sankey', type: 'Sankey', category: 'Flux', icon: Activity },
-  { label: 'Cascade (Waterfall)', type: 'Waterfall', category: 'Flux', icon: BarChartIcon },
-  { label: 'Waterfall Horizontal', type: 'WaterfallHorizontal', category: 'Flux', icon: BarChartIcon },
-  { label: 'Entonnoir (Funnel)', type: 'Funnel', category: 'Flux', icon: Activity },
-  
-  // Corrélation
-  { label: 'Nuage de points', type: 'Scatter', category: 'Corrélation', icon: Activity },
-  { label: 'Bulles (Bubble)', type: 'Bubble', category: 'Corrélation', icon: Activity },
-  { label: 'Heatmap', type: 'Heatmap', category: 'Corrélation', icon: LayoutIcon },
-  { label: 'Coordonnées Parallèles', type: 'ParallelCoordinates', category: 'Corrélation', icon: Activity },
-  
-  // Hiérarchie
-  { label: 'Arbre (Tree)', type: 'Tree', category: 'Hiérarchie', icon: Layers },
-  { label: 'Dendrogramme', type: 'Dendrogram', category: 'Hiérarchie', icon: Layers },
-  { label: 'Radial Tree', type: 'RadialTree', category: 'Hiérarchie', icon: Layers },
-  
-  // Indicateurs
-  { label: 'KPI Big Number', type: 'Bar', category: 'Indicateurs', icon: Hash },
-  { label: 'Jauge (Gauge)', type: 'Gauge', category: 'Indicateurs', icon: Activity },
-  { label: 'Bullet Chart', type: 'Bullet', category: 'Indicateurs', icon: BarChartIcon },
-];
+const CHART_CATEGORIES = Array.from(new Set(chartPlugins.map(p => p.metadata.category).filter(Boolean))).map(cat => ({
+  name: cat as string,
+  icon: CATEGORY_ICONS[cat as string] || Layers
+}));
+
+const CHART_TYPES = chartPlugins.map(p => ({
+  label: p.metadata.name,
+  type: p.type,
+  icon: CATEGORY_ICONS[p.metadata.category || ''] || Layers,
+  category: p.metadata.category || 'Evolution',
+  description: p.metadata.description || '',
+  thumbnail: p.metadata.thumbnail,
+}));
 
 export const ChartEditor = () => {
   const navigate = useNavigate();
@@ -285,13 +256,13 @@ export const ChartEditor = () => {
   const [activePreviewTab, setActivePreviewTab] = React.useState<'preview' | 'data' | 'sql'>('preview');
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
   const [chartSearch, setChartSearch] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState('Évolution');
+  const [selectedCategory, setSelectedCategory] = React.useState('Distribution');
   
   const [datasets, setDatasets] = React.useState<any[]>([]);
-  const [selectedDataset, setSelectedDataset] = React.useState<{ name: string, id: string | number, source: 'local' | 'superset' }>({
+  const [selectedDataset, setSelectedDataset] = React.useState<{ name: string, id: string | number, source: 'local' }>({
     name: searchParams.get('dataset') || searchParams.get('table') || '',
     id: searchParams.get('datasetId') || searchParams.get('table') || '',
-    source: (searchParams.get('source') as any) || 'local'
+    source: 'local'
   });
   const [schema, setSchema] = React.useState<any[]>([]);
   const [xAxis, setXAxis] = React.useState<string[]>(() => {
@@ -312,6 +283,8 @@ export const ChartEditor = () => {
   const [isSaveModalOpen, setIsSaveModalOpen] = React.useState(false);
   const [isCalcModalOpen, setIsCalcModalOpen] = React.useState(false);
   const [chartName, setChartName] = React.useState('');
+  
+  const currentPlugin = React.useMemo(() => getChartPlugin(chartType), [chartType]);
   
   const [calcColName, setCalcColName] = React.useState('');
   const [calcColSql, setCalcColSql] = React.useState('');
@@ -343,7 +316,7 @@ export const ChartEditor = () => {
   };
 
   // Customization options
-  const [customConfig, setCustomConfig] = React.useState({
+  const [customConfig, setCustomConfig] = React.useState<any>({
     showLegend: true,
     showGrid: true,
     colorScheme: 'Superset Colors',
@@ -352,6 +325,7 @@ export const ChartEditor = () => {
     showCellBars: true,
     pageLength: 10,
     searchBox: true,
+    rowLimit: 1000,
     customScript: `// D3 Custom Script
 // Available variables: d3, svg, data, width, height, margin, xAxis, yAxis, config, showTooltip, moveTooltip, hideTooltip
 
@@ -523,10 +497,12 @@ g.selectAll('rect')
         yAxis,
         config: customConfig
       });
+      toast.success("Graphique enregistré avec succès");
       setIsSaveModalOpen(false);
       navigate('/charts');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save chart:', err);
+      toast.error(`Erreur lors de l'enregistrement : ${err.message || 'Erreur réseau'}`);
     }
   };
 
@@ -741,119 +717,181 @@ g.selectAll('rect')
                 {/* Query Section */}
                 <div className="space-y-6 pt-6 border-t border-border">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-foreground">Query</h3>
-                    <div className="flex bg-muted p-0.5 rounded-lg border border-border">
-                      <button className="px-3 py-1 text-[10px] font-bold bg-background text-accent rounded-md shadow-sm">Aggregate</button>
-                      <button className="px-3 py-1 text-[10px] font-bold text-muted-foreground hover:text-foreground">Raw records</button>
-                    </div>
+                    <h3 className="text-sm font-bold text-foreground">Configuration des données</h3>
                   </div>
 
-                  <DropZone 
-                    id="xAxis"
-                    label="Axe X (Dimension / Temps)" 
-                    icon={Activity} 
-                    items={xAxis} 
-                    onRemove={() => setXAxis([])} 
-                  />
-                  
-                  <DropZone 
-                    id="yAxis"
-                    label="Métriques (Valeurs)" 
-                    icon={TrendingUp} 
-                    items={yAxis} 
-                    isMetric={true}
-                    onRemove={(item: Metric) => setYAxis(yAxis.filter(i => i.alias !== item.alias))} 
-                    onUpdateAgg={(item: Metric, agg: string) => {
-                      setYAxis(yAxis.map(m => m.alias === item.alias ? { ...m, agg: agg as any } : m));
-                    }}
-                  />
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Filters</label>
-                    <div className="p-4 border-2 border-dashed border-border rounded-xl bg-muted/30 flex items-center justify-center">
-                      <span className="text-[10px] text-muted-foreground/60 italic">Drop columns/metrics here</span>
+                  {currentPlugin?.controlPanel?.controlPanelSections?.filter(s => s.label === 'Query' || s.label === 'Données' || s.label === 'Conversion').map((section, sIdx) => (
+                    <div key={sIdx} className="space-y-6">
+                      {section.controlSetRows.map((row, rIdx) => (
+                        <div key={rIdx} className="space-y-4">
+                          {row.map((control: string) => {
+                            if (control === 'metrics') {
+                              return (
+                                <DropZone 
+                                  key={control}
+                                  id="yAxis"
+                                  label="Métriques (Valeurs)" 
+                                  icon={TrendingUp} 
+                                  items={yAxis} 
+                                  isMetric={true}
+                                  onRemove={(item: Metric) => setYAxis(yAxis.filter(i => i.alias !== item.alias))} 
+                                  onUpdateAgg={(item: Metric, agg: string) => {
+                                    setYAxis(yAxis.map(m => m.alias === item.alias ? { ...m, agg: agg as any } : m));
+                                  }}
+                                />
+                              );
+                            }
+                            if (control === 'groupby') {
+                                return (
+                                  <DropZone 
+                                    key={control}
+                                    id="xAxis"
+                                    label="Dimensions (Group By)" 
+                                    icon={Activity} 
+                                    items={xAxis} 
+                                    onRemove={() => setXAxis([])} 
+                                  />
+                                );
+                            }
+                            if (control === 'row_limit' || control === 'limit') {
+                                return (
+                                  <FormSection key={control} label="Limite de lignes">
+                                    <FormSelect className="py-2.5 px-4 h-auto text-xs" value={customConfig.rowLimit || 1000} onChange={(e) => setCustomConfig({...customConfig, rowLimit: parseInt(e.target.value)})}>
+                                      <option value="1000">1000</option>
+                                      <option value="5000">5000</option>
+                                      <option value="10000">10000</option>
+                                    </FormSelect>
+                                  </FormSection>
+                                );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      ))}
                     </div>
-                  </div>
+                  ))}
 
-                  <FormSection label="Row Limit">
-                    <FormSelect className="py-2.5 px-4 h-auto text-xs">
-                      <option>1000</option>
-                      <option>5000</option>
-                      <option>10000</option>
-                    </FormSelect>
-                  </FormSection>
+                  {!currentPlugin && (
+                    <>
+                      <DropZone 
+                        id="xAxis"
+                        label="Axe X (Dimension / Temps)" 
+                        icon={Activity} 
+                        items={xAxis} 
+                        onRemove={() => setXAxis([])} 
+                      />
+                      
+                      <DropZone 
+                        id="yAxis"
+                        label="Métriques (Valeurs)" 
+                        icon={TrendingUp} 
+                        items={yAxis} 
+                        isMetric={true}
+                        onRemove={(item: Metric) => setYAxis(yAxis.filter(i => i.alias !== item.alias))} 
+                        onUpdateAgg={(item: Metric, agg: string) => {
+                          setYAxis(yAxis.map(m => m.alias === item.alias ? { ...m, agg: agg as any } : m));
+                        }}
+                      />
+                    </>
+                  )}
                 </div>
               </motion.div>
             ) : (
-              <div className="flex-1 overflow-y-auto p-4">
-                <CollapsibleSection title="General" icon={Settings2} defaultOpen={true}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Show Legend</span>
-                    <input 
-                      type="checkbox" 
-                      checked={customConfig.showLegend}
-                      onChange={(e) => setCustomConfig({ ...customConfig, showLegend: e.target.checked })}
-                      className="w-4 h-4 rounded border-border bg-background text-accent focus:ring-accent"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Show Grid</span>
-                    <input 
-                      type="checkbox" 
-                      checked={customConfig.showGrid}
-                      onChange={(e) => setCustomConfig({ ...customConfig, showGrid: e.target.checked })}
-                      className="w-4 h-4 rounded border-border bg-background text-accent focus:ring-accent"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Show cell bars</span>
-                    <input 
-                      type="checkbox" 
-                      checked={customConfig.showCellBars}
-                      onChange={(e) => setCustomConfig({ ...customConfig, showCellBars: e.target.checked })}
-                      className="w-4 h-4 rounded border-border bg-background text-accent focus:ring-accent"
-                    />
-                  </div>
-                </CollapsibleSection>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {currentPlugin?.controlPanel?.controlPanelSections?.filter(s => !['Query', 'Données', 'Conversion'].includes(s.label)).map((section, sIdx) => (
+                  <CollapsibleSection key={sIdx} title={section.label} icon={Settings2} defaultOpen={section.expanded}>
+                    <div className="space-y-4">
+                      {section.controlSetRows.map((row, rIdx) => (
+                        <div key={rIdx} className="space-y-4">
+                          {row.map((control: string) => {
+                            if (control === 'color_scheme') {
+                              return (
+                                <FormSection key={control} label="Schéma de couleurs">
+                                  <FormSelect 
+                                    value={customConfig.colorScheme || 'default'} 
+                                    onChange={(e) => setCustomConfig({ ...customConfig, colorScheme: e.target.value })}
+                                    className="py-2.5 px-4 h-auto text-xs rounded-xl"
+                                  >
+                                    <option value="default">Par défaut</option>
+                                    <option value="vibrant">Vibrant</option>
+                                    <option value="pastel">Pastel</option>
+                                    <option value="mono">Monochrome</option>
+                                  </FormSelect>
+                                </FormSection>
+                              );
+                            }
+                            if (['pie_type', 'line_type', 'bar_mode', 'orientation', 'shape'].includes(control)) {
+                              const configKey = control.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+                              const optionsMap: Record<string, string[]> = {
+                                'pie_type': ['Pie', 'Donut'],
+                                'line_type': ['Line', 'SmoothLine', 'StepLine', 'Area'],
+                                'bar_mode': ['Grouped', 'Stacked'],
+                                'orientation': ['Vertical', 'Horizontal'],
+                                'shape': ['circle', 'square', 'triangle']
+                              };
+                              const opts = optionsMap[control] || [];
+                              if (opts.length > 0) {
+                                return (
+                                  <FormSection key={control} label={control.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}>
+                                    <FormSelect 
+                                      value={customConfig[configKey] || opts[0]} 
+                                      onChange={(e) => setCustomConfig({ ...customConfig, [configKey]: e.target.value })}
+                                      className="py-2.5 px-4 h-auto text-xs rounded-xl"
+                                    >
+                                      {opts.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    </FormSelect>
+                                  </FormSection>
+                                );
+                              }
+                            }
+                            if (control.startsWith('show_')) {
+                              const configKey = control.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+                              return (
+                                <div key={control} className="flex items-center justify-between">
+                                  <span className="text-xs font-medium text-muted-foreground capitalize">{control.replace('show_', '').replace('_', ' ')}</span>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={customConfig[configKey] ?? true}
+                                    onChange={(e) => setCustomConfig({ ...customConfig, [configKey]: e.target.checked })}
+                                    className="w-4 h-4 rounded border-border bg-background text-accent focus:ring-accent"
+                                  />
+                                </div>
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </CollapsibleSection>
+                ))}
 
-                <CollapsibleSection title="Axes" icon={Activity}>
-                  <div className="space-y-4">
-                    <FormSection label="X-Axis Label">
-                      <FormInput placeholder="Auto" className="py-2.5 px-4 h-auto text-xs rounded-xl" />
-                    </FormSection>
-                    <FormSection label="Y-Axis Label">
-                      <FormInput placeholder="Auto" className="py-2.5 px-4 h-auto text-xs rounded-xl" />
-                    </FormSection>
-                  </div>
-                </CollapsibleSection>
+                {!currentPlugin && (
+                  <>
+                    <CollapsibleSection title="Général" icon={Settings2} defaultOpen={true}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">Afficher la légende</span>
+                        <input 
+                          type="checkbox" 
+                          checked={customConfig.showLegend}
+                          onChange={(e) => setCustomConfig({ ...customConfig, showLegend: e.target.checked })}
+                          className="w-4 h-4 rounded border-border bg-background text-accent focus:ring-accent"
+                        />
+                      </div>
+                    </CollapsibleSection>
 
-                <CollapsibleSection title="Tooltips" icon={Info}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Enable Tooltips</span>
-                    <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-border bg-background text-accent focus:ring-accent" />
-                  </div>
-                  <FormSection label="Value Format" className="mt-4">
-                    <FormSelect className="py-2.5 px-4 h-auto text-xs rounded-xl">
-                      <option>Default</option>
-                      <option>Currency</option>
-                      <option>Percentage</option>
-                    </FormSelect>
-                  </FormSection>
-                </CollapsibleSection>
-
-                <CollapsibleSection title="Colors" icon={Palette}>
-                  <FormSection label="Color Scheme">
-                    <FormSelect 
-                      value={customConfig.colorScheme}
-                      onChange={(e) => setCustomConfig({ ...customConfig, colorScheme: e.target.value })}
-                      className="py-2.5 px-4 h-auto text-xs rounded-xl"
-                    >
-                      <option>Superset Colors</option>
-                      <option>Hifadih Theme</option>
-                      <option>Vibrant</option>
-                    </FormSelect>
-                  </FormSection>
-                </CollapsibleSection>
+                    <CollapsibleSection title="Axes" icon={Activity}>
+                      <div className="space-y-4">
+                        <FormSection label="Label Axe X">
+                          <FormInput placeholder="Auto" className="py-2.5 px-4 h-auto text-xs rounded-xl" />
+                        </FormSection>
+                        <FormSection label="Label Axe Y">
+                          <FormInput placeholder="Auto" className="py-2.5 px-4 h-auto text-xs rounded-xl" />
+                        </FormSection>
+                      </div>
+                    </CollapsibleSection>
+                  </>
+                )}
 
                 {chartType === 'Custom D3' && (
                   <CollapsibleSection title="Custom Configuration" icon={Settings2} defaultOpen={true}>
@@ -1005,16 +1043,32 @@ g.selectAll('rect')
                       className="w-full h-full"
                     >
                       {results.length > 0 ? (
-                        <D3Chart 
-                          type={chartType}
-                          data={results}
-                          xAxis={xAxis[0]}
-                          yAxis={yAxis.map(m => m.alias)}
-                          config={{
-                            ...customConfig,
-                            margin: { top: 40, right: 40, bottom: 60, left: 60 }
-                          }}
-                        />
+                        <div className="w-full h-full flex flex-col relative">
+                          <input 
+                            value={chartName}
+                            onChange={(e) => setChartName(e.target.value)}
+                            placeholder="Saisir le titre du graphique"
+                            className="bg-transparent border-none outline-none placeholder:text-muted-foreground/30 focus:ring-0 py-2 px-4 text-2xl font-black tracking-tight text-foreground text-center mb-6 hover:bg-muted/30 focus:bg-white focus:shadow-sm rounded-2xl shrink-0 transition-all z-20"
+                          />
+                          <div className="flex-1 min-h-[300px] relative z-10 w-full">
+                            <D3Chart 
+                              type={chartType}
+                              data={results}
+                              xAxis={(xAxis[0] as any)?.column || xAxis[0]} // Handle both objects and strings if necessary
+                              yAxis={yAxis.map(m => m.alias)}
+                              config={{
+                                ...customConfig,
+                                margin: { top: 40, right: customConfig.showLegend !== false ? 120 : 40, bottom: 60, left: 60 }
+                              }}
+                              onItemClick={(item) => {
+                                const label = (xAxis[0] as any)?.column || xAxis[0];
+                                toast.success(`Filtrage par ${label}: ${item[label]}`, {
+                                  description: "Le drill-down et le filtrage croisé sont en cours d'activation."
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center gap-6">
                           <div className="w-24 h-24 rounded-full bg-accent/5 flex items-center justify-center animate-pulse">

@@ -7,6 +7,10 @@ import { ScatterChartPlugin } from './plugin-chart-scatter/src';
 import { HeatmapPlugin } from './plugin-chart-heatmap/src';
 import { SankeyPlugin } from './plugin-chart-sankey/src';
 import { TreemapPlugin } from './plugin-chart-treemap/src';
+import { BoxPlotPlugin } from './plugin-chart-boxplot/src';
+import { FunnelPlugin } from './plugin-chart-funnel/src';
+import { SunburstPlugin } from './plugin-chart-sunburst/src';
+import { WaterfallPlugin } from './plugin-chart-waterfall/src';
 
 export const chartPlugins: ChartPlugin[] = [
   BarChartPlugin,
@@ -17,6 +21,10 @@ export const chartPlugins: ChartPlugin[] = [
   HeatmapPlugin,
   SankeyPlugin,
   TreemapPlugin,
+  BoxPlotPlugin,
+  FunnelPlugin,
+  SunburstPlugin,
+  WaterfallPlugin,
   { ...BarChartPlugin, type: 'StackedBar', metadata: { 
     ...BarChartPlugin.metadata, 
     name: 'Stacked Bar', 
@@ -39,18 +47,6 @@ export const chartPlugins: ChartPlugin[] = [
     ...LineChartPlugin.metadata, 
     name: 'Area Chart', 
     description: 'Visualizes quantitative data over time with a shaded area below the line.',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Line/images/thumbnail.png' 
-  } },
-  { ...LineChartPlugin, type: 'StepLine', metadata: { 
-    ...LineChartPlugin.metadata, 
-    name: 'Step Line', 
-    description: 'A line chart where points are connected by vertical and horizontal segments.',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Line/images/thumbnail.png' 
-  } },
-  { ...LineChartPlugin, type: 'SmoothLine', metadata: { 
-    ...LineChartPlugin.metadata, 
-    name: 'Smooth Line', 
-    description: 'A line chart with spline interpolation for a continuous, smooth curve.',
     thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Line/images/thumbnail.png' 
   } },
 ];

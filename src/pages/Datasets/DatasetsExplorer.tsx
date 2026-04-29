@@ -29,9 +29,7 @@ import {
 } from '../../components/ui/FormElements';
 import { Link, useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
-import { importCSV, getTables } from '../../core/utils/db';
-import { supersetService } from '../../lib/superset-service';
-import { isConfigured as isSupersetConfigured } from '../../lib/supersetClient';
+import { importCSV, getTables, deleteDataset } from '../../core/utils/db';
 import { cn } from '../../core/utils/utils';
 
 const DatasetListItem = ({ id, name, type, owner, lastModified, health, onDelete }: any) => (
@@ -113,7 +111,7 @@ export const DatasetsExplorer = () => {
   const [importStatus, setImportStatus] = React.useState<'idle' | 'parsing' | 'importing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = React.useState('');
   const [localTables, setLocalTables] = React.useState<string[]>([]);
-  const [supersetDatasets, setSupersetDatasets] = React.useState<any[]>([]);
+  const [metadataDatasets, setMetadataDatasets] = React.useState<any[]>([]);
   const [databases, setDatabases] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [datasetToDelete, setDatasetToDelete] = React.useState<any>(null);
@@ -132,21 +130,25 @@ export const DatasetsExplorer = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      if (!isSupersetConfigured) {
-        const tables = await getTables();
-        setLocalTables(tables);
-        setSupersetDatasets([]);
-        setDatabases([]);
+      const { initDatabase } = await import('../../core/utils/db');
+      const { db } = await initDatabase();
+      const tables = await getTables();
+      setLocalTables(tables);
+      
+      const res = db.exec("SELECT * FROM dataset_metadata ORDER BY created_at DESC");
+      if (res.length > 0) {
+        const { columns, values } = res[0];
+        const datasets = values.map(row => {
+          const obj: any = {};
+          columns.forEach((col, i) => obj[col] = row[i]);
+          return obj;
+        });
+        setMetadataDatasets(datasets);
       } else {
-        const [tables, dsResponse, dbResponse] = await Promise.all([
-          getTables(),
-          supersetService.getDatasets().catch(() => ({ result: [] })),
-          supersetService.getDatabases().catch(() => ({ result: [] }))
-        ]);
-        setLocalTables(tables);
-        setSupersetDatasets(dsResponse.result);
-        setDatabases(dbResponse.result);
+        setMetadataDatasets([]);
       }
+      
+      setDatabases([{ id: 1, database_name: 'Local SQLite' }]);
     } catch (err) {
       console.error('Data load error:', err);
     } finally {
@@ -187,24 +189,27 @@ export const DatasetsExplorer = () => {
   };
 
   const filteredDatasets = [
-    ...localTables.map(table => ({
-      name: table,
-      type: "Physical",
-      owner: "Local User",
-      lastModified: "À l'instant",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      health: 100
-    })),
-    ...supersetDatasets.map(ds => ({
-      name: ds.table_name || ds.name,
-      id: ds.id,
-      type: ds.kind === 'physical' ? 'Physical' : 'Virtual',
-      owner: ds.owner || 'Superset',
-      created_at: ds.created_on || null,
-      updated_at: ds.changed_on || null,
-      lastModified: ds.changed_on_delta_humanized || 'Récemment',
-      health: ds.healthScore || 95
+    ...localTables
+      .filter(table => !metadataDatasets.some(meta => meta.table_name === table))
+      .map(table => ({
+        name: table,
+        id: table,
+        type: "Physical",
+        owner: "Local User",
+        lastModified: "À l'instant",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        health: 100
+      })),
+    ...metadataDatasets.map(ds => ({
+      name: ds.name || ds.table_name,
+      id: ds.id || ds.table_name,
+      type: ds.sql ? 'Virtual' : 'Physical',
+      owner: 'Admin',
+      created_at: ds.created_at,
+      updated_at: ds.created_at,
+      lastModified: 'Récemment',
+      health: 95
     }))
   ].filter(ds => {
     const matchesSearch = ds.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -217,20 +222,14 @@ export const DatasetsExplorer = () => {
   const handleDelete = async () => {
     if (!datasetToDelete) return;
     
-    // If it's a superset dataset
-    if (datasetToDelete.id) {
-      const loadingToast = toast.loading("Suppression du dataset...");
-      try {
-        await supersetService.deleteDataset(datasetToDelete.id);
-        toast.success("Dataset supprimé avec succès.", { id: loadingToast });
-        loadData();
-      } catch (err) {
-        toast.error("Erreur lors de la suppression.", { id: loadingToast });
-        console.error('Delete error:', err);
-      }
-    } else {
-      // Local table deletion
-      toast.info("La suppression des tables locales n'est pas supportée dans cette version.");
+    const loadingToast = toast.loading("Suppression du dataset...");
+    try {
+      await deleteDataset(datasetToDelete.id || datasetToDelete.name);
+      toast.success("Dataset supprimé avec succès.", { id: loadingToast });
+      loadData();
+    } catch (err) {
+      toast.error("Erreur lors de la suppression.", { id: loadingToast });
+      console.error('Delete error:', err);
     }
     
     setIsDeleteModalOpen(false);

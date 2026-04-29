@@ -23,9 +23,10 @@ export interface ChartPluginProps {
   width: number;
   height: number;
   colorScale: d3.ScaleOrdinal<string, string, never>;
-  showTooltip: (event: any, label: string, value: any, seriesName?: string) => void;
+  showTooltip: (event: any, label: string, value: any, seriesName?: string, rawData?: any) => void;
   moveTooltip: (event: any) => void;
   hideTooltip: () => void;
+  onItemClick?: (data: any) => void;
 }
 
 export interface ChartMetadata {

@@ -45,7 +45,7 @@ export const Documentation = () => {
         </h1>
         <p className="text-xl text-muted-foreground max-w-3xl font-light leading-relaxed">
           Tout ce que vous devez savoir sur l'architecture de Hifadih BI, 
-          l'intégration frontend et les protocoles de sécurité avancés.
+          l'analyse locale et les protocoles de sécurité.
         </p>
       </header>
 
@@ -96,87 +96,61 @@ export const Documentation = () => {
 
         {/* Technical Specification */}
         <DocumentCard 
-          title="Intégration Frontend Indépendant (Headless Superset)"
-          description="Exigences backend et mapping des API pour connecter un frontend étranger."
+          title="Architecture Locale & SQL.js"
+          description="Détails sur l'implémentation du moteur de données local."
           icon={Code}
         >
-          <h4>1. Exigences Backend & Sécurité</h4>
-          <p>Pour qu'un frontend hébergé sur un domaine différent puisse communiquer avec Superset, les configurations suivantes sont impératives :</p>
+          <h4>1. Moteur de Base de Données</h4>
+          <p>Hifadih BI utilise une architecture orientée client pour garantir la rapidité et la confidentialité des données :</p>
           <ul>
-            <li><strong>Activation de CORS</strong> : <code>ENABLE_CORS = True</code></li>
-            <li><strong>Politique de Cookies</strong> : <code>SESSION_COOKIE_SAMESITE = "None"</code></li>
-            <li><strong>Gestion du Token CSRF</strong> : Récupération via <code>/api/v1/security/csrf_token/</code></li>
+            <li><strong>SQL.js</strong> : Moteur SQLite compilé en WebAssembly pour les calculs.</li>
+            <li><strong>IndexedDB</strong> : Persistance locale des bases de données et métadonnées.</li>
+            <li><strong>Worker Pattern</strong> : Exécution des requêtes SQL sur un thread séparé.</li>
           </ul>
 
-          <h4>2. Mapping API par Fonctionnalité</h4>
+          <h4>2. Gestion des Sources</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 not-prose">
             <div className="p-4 bg-muted/50 rounded-xl border border-border">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Profil & Connexion</p>
-              <code className="text-xs text-accent">GET /api/v1/me/</code>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Importation</p>
+              <span className="text-xs text-accent">Support des fichiers CSV & SQL</span>
             </div>
             <div className="p-4 bg-muted/50 rounded-xl border border-border">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Tableaux de Bord</p>
-              <code className="text-xs text-accent">GET /api/v1/dashboard/</code>
-            </div>
-            <div className="p-4 bg-muted/50 rounded-xl border border-border">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Données Graphiques</p>
-              <code className="text-xs text-accent">POST /api/v1/chart/data</code>
-            </div>
-            <div className="p-4 bg-muted/50 rounded-xl border border-border">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">SQL Lab</p>
-              <code className="text-xs text-accent">POST /api/v1/sqllab/execute</code>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Persistance</p>
+              <span className="text-xs text-accent">Sauvegarde automatique dans le navigateur</span>
             </div>
           </div>
         </DocumentCard>
 
         {/* Full Architecture Dossier */}
         <DocumentCard 
-          title="Dossier Complet d'Architecture"
-          description="Inventaire exhaustif de l'interface et de la logique backend."
+          title="Composants du Système"
+          description="Inventaire exhaustif de l'interface et de la logique métier."
           icon={Layers}
         >
           <h4>Architecture Frontend</h4>
-          <p>Toutes les routes principales sont centralisées dans <code>superset-frontend/src/views/routes.tsx</code>. Les composants clés incluent :</p>
+          <p>L'application est construite avec React et suit une structure modulaire :</p>
           <ul>
-            <li><strong>Dashboard</strong> : Visionneuse et éditeur de dashboard.</li>
-            <li><strong>Explore</strong> : Point d'entrée principal pour créer des graphiques.</li>
-            <li><strong>SqlLab</strong> : IDE SQL interactif.</li>
+            <li><strong>Dashboard Engine</strong> : Gestionnaire de layout flexible pour organiser les analyses.</li>
+            <li><strong>Chart Editor</strong> : Interface visuelle pour transformer les colonnes SQL en graphiques D3.js.</li>
+            <li><strong>SQL Lab</strong> : IDE interactif pour l'exploration de données brute.</li>
           </ul>
-
-          <h4>Architecture Backend</h4>
-          <p>Le backend gère les requêtes via <strong>Flask-AppBuilder (FAB)</strong> et suit le cycle suivant :</p>
-          <ol>
-            <li>Entrée sur un endpoint exposé.</li>
-            <li>Sécurité via l'annotateur <code>@protect()</code>.</li>
-            <li>Validation via <strong>Marshmallow Schemas</strong>.</li>
-            <li>Exécution via le <strong>Command Pattern</strong>.</li>
-            <li>Interaction ORM via <strong>SQLAlchemy</strong>.</li>
-          </ol>
         </DocumentCard>
 
         {/* Security & Integration Report */}
         <DocumentCard 
-          title="Rapport de Sécurité & Intégration"
-          description="Synthèse exhaustive de l'architecture technique et stratégies Headless."
+          title="Sécurité & Confidentialité"
+          description="Politique de gestion des données au sein de Hifadih BI."
           icon={Shield}
         >
           <div className="bg-accent/5 border border-accent/20 rounded-xl p-6 mb-6">
             <div className="flex items-center gap-2 text-accent font-bold mb-2">
               <Info className="w-4 h-4" />
-              Résumé Exécutif
+              Résumé de Sécurité
             </div>
             <p className="text-sm italic">
-              "Apache Superset est une plateforme de data visualisation robuste construite sur un backend Python (Flask/Gunicorn) et un frontend React/TypeScript. Son architecture est résolument modulaire et extensible."
+              "Toutes les analyses et données traitées par Hifadih BI restent exclusivement dans l'environnement local de l'utilisateur. Aucune donnée brute n'est transmise à nos serveurs."
             </p>
           </div>
-
-          <h4>Stratégies Headless</h4>
-          <p>Pour brancher votre propre frontend sur le moteur de Superset :</p>
-          <ul>
-            <li><strong>Authentification Guest</strong> : Utilisation de tokens JWT pour l'intégration sécurisée.</li>
-            <li><strong>Consommation de Données</strong> : Appel direct à <code>POST /api/v1/chart/data</code>.</li>
-            <li><strong>Rendu</strong> : Utilisation de composants tiers (D3.js, Chart.js) pour une intégration visuelle parfaite.</li>
-          </ul>
         </DocumentCard>
       </div>
 

@@ -35,8 +35,6 @@ const BACKGROUNDS = [
 ];
 
 import { getDashboard as getLocalDashboard, executeQuery } from '../../core/utils/db';
-import { supersetService } from '../../lib/superset-service';
-import { isConfigured as isSupersetConfigured } from '../../lib/supersetClient';
 import { DashboardChart } from '../../components/dashboard/DashboardChart';
 import ReactMarkdown from 'react-markdown';
 import { mapSupersetLayoutToPrism, denormalizeLayout } from '../../core/utils/dashboardLayout';
@@ -180,43 +178,14 @@ export const DashboardDetail = () => {
 
   const loadDashboard = async (dashboardId: string) => {
     setIsLoading(true);
-    const isSupersetId = dashboardId && !isNaN(Number(dashboardId));
-    
-    if (isSupersetId && isSupersetConfigured) {
-      try {
-        // Try Superset first
-        const d = await supersetService.getDashboard(dashboardId);
-        
-        // If Superset returns a dashboard, we need to handle its layout
-        // Superset layout is in position_json (stringified)
-        if (d.position_json) {
-          const position = typeof d.position_json === 'string' ? JSON.parse(d.position_json) : d.position_json;
-          const normalized = mapSupersetLayoutToPrism(position);
-          setDashboard({
-            ...d,
-            layout: denormalizeLayout(normalized)
-          });
-        } else {
-          setDashboard(d);
-        }
-      } catch (err) {
-        try {
-          const local = await getLocalDashboard(dashboardId);
-          setDashboard(local);
-        } catch (localErr) {
-          console.error('Failed to load local dashboard:', localErr);
-        }
-      }
-    } else {
-      // Local only or Superset not configured
-      try {
-        const local = await getLocalDashboard(dashboardId);
-        setDashboard(local);
-      } catch (localErr) {
-        console.error('Failed to load local dashboard:', localErr);
-      }
+    try {
+      const local = await getLocalDashboard(dashboardId);
+      setDashboard(local);
+    } catch (err) {
+      console.error('Failed to load dashboard:', err);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   if (isLoading) {

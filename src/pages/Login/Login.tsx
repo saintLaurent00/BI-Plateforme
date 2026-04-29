@@ -13,7 +13,6 @@ import {
   Globe,
   Fingerprint
 } from 'lucide-react';
-import { supersetService } from '../../lib/superset-service';
 import { toast } from 'sonner';
 import { 
   FormSection, 
@@ -38,13 +37,13 @@ export const Login = ({ onLogin }: { onLogin: () => void }) => {
   };
 
   const handleSSO = async (provider: 'google' | 'github' | 'ldap') => {
-    try {
-      await supersetService.authenticateSSO(provider);
+    setIsSubmitting(true);
+    // Simulation d'une légère pause pour l'animation
+    setTimeout(() => {
       toast.success(`Authentification ${provider.toUpperCase()} réussie`);
       onLogin();
-    } catch (error) {
-      toast.error(`Échec de l'authentification ${provider.toUpperCase()}`);
-    }
+      setIsSubmitting(false);
+    }, 800);
   };
 
   return (

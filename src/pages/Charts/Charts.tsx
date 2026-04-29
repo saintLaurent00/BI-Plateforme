@@ -25,8 +25,6 @@ import {
 } from 'lucide-react';
 import { getCharts as getLocalCharts, getChart as getLocalChart, executeQuery } from '../../core/utils/db';
 import Papa from 'papaparse';
-import { supersetService } from '../../lib/superset-service';
-import { isConfigured as isSupersetConfigured } from '../../lib/supersetClient';
 import { ChartCard } from '../../components/ui/cards/ChartCard';
 import { Badge } from '../../components/ui/Badge';
 import { MiniChart } from '../../components/ui/cards/MiniChart';
@@ -64,30 +62,11 @@ export const Charts = () => {
   }, []);
 
   const loadCharts = async () => {
-    if (!isSupersetConfigured) {
-      try {
-        const local = await getLocalCharts();
-        setCharts(local);
-      } catch (lerr) {}
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      const { result } = await supersetService.getCharts();
-      if (result.length > 0) {
-        setCharts(result);
-      } else {
-        const local = await getLocalCharts();
-        setCharts(local);
-      }
+      const local = await getLocalCharts();
+      setCharts(local);
     } catch (err) {
-      try {
-        const local = await getLocalCharts();
-        setCharts(local);
-      } catch (localErr) {
-        console.error('Failed to load local charts:', localErr);
-      }
+      console.error('Failed to load charts:', err);
     } finally {
       setIsLoading(false);
     }

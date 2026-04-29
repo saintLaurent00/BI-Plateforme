@@ -24,7 +24,6 @@ import { Stepper } from '../../components/ui/Stepper';
 import { FormSection, FormInput, FormSelect, FormActions, FormButton } from '../../components/ui/FormElements';
 import { cn } from '../../core/utils/utils';
 import { toast } from 'sonner';
-import { supersetService } from '../../lib/superset-service';
 
 export const PhysicalDatasetWizard = () => {
   const navigate = useNavigate();
@@ -70,14 +69,7 @@ export const PhysicalDatasetWizard = () => {
   }, [selectedDatabaseId]);
 
   const loadDatabases = async () => {
-    try {
-        const dbsRes = await supersetService.getDatabases();
-        const dbs = dbsRes.result || [];
-        // Add local as option
-        setDatabases([...dbs, { id: 'local', database_name: 'Base Locale (SQLite)' }]);
-    } catch (e) {
-        setDatabases([{ id: 'local', database_name: 'Base Locale (SQLite)' }]);
-    }
+    setDatabases([{ id: 'local', database_name: 'Base Locale (SQLite)' }]);
   };
 
   const loadTables = async (dbId: string) => {

@@ -16,8 +16,6 @@ import {
 } from 'lucide-react';
 import { DashboardCard } from '../../components/ui/cards/DashboardCard';
 import { Badge } from '../../components/ui/Badge';
-import { supersetService } from '../../lib/superset-service';
-import { isConfigured as isSupersetConfigured } from '../../lib/supersetClient';
 import { getDashboards as getLocalDashboards } from '../../core/utils/db';
 import { useNavigate } from 'react-router-dom';
 
@@ -62,28 +60,11 @@ export const Home = () => {
 
   React.useEffect(() => {
     const loadDashboards = async () => {
-      if (!isSupersetConfigured) {
-        try {
-          const local = await getLocalDashboards();
-          setDashboards(local.slice(0, 4));
-        } catch (lerr) {}
-        setIsLoading(false);
-        return;
-      }
-
       try {
-        const { result } = await supersetService.getDashboards();
-        if (result && result.length > 0) {
-          setDashboards(result.slice(0, 4));
-        } else {
-          const local = await getLocalDashboards();
-          setDashboards(local.slice(0, 4));
-        }
+        const local = await getLocalDashboards();
+        setDashboards(local.slice(0, 4));
       } catch (err) {
-        try {
-          const local = await getLocalDashboards();
-          setDashboards(local.slice(0, 4));
-        } catch (lerr) {}
+        console.error('Failed to load dashboards:', err);
       } finally {
         setIsLoading(false);
       }

@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { getTables, getTableSchema } from '../../core/utils/db';
 import { Badge } from '../../components/ui/Badge';
-import { supersetService } from '../../lib/superset-service';
 import { Dataset } from '../../core/types';
 
 import { Stepper } from '../../components/ui/Stepper';
@@ -156,10 +155,7 @@ export const ChartSelector = () => {
 
   const loadData = async () => {
     try {
-      const [localTables, supersetResponse] = await Promise.all([
-        getTables(),
-        supersetService.getDatasets().catch(() => ({ result: [] }))
-      ]);
+      const localTables = await getTables();
       
       const localDs = localTables.map(t => ({
         id: t,
@@ -169,15 +165,7 @@ export const ChartSelector = () => {
         source: 'local'
       }));
 
-      const remoteDs = supersetResponse.result.map((ds: any) => ({
-        id: ds.id,
-        name: ds.table_name || ds.name,
-        type: ds.kind === 'physical' ? 'Physical' : 'Virtual',
-        kind: ds.kind,
-        source: 'superset'
-      }));
-
-      setDatasets([...localDs, ...remoteDs]);
+      setDatasets(localDs);
     } catch (err) {
       console.error(err);
     }
@@ -186,17 +174,7 @@ export const ChartSelector = () => {
   const handleNext = () => {
     if (step === 1 && selectedDataset) setStep(2);
     else if (step === 2 && selectedType) {
-      if (selectedDataset.source === 'local') {
-        getTableSchema(selectedDataset.id).then(setSchema);
-      } else {
-        // Mock schema for remote datasets for now or fetch it if needed
-        setSchema([
-          { name: 'date', type: 'TIMESTAMP' },
-          { name: 'sales', type: 'FLOAT' },
-          { name: 'quantity', type: 'INT' },
-          { name: 'category', type: 'VARCHAR' }
-        ]);
-      }
+      getTableSchema(selectedDataset.id).then(setSchema);
       setStep(3);
     }
     else if (step === 3) handleCreate();

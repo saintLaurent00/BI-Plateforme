@@ -46,8 +46,6 @@ import {
   FormLabel,
   FormButtonGroup
 } from '../../components/ui/FormElements';
-import { supersetService } from '../../lib/superset-service';
-import { isConfigured as isSupersetConfigured } from '../../lib/supersetClient';
 import { 
   getRoles as getLocalRoles, 
   saveRole as saveLocalRole, 
@@ -127,11 +125,10 @@ export const Admin = () => {
   const [activeSection, setActiveSection] = React.useState<'users' | 'groups' | 'roles' | 'rls' | 'sessions' | 'audit' | 'sources' | 'security' | 'settings' | 'reports' | 'screening' | 'auth'>(sectionFromUrl || 'users');
   const [activeTab, setActiveTab] = React.useState<'list' | 'wizard'>('list');
   const [isLoading, setIsLoading] = React.useState(true);
-  const [supersetUsers, setSupersetUsers] = React.useState<any[]>([]);
-  const [supersetRoles, setSupersetRoles] = React.useState<any[]>([]);
-  const [supersetDatabases, setSupersetDatabases] = React.useState<any[]>([]);
-  const [supersetReports, setSupersetReports] = React.useState<any[]>([]);
-  const [supersetLogs, setSupersetLogs] = React.useState<any[]>([]);
+  const [rolesData, setRolesData] = React.useState<any[]>([]);
+  const [databasesData, setDatabasesData] = React.useState<any[]>([]);
+  const [reportsData, setReportsData] = React.useState<any[]>([]);
+  const [logsData, setLogsData] = React.useState<any[]>([]);
 
   const engines = [
     { id: 'postgresql', name: 'PostgreSQL', icon: Database, color: 'text-blue-500', bg: 'bg-blue-500/10' },
@@ -184,39 +181,16 @@ export const Admin = () => {
   const loadSectionData = async () => {
     setIsLoading(true);
     
-    // Load local data regardless of Superset configuration for some sections
     try {
       if (activeSection === 'roles') {
         const localRoles = await getLocalRoles();
-        setSupersetRoles(localRoles);
+        setRolesData(localRoles);
       } else if (activeSection === 'sources') {
         const localSources = await getLocalDataSources();
-        setSupersetDatabases(localSources);
+        setDatabasesData(localSources);
       }
     } catch (err) {
-      console.error('Failed to load local data:', err);
-    }
-
-    if (!isSupersetConfigured) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      if (activeSection === 'users') {
-        const { result } = await supersetService.getUsers();
-        setSupersetUsers(result || []);
-      } else if (activeSection === 'reports') {
-        const { result } = await supersetService.getReports();
-        setSupersetReports(result || []);
-      } else if (activeSection === 'audit') {
-        const { result } = await supersetService.getLogs();
-        setSupersetLogs(result || []);
-      }
-    } catch (err) {
-      if (activeSection === 'users') setSupersetUsers([]);
-      if (activeSection === 'reports') setSupersetReports([]);
-      if (activeSection === 'audit') setSupersetLogs([]);
+      console.error('Failed to load data:', err);
     } finally {
       setIsLoading(false);
     }
@@ -329,24 +303,9 @@ export const Admin = () => {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const [firstName, ...lastNameParts] = newUser.name.split(' ');
-      const lastName = lastNameParts.join(' ') || '.';
-      await supersetService.createUser({
-        first_name: firstName,
-        last_name: lastName,
-        username: newUser.email,
-        email: newUser.email,
-        active: true,
-        roles: [newUser.role === 'Admin' ? 1 : 2], // Simplified role mapping
-      });
-      toast.success('User invited successfully');
-      setIsInviteModalOpen(false);
-      setNewUser({ name: '', email: '', role: 'Viewer' });
-      loadSectionData();
-    } catch (err) {
-      console.error('Failed to invite user:', err);
-    }
+    toast.success('Invitation envoyée (Simulé)');
+    setIsInviteModalOpen(false);
+    setNewUser({ name: '', email: '', role: 'Viewer' });
   };
 
   const handleEdit = (user: any) => {
@@ -361,32 +320,13 @@ export const Admin = () => {
 
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const [firstName, ...lastNameParts] = selectedUser.name.split(' ');
-      const lastName = lastNameParts.join(' ') || '.';
-      await supersetService.updateUser(selectedUser.id, {
-        first_name: firstName,
-        last_name: lastName,
-        active: selectedUser.status === 'Active',
-      });
-      toast.success('User updated successfully');
-      setIsEditModalOpen(false);
-      loadSectionData();
-    } catch (err) {
-      console.error('Failed to update user:', err);
-    }
+    toast.success('Utilisateur mis à jour (Simulé)');
+    setIsEditModalOpen(false);
   };
 
   const handleDeleteUser = async () => {
-    try {
-      await supersetService.deleteUser(selectedUser.id);
-      toast.success('User deleted successfully');
-      setIsDeleteModalOpen(false);
-      loadSectionData();
-    } catch (err) {
-      toast.error('Failed to delete user');
-      console.error('Failed to delete user:', err);
-    }
+    toast.success('Utilisateur supprimé (Simulé)');
+    setIsDeleteModalOpen(false);
   };
 
   const handleCreateRole = async (e: React.FormEvent) => {
@@ -521,19 +461,13 @@ export const Admin = () => {
                 <div className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center gap-3">
                     <Activity className="w-8 h-8 text-accent animate-spin" />
-                    <p className="text-sm text-muted-foreground font-medium">Synchronizing with Superset...</p>
+                    <p className="text-sm text-muted-foreground font-medium">Initialisation des données...</p>
                   </div>
                 </div>
               ) : (
                 <DataTable 
                   showSearch={false}
-                  data={supersetUsers.length > 0 ? supersetUsers.map(u => ({
-                    ...u,
-                    name: `${u.first_name} ${u.last_name}`,
-                    role: u.roles?.[0]?.name || 'User',
-                    status: u.active ? 'Active' : 'Inactive',
-                    lastActive: u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Never'
-                  })) : users}
+                  data={users}
                   columns={[
                     {
                       key: 'name',
@@ -598,7 +532,7 @@ export const Admin = () => {
                 />
               )}
               <div className="px-6 py-4 bg-muted/30 border-t border-border flex items-center justify-between">
-                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Affiche {supersetUsers.length || 6} sur 1,284 utilisateurs</p>
+                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Affiche 6 sur 1,284 utilisateurs</p>
                 <div className="flex items-center gap-2">
                   <button className="px-3 py-1 bg-background border border-border rounded-lg text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 cursor-not-allowed">Précédent</button>
                   <button className="px-3 py-1 bg-background border border-border rounded-lg text-[9px] font-black uppercase tracking-widest text-foreground hover:bg-muted transition-all">Suivant</button>
@@ -629,8 +563,8 @@ export const Admin = () => {
                 [1, 2, 3].map(i => (
                   <div key={i} className="prism-card p-6 h-48 animate-pulse bg-muted/30"></div>
                 ))
-              ) : supersetRoles.length > 0 ? (
-                supersetRoles.map((role, i) => (
+              ) : rolesData.length > 0 ? (
+                rolesData.map((role, i) => (
                   <div key={i} className="prism-card p-6 space-y-4 group hover:border-accent/30 transition-all">
                     <div className="flex items-center justify-between">
                       <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center text-accent">
@@ -955,8 +889,8 @@ export const Admin = () => {
                         </div>
                       </td>
                     </tr>
-                  ) : supersetLogs.length > 0 ? (
-                    supersetLogs.map((log, i) => (
+                  ) : logsData.length > 0 ? (
+                    logsData.map((log, i) => (
                       <tr key={i} className="hover:bg-muted/30 transition-colors group">
                         <td className="px-8 py-6">
                           <span className="text-[10px] font-mono text-muted-foreground">{new Date(log.dttm).toLocaleString()}</span>
@@ -1382,8 +1316,8 @@ export const Admin = () => {
                   [1, 2, 3].map(i => (
                     <div key={i} className="prism-card p-8 h-64 animate-pulse bg-muted/30"></div>
                   ))
-                ) : supersetDatabases.length > 0 ? (
-                  supersetDatabases.map((db, i) => {
+                ) : databasesData.length > 0 ? (
+                  databasesData.map((db, i) => {
                     const engine = engines.find(e => e.id === (db.engine || db.backend)?.toLowerCase()) || engines[0];
                     return (
                       <div key={i} className="prism-card p-6 group hover:border-accent/30 transition-all duration-500 relative overflow-hidden">
@@ -2006,8 +1940,8 @@ export const Admin = () => {
                         </div>
                       </td>
                     </tr>
-                  ) : supersetReports.length > 0 ? (
-                    supersetReports.map((report, i) => (
+                  ) : reportsData.length > 0 ? (
+                    reportsData.map((report, i) => (
                       <tr key={i} className="hover:bg-muted/30 transition-colors group">
                         <td className="px-8 py-6">
                           <span className="font-bold text-foreground text-sm">{report.name}</span>

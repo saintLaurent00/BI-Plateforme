@@ -1,0 +1,7 @@
+{
+  "name": "@prism/plugin-chart-scatter",
+  "version": "1.0.0",
+  "description": "Scatter plot plugin for Prism BI",
+  "main": "src/index.ts",
+  "license": "MIT"
+}

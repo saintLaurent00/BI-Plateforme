@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { executeQuery } from '../../core/utils/db';
-import { supersetService } from '../../lib/superset-service';
-import { isConfigured as isSupersetConfigured } from '../../lib/supersetClient';
 import { D3Chart } from '../charts/D3Chart';
 import { DataTable } from '../ui/DataTable';
 import { PivotTable } from '../charts/PivotTable';
@@ -24,63 +22,28 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ chart }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const isSupersetId = typeof chart.id === 'number' || (typeof chart.id === 'string' && !isNaN(Number(chart.id)));
-      
-      if (isSupersetId && isSupersetConfigured) {
-        // Superset chart
-        const chartId = Number(chart.id);
-        
-        const chartMetadata = await supersetService.getChart(chartId);
-        
-        let queryContext = {};
-        if (chartMetadata.params) {
-          const params = JSON.parse(chartMetadata.params);
-          queryContext = {
-            datasource: { id: chartMetadata.datasource_id, type: 'table' },
-            force: false,
-            queries: [{
-              groupby: params.groupby || [],
-              metrics: params.metrics || [],
-              filters: params.adhoc_filters || [],
-              row_limit: params.row_limit || 1000,
-              order_desc: true,
-            }],
-            result_format: 'json',
-            result_type: 'full',
-          };
-        }
+      // Local chart
+      const x = Array.isArray(chart.x_axis) ? chart.x_axis[0] : (chart.x_axis || 'id');
+      let metrics = [];
+      if (Array.isArray(chart.y_axis)) {
+        metrics = chart.y_axis.filter((m: any) => m && m.toString().length > 0);
+      } else if (chart.y_axis) {
+        metrics = [chart.y_axis];
+      }
 
-        const res = await supersetService.getChartData(chartId, queryContext);
-        setData(res.result?.[0]?.data || []);
+      if (metrics.length === 0) {
+        const sql = `SELECT "${x}" FROM "${chart.table_name || 'charts'}" LIMIT 100;`;
+        const res = await executeQuery(sql);
+        setData(res);
       } else {
-        // Local chart or Superset not configured
-        const x = Array.isArray(chart.x_axis) ? chart.x_axis[0] : (chart.x_axis || 'id');
-        let metrics = [];
-        if (Array.isArray(chart.y_axis)) {
-          metrics = chart.y_axis.filter((m: any) => m && m.toString().length > 0);
-        } else if (chart.y_axis) {
-          metrics = [chart.y_axis];
-        }
-
-        if (metrics.length === 0) {
-          const sql = `SELECT "${x}" FROM "${chart.table_name || 'charts'}" LIMIT 100;`;
-          const res = await executeQuery(sql);
-          setData(res);
-        } else {
-          const y = metrics.map((col: string) => `SUM("${col}") as "${col}"`).join(', ');
-          const sql = `SELECT "${x}", ${y} FROM "${chart.table_name || 'charts'}" GROUP BY "${x}" LIMIT 100;`;
-          const res = await executeQuery(sql);
-          setData(res);
-        }
+        const y = metrics.map((col: string) => `SUM("${col}") as "${col}"`).join(', ');
+        const sql = `SELECT "${x}", ${y} FROM "${chart.table_name || 'charts'}" GROUP BY "${x}" LIMIT 100;`;
+        const res = await executeQuery(sql);
+        setData(res);
       }
     } catch (err: any) {
-      if (isSupersetConfigured) {
-        console.error('Failed to load chart data:', err);
-        setError(err.message);
-      } else {
-        // If not configured, just try local fallback if not already there
-        setData([]);
-      }
+      console.error('Failed to load chart data:', err);
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }

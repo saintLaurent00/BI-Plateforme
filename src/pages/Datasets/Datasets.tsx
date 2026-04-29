@@ -26,7 +26,7 @@ import {
 import { Badge } from '../../components/ui/Badge';
 import { AIInsight } from '../../components/dashboard/AIInsight';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supersetService } from '../../lib/superset-service';
+import { getDataset, deleteDataset, saveDatasetMetadata } from '../../core/utils/db';
 import { Modal } from '../../components/ui/Modal';
 import { FormSection, FormInput, FormTextarea, FormActions, FormButton } from '../../components/ui/FormElements';
 import { toast } from 'sonner';
@@ -77,8 +77,8 @@ export const Datasets = () => {
   const loadDataset = async () => {
     setIsLoading(true);
     try {
-      const ds = await supersetService.getDataset(id!);
-      setDataset(ds);
+      const ds = await getDataset(id!);
+      setDataset(ds as any);
     } catch (err) {
       toast.error("Impossible de charger le dataset.");
     } finally {
@@ -90,7 +90,7 @@ export const Datasets = () => {
     if (!id) return;
     const loadingToast = toast.loading("Suppression du dataset...");
     try {
-      await supersetService.deleteDataset(id);
+      await deleteDataset(id);
       toast.success("Dataset supprimé avec succès.", { id: loadingToast });
       navigate('/datasets');
     } catch (err) {
@@ -101,7 +101,7 @@ export const Datasets = () => {
     }
   };
 
-  const handleUpdateColumn = (updatedCol: DatasetColumn) => {
+  const handleUpdateColumn = async (updatedCol: DatasetColumn) => {
     if (!dataset) return;
     let newCols = [...dataset.columns];
     if (editingColumn && !isCalculatedColumn) {
@@ -109,13 +109,15 @@ export const Datasets = () => {
     } else {
         newCols.push({ ...updatedCol, isCalculated: true });
     }
-    setDataset({ ...dataset, columns: newCols });
+    const updatedDataset = { ...dataset, columns: newCols };
+    setDataset(updatedDataset);
+    await saveDatasetMetadata(updatedDataset);
     setEditingColumn(null);
     setIsCalculatedColumn(false);
     toast.success("Configuration sauvegardée.");
   };
 
-  const handleSaveMetric = (metric: DatasetMetric) => {
+  const handleSaveMetric = async (metric: DatasetMetric) => {
     if (!dataset) return;
     let newMetrics = [...dataset.metrics];
     if (editingMetric) {
@@ -123,7 +125,9 @@ export const Datasets = () => {
     } else {
         newMetrics.push(metric);
     }
-    setDataset({ ...dataset, metrics: newMetrics });
+    const updatedDataset = { ...dataset, metrics: newMetrics };
+    setDataset(updatedDataset);
+    await saveDatasetMetadata(updatedDataset);
     setEditingMetric(null);
     toast.success("Métrique mise à jour.");
   };

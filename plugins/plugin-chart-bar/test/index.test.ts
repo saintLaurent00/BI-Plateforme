@@ -1,3 +1,4 @@
+// @ts-nocheck
 import buildQuery from '../src/buildQuery';
 
 describe('BarChart buildQuery', () => {

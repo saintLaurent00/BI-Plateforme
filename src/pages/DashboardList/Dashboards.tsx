@@ -23,8 +23,6 @@ import {
 } from '../../components/ui/FormElements';
 import { getDashboards as getLocalDashboards, saveDashboard, deleteDashboard } from '../../core/utils/db';
 import { DASHBOARD_TEMPLATES, DashboardTemplate } from '../../constants/templates';
-import { supersetService } from '../../lib/superset-service';
-import { isConfigured as isSupersetConfigured } from '../../lib/supersetClient';
 import { DashboardCard } from '../../components/ui/cards/DashboardCard';
 import { cn } from '../../core/utils/utils';
 import { Check } from 'lucide-react';
@@ -69,30 +67,11 @@ export const Dashboards = () => {
   }, []);
 
   const loadDashboards = async () => {
-    if (!isSupersetConfigured) {
-      try {
-        const local = await getLocalDashboards();
-        setDashboards(local);
-      } catch (err) {
-        console.error('Failed to load local dashboards:', err);
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
     try {
-      const { result } = await supersetService.getDashboards();
-      if (result.length > 0) {
-        setDashboards(result);
-      } else {
-        const local = await getLocalDashboards();
-        setDashboards(local);
-      }
-    } catch (err) {
-      // Quiet fallback if not explicitly configured or network issues
       const local = await getLocalDashboards();
       setDashboards(local);
+    } catch (err) {
+      console.error('Failed to load local dashboards:', err);
     } finally {
       setIsLoading(false);
     }
