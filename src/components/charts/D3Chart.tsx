@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
-import { ChartType } from '../../../plugins/charts/types';
-import { getChartPlugin } from '../../../plugins/charts';
+import { ChartType } from '../../../plugins/types';
+import { getChartPlugin } from '../../../plugins';
 
 interface D3ChartProps {
   data: any[];

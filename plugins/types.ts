@@ -38,5 +38,7 @@ export interface ChartMetadata {
 export interface ChartPlugin {
   type: string;
   metadata: ChartMetadata;
+  buildQuery?: (formData: any) => any;
+  controlPanel?: any;
   render: (g: d3.Selection<SVGGElement, unknown, null, undefined>, props: ChartPluginProps) => void;
 }

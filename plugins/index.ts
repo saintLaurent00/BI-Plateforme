@@ -1,12 +1,12 @@
 import { ChartPlugin } from './types';
-import { BarChartPlugin } from './bar/src';
-import { LineChartPlugin } from './line/src';
-import { PieChartPlugin } from './pie/src';
-import { RadarChartPlugin } from './radar/src';
-import { ScatterChartPlugin } from './scatter/src';
-import { HeatmapPlugin } from './heatmap/src';
-import { SankeyPlugin } from './sankey/src';
-import { TreemapPlugin } from './treemap/src';
+import { BarChartPlugin } from './plugin-chart-bar/src';
+import { LineChartPlugin } from './plugin-chart-line/src';
+import { PieChartPlugin } from './plugin-chart-pie/src';
+import { RadarChartPlugin } from './plugin-chart-radar/src';
+import { ScatterChartPlugin } from './plugin-chart-scatter/src';
+import { HeatmapPlugin } from './plugin-chart-heatmap/src';
+import { SankeyPlugin } from './plugin-chart-sankey/src';
+import { TreemapPlugin } from './plugin-chart-treemap/src';
 
 export const chartPlugins: ChartPlugin[] = [
   BarChartPlugin,

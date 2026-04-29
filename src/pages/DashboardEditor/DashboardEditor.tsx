@@ -24,7 +24,7 @@ import {
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { getCharts, saveDashboard, getDashboard } from '../../core/utils/db';
-import { getChartPlugin } from '../../../plugins/charts';
+import { getChartPlugin } from '../../../plugins';
 import { DashboardChart } from '../../components/dashboard/DashboardChart';
 import { Badge } from '../../components/ui/Badge';
 import { 
