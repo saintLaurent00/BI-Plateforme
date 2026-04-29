@@ -5,23 +5,23 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Layout } from './components/Layout';
-import { Home } from './pages/Home';
-import { Dashboards } from './pages/Dashboards';
-import { Charts } from './pages/Charts';
-import { SqlLab } from './pages/SqlLab';
-import { DatasetsExplorer } from './pages/DatasetsExplorer';
-import { Datasets as DatasetDetail } from './pages/Datasets';
-import { DatasetWizard } from './pages/DatasetWizard';
-import { PhysicalDatasetWizard } from './pages/PhysicalDatasetWizard';
-import { PhysicalDatasetEdit } from './pages/PhysicalDatasetEdit';
-import { ChartEditor } from './pages/ChartEditor';
-import { ChartSelector } from './pages/ChartSelector';
-import { DashboardDetail } from './pages/DashboardDetail';
-import { DashboardEditor } from './pages/DashboardEditor';
-import { Admin } from './pages/Admin';
-import { Documentation } from './pages/Documentation';
-import { Login } from './pages/Login';
+import { Layout } from './components/layout/Layout';
+import { Home } from './pages/Home/Home';
+import { Dashboards } from './pages/DashboardList/Dashboards';
+import { Charts } from './pages/Charts/Charts';
+import { SqlLab } from './pages/SqlLab/SqlLab';
+import { DatasetsExplorer } from './pages/Datasets/DatasetsExplorer';
+import { Datasets as DatasetDetail } from './pages/Datasets/Datasets';
+import { DatasetWizard } from './features/data-sources/DatasetWizard';
+import { PhysicalDatasetWizard } from './features/data-sources/PhysicalDatasetWizard';
+import { PhysicalDatasetEdit } from './features/data-sources/PhysicalDatasetEdit';
+import { ChartEditor } from './features/visualization-editor/ChartEditor';
+import { ChartSelector } from './features/visualization-editor/ChartSelector';
+import { DashboardDetail } from './pages/DashboardList/DashboardDetail';
+import { DashboardEditor } from './pages/DashboardEditor/DashboardEditor';
+import { Admin } from './pages/Admin/Admin';
+import { Documentation } from './pages/Documentation/Documentation';
+import { Login } from './pages/Login/Login';
 import { Toaster } from 'sonner';
 
 export default function App() {

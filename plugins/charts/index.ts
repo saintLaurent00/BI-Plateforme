@@ -1,36 +1,58 @@
 import { ChartPlugin } from './types';
-import { BarChartPlugin } from './BarChart';
-import { LineChartPlugin } from './LineChart';
-import { PieChartPlugin } from './PieChart';
-import { RadarChartPlugin } from './RadarChart';
-import { HierarchicalChartPlugin } from './HierarchicalCharts';
-import { CommonPlotsPlugin } from './CommonPlots';
+import { BarChartPlugin } from './bar/src';
+import { LineChartPlugin } from './line/src';
+import { PieChartPlugin } from './pie/src';
+import { RadarChartPlugin } from './radar/src';
+import { ScatterChartPlugin } from './scatter/src';
+import { HeatmapPlugin } from './heatmap/src';
+import { SankeyPlugin } from './sankey/src';
+import { TreemapPlugin } from './treemap/src';
 
 export const chartPlugins: ChartPlugin[] = [
   BarChartPlugin,
   LineChartPlugin,
   PieChartPlugin,
   RadarChartPlugin,
-  HierarchicalChartPlugin,
-  CommonPlotsPlugin,
-  { ...BarChartPlugin, type: 'StackedBar', name: 'Stacked Bar' },
-  { ...BarChartPlugin, type: 'GroupedBar', name: 'Grouped Bar' },
-  { ...BarChartPlugin, type: 'HorizontalBar', name: 'Horizontal Bar' },
-  { ...BarChartPlugin, type: 'Waterfall', name: 'Waterfall' },
-  { ...PieChartPlugin, type: 'Donut', name: 'Donut Chart' },
-  { ...LineChartPlugin, type: 'Area', name: 'Area Chart' },
-  { ...LineChartPlugin, type: 'StepLine', name: 'Step Line' },
-  { ...LineChartPlugin, type: 'SmoothLine', name: 'Smooth Line' },
-  { ...RadarChartPlugin, type: 'PolarArea', name: 'Polar Area' },
-  { ...HierarchicalChartPlugin, type: 'Sunburst', name: 'Sunburst' },
-  { ...HierarchicalChartPlugin, type: 'CirclePacking', name: 'Circle Packing' },
-  { ...HierarchicalChartPlugin, type: 'Tree', name: 'Tree Diagram' },
-  { ...HierarchicalChartPlugin, type: 'Dendrogram', name: 'Dendrogram' },
-  { ...HierarchicalChartPlugin, type: 'RadialTree', name: 'Radial Tree' },
-  { ...CommonPlotsPlugin, type: 'Bubble', name: 'Bubble Chart' },
-  { ...CommonPlotsPlugin, type: 'Scatter', name: 'Scatter Plot' },
-  { ...CommonPlotsPlugin, type: 'Heatmap', name: 'Heatmap' },
-  { ...CommonPlotsPlugin, type: 'Gauge', name: 'Gauge' },
+  ScatterChartPlugin,
+  HeatmapPlugin,
+  SankeyPlugin,
+  TreemapPlugin,
+  { ...BarChartPlugin, type: 'StackedBar', metadata: { 
+    ...BarChartPlugin.metadata, 
+    name: 'Stacked Bar', 
+    description: 'Compares parts of a whole across categories using stacked segments.',
+    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/legacy-plugin-chart-bar/src/images/thumbnail.png' 
+  } },
+  { ...BarChartPlugin, type: 'GroupedBar', metadata: { 
+    ...BarChartPlugin.metadata, 
+    name: 'Grouped Bar', 
+    description: 'Compares multiple metrics side-by-side across categories.',
+    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/legacy-plugin-chart-bar/src/images/thumbnail.png' 
+  } },
+  { ...PieChartPlugin, type: 'Donut', metadata: { 
+    ...PieChartPlugin.metadata, 
+    name: 'Donut Chart', 
+    description: 'A variation of the pie chart with a hollow center, often used for KPIs.',
+    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Pie/images/thumbnail.png' 
+  } },
+  { ...LineChartPlugin, type: 'Area', metadata: { 
+    ...LineChartPlugin.metadata, 
+    name: 'Area Chart', 
+    description: 'Visualizes quantitative data over time with a shaded area below the line.',
+    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Line/images/thumbnail.png' 
+  } },
+  { ...LineChartPlugin, type: 'StepLine', metadata: { 
+    ...LineChartPlugin.metadata, 
+    name: 'Step Line', 
+    description: 'A line chart where points are connected by vertical and horizontal segments.',
+    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Line/images/thumbnail.png' 
+  } },
+  { ...LineChartPlugin, type: 'SmoothLine', metadata: { 
+    ...LineChartPlugin.metadata, 
+    name: 'Smooth Line', 
+    description: 'A line chart with spline interpolation for a continuous, smooth curve.',
+    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Line/images/thumbnail.png' 
+  } },
 ];
 
 export const getChartPlugin = (type: string): ChartPlugin | undefined => {
