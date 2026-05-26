@@ -1,8 +1,44 @@
-node_modules/
-build/
-dist/
-coverage/
+# Binaires Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Build output
+/bin/
+/dist/
+*.o
+*.a
+*.out
+
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
+
+# Logs
 *.log
-.env*
-!.env.example
+logs/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Cache
+.cache/
+*.parquet
+*.zstd
+
+# Docker
+.dockerignore
