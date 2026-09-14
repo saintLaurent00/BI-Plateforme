@@ -10,12 +10,11 @@ export const HeatmapPlugin: ChartPlugin = {
     name: 'Heatmap',
     description: 'Visualizes data intensity using colored cells across two dimensions.',
     category: 'Correlation',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Heatmap/images/thumbnail.png',
+
   },
   buildQuery,
   controlPanel,
-  render: (g, props) => {
-    const transformedProps = transformProps(props);
-    HeatmapChart(g, transformedProps);
+  getOptions: (props) => {
+    return HeatmapChart(props);
   }
 };

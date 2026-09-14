@@ -10,12 +10,11 @@ export const RadarChartPlugin: ChartPlugin = {
     name: 'Radar Chart',
     description: 'A spider chart for multivariate data comparison.',
     category: 'Ranking',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Radar/images/thumbnail.png',
+
   },
   buildQuery,
   controlPanel,
-  render: (g, props) => {
-    const transformedProps = transformProps(props);
-    RadarChart(g, transformedProps);
+  getOptions: (props) => {
+    return RadarChart(props);
   }
 };

@@ -16,11 +16,12 @@ import {
 } from 'lucide-react';
 import { DashboardCard } from '../../components/ui/cards/DashboardCard';
 import { Badge } from '../../components/ui/Badge';
+import { hifadihService } from '../../lib/hifadihService';
 import { getDashboards as getLocalDashboards } from '../../core/utils/db';
 import { useNavigate } from 'react-router-dom';
 
 const StatCard = ({ label, value, trend, icon: Icon }: any) => (
-  <div className="glass-panel p-6 flex flex-col gap-4 group hover:border-accent/30 transition-all duration-300">
+  <div className="hifadih-glass p-6 flex flex-col gap-4 group hover:border-accent/30 transition-all duration-300">
     <div className="flex items-center justify-between">
       <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all duration-300">
         <Icon className="w-4 h-4" />
@@ -61,10 +62,22 @@ export const Home = () => {
   React.useEffect(() => {
     const loadDashboards = async () => {
       try {
-        const local = await getLocalDashboards();
-        setDashboards(local.slice(0, 4));
+        setIsLoading(true);
+        const { result } = await hifadihService.getDashboards();
+        
+        // Prioritize results from service, with fallback to local
+        if (result && result.length > 0) {
+          setDashboards(result.slice(0, 4));
+        } else {
+          const local = await getLocalDashboards();
+          setDashboards(local.slice(0, 4));
+        }
       } catch (err) {
-        console.error('Failed to load dashboards:', err);
+        console.error('Failed to load home dashboards:', err);
+        try {
+          const local = await getLocalDashboards();
+          setDashboards(local.slice(0, 4));
+        } catch (lerr) {}
       } finally {
         setIsLoading(false);
       }

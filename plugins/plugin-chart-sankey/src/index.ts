@@ -10,12 +10,11 @@ export const SankeyPlugin: ChartPlugin = {
     name: 'Sankey Diagram',
     description: 'Visualizes the flow of values between several stages or groups.',
     category: 'Flow',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-sankey/src/images/thumbnail.png',
+
   },
   buildQuery,
   controlPanel,
-  render: (g, props) => {
-    const transformedProps = transformProps(props);
-    SankeyChart(g, transformedProps);
+  getOptions: (props) => {
+    return SankeyChart(props);
   }
 };

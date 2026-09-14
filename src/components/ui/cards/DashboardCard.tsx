@@ -37,7 +37,7 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({ dashboard, view = 
     return (
       <div 
         onClick={onClick}
-        className="glass-panel p-5 flex items-center gap-8 group cursor-pointer hover:border-accent/30 transition-all duration-500"
+        className="hifadih-card p-5 flex items-center gap-8 group cursor-pointer hover:border-accent/30 transition-all duration-500"
       >
         <div className="w-14 h-14 rounded-2xl bg-muted overflow-hidden shrink-0 border border-border group-hover:border-accent/20 transition-all">
           <MiniDashboard />
@@ -95,7 +95,7 @@ export const DashboardCard: React.FC<DashboardCardProps> = ({ dashboard, view = 
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       onClick={onClick}
-      className="glass-panel group cursor-pointer overflow-hidden hover:border-accent/30 transition-all duration-500"
+      className="hifadih-card group cursor-pointer overflow-hidden hover:border-accent/30 transition-all duration-500"
     >
       <div className="h-32 bg-muted/30 relative overflow-hidden">
         <MiniDashboard />

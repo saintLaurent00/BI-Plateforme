@@ -10,12 +10,11 @@ export const LineChartPlugin: ChartPlugin = {
     name: 'Line Chart',
     description: 'A professional line chart for trend visualization.',
     category: 'Evolution',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Line/images/thumbnail.png',
+
   },
   buildQuery,
   controlPanel,
-  render: (g, props) => {
-    const transformedProps = transformProps(props);
-    LineChart(g, transformedProps);
+  getOptions: (props) => {
+    return LineChart(props);
   }
 };

@@ -1,41 +1,110 @@
-import * as d3 from 'd3';
 import { ChartPluginProps } from '../../types';
 
-export default function WaterfallChart(g: d3.Selection<SVGGElement, unknown, null, undefined>, props: ChartPluginProps) {
-  const { data, xAxis, yAxis, width, height, colorScale } = props;
+export default function WaterfallChart(props: ChartPluginProps) {
+  const { data, xAxis, yAxis } = props;
+
+  const metric = yAxis[0];
+  const categories = data.map(d => String(d[xAxis]));
   
-  let cumulative = 0;
-  const waterfallData = data.map((d, i) => {
-    const start = cumulative;
-    cumulative += d[yAxis[0]];
-    const end = cumulative;
-    return { ...d, start, end };
-  });
+  let currentSum = 0;
+  const helpData: number[] = [];
+  const positiveData: any[] = [];
+  const negativeData: any[] = [];
 
-  const x = d3.scaleBand().range([0, width]).domain(waterfallData.map(d => String(d[xAxis]))).padding(0.2);
-  const y = d3.scaleLinear().range([height, 0]).domain([0, d3.max(waterfallData, d => d.end) || 100]);
-
-  g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x));
-  g.append('g').call(d3.axisLeft(y));
-
-  const barG = g.selectAll('.bar').data(waterfallData).enter().append('g').attr('transform', d => `translate(${x(String(d[xAxis]))},0)`);
-
-  barG.append('rect')
-    .attr('y', d => y(Math.max(d.start, d.end)))
-    .attr('height', d => Math.abs(y(d.start) - y(d.end)))
-    .attr('width', x.bandwidth())
-    .attr('fill', (d, i) => d[yAxis[0]] >= 0 ? '#10b981' : '#ef4444');
-
-  // Connector lines
-  waterfallData.forEach((d, i) => {
-    if (i < waterfallData.length - 1) {
-      g.append('line')
-        .attr('x1', (x(String(d[xAxis])) || 0) + x.bandwidth())
-        .attr('y1', y(d.end))
-        .attr('x2', x(String(waterfallData[i+1][xAxis])) || 0)
-        .attr('y2', y(d.end))
-        .attr('stroke', '#ccc')
-        .attr('stroke-dasharray', '2,2');
+  data.forEach(d => {
+    const val = Number(d[metric]) || 0;
+    if (val >= 0) {
+      helpData.push(currentSum);
+      positiveData.push(val);
+      negativeData.push('-');
+      currentSum += val;
+    } else {
+      currentSum += val;
+      helpData.push(currentSum);
+      positiveData.push('-');
+      negativeData.push(Math.abs(val));
     }
   });
+
+  return {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      borderWidth: 1,
+      textStyle: { color: '#fff', fontSize: 11 },
+      padding: [12, 16],
+      borderRadius: 12,
+      formatter: (params: any[]) => {
+        const item = params[1].value !== '-' ? params[1] : params[2];
+        return `${item.name}<br/>Value: ${item.value}`;
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '10%',
+      top: '10%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: categories,
+      axisLabel: {
+        color: '#64748b',
+        fontSize: 10,
+        rotate: data.length > 8 ? 45 : 0
+      },
+      axisLine: {
+        lineStyle: { color: 'rgba(0,0,0,0.1)' }
+      }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { color: '#64748b', fontSize: 10 },
+      splitLine: {
+        lineStyle: { color: 'rgba(0,0,0,0.05)', type: 'dashed' }
+      }
+    },
+    series: [
+      {
+        name: 'Placeholder',
+        type: 'bar',
+        stack: 'all',
+        itemStyle: {
+          borderColor: 'transparent',
+          color: 'transparent'
+        },
+        emphasis: {
+          itemStyle: {
+            borderColor: 'transparent',
+            color: 'transparent'
+          }
+        },
+        data: helpData
+      },
+      {
+        name: 'Positive',
+        type: 'bar',
+        stack: 'all',
+        itemStyle: {
+           color: '#10b981',
+           borderRadius: [4, 4, 0, 0]
+        },
+        data: positiveData
+      },
+      {
+        name: 'Negative',
+        type: 'bar',
+        stack: 'all',
+        itemStyle: {
+           color: '#f43f5e',
+           borderRadius: [4, 4, 0, 0]
+        },
+        data: negativeData
+      }
+    ]
+  };
 }

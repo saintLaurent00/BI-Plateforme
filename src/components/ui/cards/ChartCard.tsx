@@ -46,7 +46,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({ chart, view = 'grid', onCl
         onClick={onClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="glass-panel p-5 flex items-center gap-8 group cursor-pointer hover:border-accent/30 hover:shadow-xl hover:shadow-accent/5 transition-all duration-500 relative"
+        className="hifadih-card p-5 flex items-center gap-8 group cursor-pointer hover:border-accent/30 hover:shadow-xl hover:shadow-accent/5 transition-all duration-500 relative"
       >
         <div 
           onClick={(e) => {
@@ -103,7 +103,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({ chart, view = 'grid', onCl
       animate={{ opacity: 1, scale: 1 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="glass-panel group cursor-pointer overflow-hidden hover:border-accent/30 hover:shadow-2xl hover:shadow-accent/5 transition-all duration-500"
+      className="hifadih-card group cursor-pointer overflow-hidden hover:border-accent/30 hover:shadow-2xl hover:shadow-accent/5 transition-all duration-500"
     >
       <div 
         onClick={onClick}
@@ -150,7 +150,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({ chart, view = 'grid', onCl
         
         <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-prism-500 to-blue-500 flex items-center justify-center text-[8px] font-bold text-white">
+            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-hifadih-500 to-blue-500 flex items-center justify-center text-[8px] font-bold text-white">
               {title.charAt(0)}
             </div>
             <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">{date}</span>

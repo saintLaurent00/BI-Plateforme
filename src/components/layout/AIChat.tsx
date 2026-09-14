@@ -62,7 +62,7 @@ export const AIChat = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
           className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[500px] bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
         >
           {/* Header */}
-          <div className="p-4 bg-prism-600 text-white flex items-center justify-between">
+          <div className="p-4 bg-hifadih-600 text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
@@ -92,13 +92,13 @@ export const AIChat = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
               >
                 <div className={`flex gap-2 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                    msg.role === 'user' ? 'bg-prism-100 text-prism-600' : 'bg-white border border-slate-200 text-slate-400'
+                    msg.role === 'user' ? 'bg-hifadih-100 text-hifadih-600' : 'bg-white border border-slate-200 text-slate-400'
                   }`}>
                     {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                   </div>
                   <div className={`p-3 rounded-2xl text-sm ${
                     msg.role === 'user' 
-                      ? 'bg-prism-600 text-white rounded-tr-none' 
+                      ? 'bg-hifadih-600 text-white rounded-tr-none' 
                       : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'
                   }`}>
                     {msg.text}
@@ -113,7 +113,7 @@ export const AIChat = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                     <Bot className="w-4 h-4" />
                   </div>
                   <div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-tl-none shadow-sm">
-                    <Loader2 className="w-4 h-4 animate-spin text-prism-600" />
+                    <Loader2 className="w-4 h-4 animate-spin text-hifadih-600" />
                   </div>
                 </div>
               </div>
@@ -128,12 +128,12 @@ export const AIChat = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Posez votre question..."
-                className="w-full pl-4 pr-12 py-3 bg-slate-100 border-transparent focus:bg-white focus:border-prism-500 focus:ring-4 focus:ring-prism-500/10 rounded-xl text-sm transition-all outline-none"
+                className="w-full pl-4 pr-12 py-3 bg-slate-100 border-transparent focus:bg-white focus:border-hifadih-500 focus:ring-4 focus:ring-hifadih-500/10 rounded-xl text-sm transition-all outline-none"
               />
               <button 
                 type="submit"
                 disabled={!input.trim() || isLoading}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-prism-600 text-white rounded-lg hover:bg-prism-700 transition-all disabled:opacity-50 disabled:scale-100 active:scale-95"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-hifadih-600 text-white rounded-lg hover:bg-hifadih-700 transition-all disabled:opacity-50 disabled:scale-100 active:scale-95"
               >
                 <Send className="w-4 h-4" />
               </button>

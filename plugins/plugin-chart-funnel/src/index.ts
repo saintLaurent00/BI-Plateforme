@@ -7,7 +7,7 @@ export const FunnelPlugin: ChartPlugin = {
     name: 'Entonnoir (Funnel)',
     description: 'Visualise les étapes d\'un processus de conversion.',
     category: 'Flow',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Funnel/images/thumbnail.png',
+
   },
   controlPanel: {
     controlPanelSections: [
@@ -21,5 +21,5 @@ export const FunnelPlugin: ChartPlugin = {
       },
     ],
   },
-  render: (g, props) => FunnelChart(g, props),
+  getOptions: (props) => FunnelChart(props),
 };

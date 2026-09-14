@@ -10,12 +10,11 @@ export const PieChartPlugin: ChartPlugin = {
     name: 'Pie Chart',
     description: 'A classic pie chart for proportional data visualization.',
     category: 'Part-to-whole',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Pie/images/thumbnail.png',
+
   },
   buildQuery,
   controlPanel,
-  render: (g, props) => {
-    const transformedProps = transformProps(props);
-    PieChart(g, transformedProps);
+  getOptions: (props) => {
+    return PieChart(props);
   }
 };

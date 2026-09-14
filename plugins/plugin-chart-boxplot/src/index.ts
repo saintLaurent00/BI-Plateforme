@@ -7,7 +7,7 @@ export const BoxPlotPlugin: ChartPlugin = {
     name: 'Boîte à moustaches',
     description: 'Visualise la distribution statistique des données.',
     category: 'Distribution',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/BoxPlot/images/thumbnail.png',
+
   },
   controlPanel: {
     controlPanelSections: [
@@ -21,5 +21,5 @@ export const BoxPlotPlugin: ChartPlugin = {
       },
     ],
   },
-  render: (g, props) => BoxPlotChart(g, props),
+  getOptions: (props) => BoxPlotChart(props),
 };

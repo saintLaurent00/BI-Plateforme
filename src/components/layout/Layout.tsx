@@ -302,8 +302,7 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
           </div>
         </main>
 
-        {/* AI Chat Disabled for MVP */}
-        {/* 
+        {/* AI Chat */}
         <button 
           onClick={() => setIsChatOpen(!isChatOpen)}
           className={cn(
@@ -319,7 +318,6 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
         </button>
 
         <AIChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
-        */}
       </div>
     </div>
   );

@@ -45,7 +45,7 @@ export const Documentation = () => {
         </h1>
         <p className="text-xl text-muted-foreground max-w-3xl font-light leading-relaxed">
           Tout ce que vous devez savoir sur l'architecture de Hifadih BI, 
-          l'analyse locale et les protocoles de sécurité.
+          l'intégration frontend et les protocoles de sécurité avancés.
         </p>
       </header>
 
@@ -96,61 +96,86 @@ export const Documentation = () => {
 
         {/* Technical Specification */}
         <DocumentCard 
-          title="Architecture Locale & SQL.js"
-          description="Détails sur l'implémentation du moteur de données local."
+          title="Architecture Hifadih BI (Mode Souverain)"
+          description="Exigences techniques et protocoles de communication pour l'infrastructure Hifadih."
           icon={Code}
         >
-          <h4>1. Moteur de Base de Données</h4>
-          <p>Hifadih BI utilise une architecture orientée client pour garantir la rapidité et la confidentialité des données :</p>
+          <h4>1. Infrastructure & Sécurité</h4>
+          <p>Hifadih BI repose sur une architecture moderne conçue pour la performance et la sécurité des données d'entreprise :</p>
           <ul>
-            <li><strong>SQL.js</strong> : Moteur SQLite compilé en WebAssembly pour les calculs.</li>
-            <li><strong>IndexedDB</strong> : Persistance locale des bases de données et métadonnées.</li>
-            <li><strong>Worker Pattern</strong> : Exécution des requêtes SQL sur un thread séparé.</li>
+            <li><strong>Moteur de Données</strong> : Intégration native des bases SQL et NoSQL via des adaptateurs haute performance.</li>
+            <li><strong>Protocole de Sécurité</strong> : Authentification multi-facteurs (MFA) et Row Level Security (RLS) granulaire.</li>
+            <li><strong>Communication</strong> : API RESTful sécurisée pour une intégration fluide avec les systèmes existants.</li>
           </ul>
 
-          <h4>2. Gestion des Sources</h4>
+          <h4>2. Endpoints Stratégiques</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 not-prose">
             <div className="p-4 bg-muted/50 rounded-xl border border-border">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Importation</p>
-              <span className="text-xs text-accent">Support des fichiers CSV & SQL</span>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Profil & Identité</p>
+              <code className="text-xs text-accent">GET /api/v1/auth/me</code>
             </div>
             <div className="p-4 bg-muted/50 rounded-xl border border-border">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Persistance</p>
-              <span className="text-xs text-accent">Sauvegarde automatique dans le navigateur</span>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Tableaux de Bord</p>
+              <code className="text-xs text-accent">GET /api/v1/hifadih/dashboards</code>
+            </div>
+            <div className="p-4 bg-muted/50 rounded-xl border border-border">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Intelligence Analytique</p>
+              <code className="text-xs text-accent">POST /api/v1/hifadih/analyze</code>
+            </div>
+            <div className="p-4 bg-muted/50 rounded-xl border border-border">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Moteur SQL</p>
+              <code className="text-xs text-accent">POST /api/v1/hifadih/query</code>
             </div>
           </div>
         </DocumentCard>
 
         {/* Full Architecture Dossier */}
         <DocumentCard 
-          title="Composants du Système"
-          description="Inventaire exhaustif de l'interface et de la logique métier."
+          title="Dossier Complet d'Architecture"
+          description="Inventaire exhaustif de l'interface et de la logique métier de Hifadih."
           icon={Layers}
         >
-          <h4>Architecture Frontend</h4>
-          <p>L'application est construite avec React et suit une structure modulaire :</p>
+          <h4>Frontend Core</h4>
+          <p>L'interface est construite avec React et Tailwind CSS, favorisant une UX fluide et réactive.</p>
           <ul>
-            <li><strong>Dashboard Engine</strong> : Gestionnaire de layout flexible pour organiser les analyses.</li>
-            <li><strong>Chart Editor</strong> : Interface visuelle pour transformer les colonnes SQL en graphiques D3.js.</li>
-            <li><strong>SQL Lab</strong> : IDE interactif pour l'exploration de données brute.</li>
+            <li><strong>Dashboard Center</strong> : Visionneuse intelligente et personnalisable de données.</li>
+            <li><strong>Chart Factory</strong> : Moteur de génération de graphiques piloté par l'IA.</li>
+            <li><strong>SQL IDE</strong> : Environnement de développement SQL intégré pour l'extraction de données.</li>
           </ul>
+
+          <h4>Services de Données</h4>
+          <p>Le cœur logicielle de Hifadih gère les flux via un service unifié (hifadihService) :</p>
+          <ol>
+            <li>Collecte des métadonnées des sources connectées.</li>
+            <li>Cache intelligent pour des performances optimales.</li>
+            <li>Moteur de recommandation IA pour les meilleures visualisations.</li>
+            <li>Génération de rapports automatiques et alertes.</li>
+          </ol>
         </DocumentCard>
 
         {/* Security & Integration Report */}
         <DocumentCard 
-          title="Sécurité & Confidentialité"
-          description="Politique de gestion des données au sein de Hifadih BI."
+          title="Sécurité & Intégration Stratégique"
+          description="Synthèse exhaustive des protocoles de protection des données Hifadih."
           icon={Shield}
         >
           <div className="bg-accent/5 border border-accent/20 rounded-xl p-6 mb-6">
             <div className="flex items-center gap-2 text-accent font-bold mb-2">
               <Info className="w-4 h-4" />
-              Résumé de Sécurité
+              Vision Sécuritaire
             </div>
             <p className="text-sm italic">
-              "Toutes les analyses et données traitées par Hifadih BI restent exclusivement dans l'environnement local de l'utilisateur. Aucune donnée brute n'est transmise à nos serveurs."
+              "Hifadih BI place la souveraineté de vos données au cœur de son architecture. Chaque flux est crypté, chaque accès est audité, garantissant une intégrité totale de votre intelligence d'entreprise."
             </p>
           </div>
+
+          <h4>Gouvernance des Données</h4>
+          <p>Protocoles de protection et de mise à disposition des informations :</p>
+          <ul>
+            <li><strong>Protection RLS</strong> : Isolation stricte des données selon le profil utilisateur.</li>
+            <li><strong>Audits Immunitaires</strong> : Screening temps réel de l'état de santé du système.</li>
+            <li><strong>Connecteurs Certifiés</strong> : Protocoles standardisés pour l'échange de données sécurisé.</li>
+          </ul>
         </DocumentCard>
       </div>
 

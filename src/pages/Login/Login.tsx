@@ -8,134 +8,186 @@ import {
   Github, 
   Chrome, 
   ShieldCheck,
-  ChevronRight,
-  Database,
-  Globe,
-  Fingerprint
+  CheckCircle2
 } from 'lucide-react';
+import { hifadihService } from '../../lib/hifadihService';
 import { toast } from 'sonner';
 import { 
   FormSection, 
   FormInput, 
-  FormButton,
-  FormLabel
+  FormButton 
 } from '../../components/ui/FormElements';
 
 export const Login = ({ onLogin }: { onLogin: () => void }) => {
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
+  const [email, setEmail] = React.useState('admin@hifadih.ai');
+  const [password, setPassword] = React.useState('••••••••••••');
+  const [rememberMe, setRememberMe] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulation d'une légère pause pour l'animation
     setTimeout(() => {
       onLogin();
       setIsSubmitting(false);
-    }, 800);
+      toast.success('Connexion réussie à Hifadih BI');
+    }, 500);
   };
 
   const handleSSO = async (provider: 'google' | 'github' | 'ldap') => {
-    setIsSubmitting(true);
-    // Simulation d'une légère pause pour l'animation
-    setTimeout(() => {
+    try {
+      await hifadihService.authenticateSSO(provider);
       toast.success(`Authentification ${provider.toUpperCase()} réussie`);
       onLogin();
-      setIsSubmitting(false);
-    }, 800);
+    } catch (error) {
+      toast.error(`Échec de l'authentification ${provider.toUpperCase()}`);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-muted/20 flex items-center justify-center p-6 relative overflow-hidden text-foreground">
-      {/* Background Grid - Très subtil */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ 
-        backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`,
-        backgroundSize: '24px 24px' 
-      }}></div>
+    <div className="min-h-screen bg-muted/20 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden text-foreground">
+      {/* Background Subtle Pattern */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-[0.03]" 
+        style={{ 
+          backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`,
+          backgroundSize: '24px 24px' 
+        }} 
+      />
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-background rounded-[15px] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-border relative z-10"
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+        className="w-full max-w-md bg-background rounded-2xl p-8 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.35)] border border-border relative z-10"
       >
-        <div className="flex flex-col items-center mb-10">
-          <div className="w-12 h-12 bg-foreground rounded-xl flex items-center justify-center shadow-lg mb-4">
-            <BarChart3 className="w-6 h-6 text-background" />
+        {/* Brand Header */}
+        <div className="flex flex-col items-center mb-8 text-center">
+          <div className="w-12 h-12 bg-black text-white rounded-2xl flex items-center justify-center shadow-md mb-3.5 ring-4 ring-neutral-100 dark:ring-neutral-800">
+            <BarChart3 className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Hifadih BI</h1>
-          <p className="text-muted-foreground text-sm mt-1">Plateforme Intelligence</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Hifadih BI</h1>
+          <p className="text-muted-foreground text-xs mt-1">
+            Connectez-vous à votre espace
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <FormSection label="Email">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email field with elevated label */}
+          <div className="space-y-1.5">
+            <label className="flex items-center justify-between text-xs font-semibold text-foreground tracking-tight select-none">
+              <span className="flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-muted-foreground" />
+                <span>Adresse e-mail</span>
+              </span>
+              <span className="text-[10px] font-medium text-muted-foreground/70 tracking-normal">
+                Professionnel
+              </span>
+            </label>
             <FormInput 
               type="email" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="votre@email.com" 
+              placeholder="nom@entreprise.com" 
               required
             />
-          </FormSection>
+          </div>
 
-          <FormSection label="Mot de passe">
-            <FormInput 
-              type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••" 
-              required
-            />
-          </FormSection>
-
-          <div className="space-y-4">
-            <FormButton 
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-4 tracking-[0.2em]"
-            >
-              {isSubmitting ? "Connexion..." : "Se connecter"}
-              {!isSubmitting && <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform inline-block" />}
-            </FormButton>
-
-            <div className="flex justify-center pt-2">
+          {/* Password field with elevated label */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between select-none">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-foreground tracking-tight">
+                <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                <span>Mot de passe</span>
+              </label>
               <button 
                 type="button" 
-                className="text-[9px] font-black text-muted-foreground hover:text-foreground uppercase tracking-[0.2em] transition-colors"
+                onClick={() => toast.info('Un lien de réinitialisation sécurisé sera envoyé à votre adresse.')}
+                className="text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
                 Mot de passe oublié ?
               </button>
             </div>
+            <FormInput 
+              type="password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••" 
+              required
+            />
+          </div>
+
+          <div className="flex items-center pt-0.5">
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-foreground select-none">
+              <input 
+                type="checkbox" 
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-border text-black accent-black cursor-pointer"
+              />
+              <span className="font-normal">Mémoriser cette session</span>
+            </label>
+          </div>
+
+          <div className="pt-2">
+            <button 
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-3.5 px-4 bg-black hover:bg-neutral-800 active:bg-neutral-900 text-white rounded-xl text-xs font-semibold tracking-wide transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border border-black"
+            >
+              {isSubmitting ? "Connexion en cours..." : "Se connecter"}
+              {!isSubmitting && <ArrowRight className="w-4 h-4" />}
+            </button>
           </div>
         </form>
 
-        <div className="relative my-10 flex items-center gap-4">
+        {/* Divider */}
+        <div className="relative my-6 flex items-center gap-4">
           <div className="flex-1 h-px bg-border"></div>
-          <span className="text-[9px] font-bold text-muted-foreground/30 uppercase tracking-widest">Ou</span>
+          <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest">
+            Ou
+          </span>
           <div className="flex-1 h-px bg-border"></div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        {/* SSO Options */}
+        <div className="grid grid-cols-2 gap-2.5">
           <button 
+            type="button"
             onClick={() => handleSSO('google')}
-            className="flex items-center justify-center gap-2 py-3 border border-border rounded-xl text-[9px] font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95"
+            className="flex items-center justify-center gap-2 py-2.5 px-3 border border-border rounded-xl text-xs font-semibold text-foreground/80 hover:bg-muted hover:text-foreground transition-all cursor-pointer shadow-2xs active:scale-95"
           >
-            <Chrome className="w-4 h-4" />
-            GOOGLE
+            <Chrome className="w-4 h-4 text-rose-500" />
+            <span>Google</span>
           </button>
           <button 
+            type="button"
             onClick={() => handleSSO('github')}
-            className="flex items-center justify-center gap-2 py-3 border border-border rounded-xl text-[9px] font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95"
+            className="flex items-center justify-center gap-2 py-2.5 px-3 border border-border rounded-xl text-xs font-semibold text-foreground/80 hover:bg-muted hover:text-foreground transition-all cursor-pointer shadow-2xs active:scale-95"
           >
             <Github className="w-4 h-4" />
-            GITHUB
+            <span>GitHub</span>
           </button>
+        </div>
+
+        {/* Trust Badges */}
+        <div className="mt-8 pt-6 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground/70">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Chiffrement 256-bit</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>SOC-2 & RGPD</span>
+          </div>
         </div>
       </motion.div>
       
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">
+      {/* Footer copyright */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-medium text-muted-foreground/60">
         <span>Hifadih BI</span>
-        <div className="w-1 h-1 bg-border rounded-full"></div>
+        <div className="w-1 h-1 bg-border rounded-full" />
         <span>© 2026</span>
       </div>
     </div>

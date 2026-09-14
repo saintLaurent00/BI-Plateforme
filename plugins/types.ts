@@ -1,4 +1,3 @@
-import * as d3 from 'd3';
 export type ChartType = 
   | 'Line' | 'Bar' | 'Pie' | 'Area' | 'Scatter' | 'Bubble' 
   | 'Radar' | 'Funnel' | 'Waterfall' | 'Heatmap' | 'Donut' 
@@ -22,10 +21,6 @@ export interface ChartPluginProps {
   config: any;
   width: number;
   height: number;
-  colorScale: d3.ScaleOrdinal<string, string, never>;
-  showTooltip: (event: any, label: string, value: any, seriesName?: string, rawData?: any) => void;
-  moveTooltip: (event: any) => void;
-  hideTooltip: () => void;
   onItemClick?: (data: any) => void;
 }
 
@@ -41,5 +36,6 @@ export interface ChartPlugin {
   metadata: ChartMetadata;
   buildQuery?: (formData: any) => any;
   controlPanel?: any;
-  render: (g: d3.Selection<SVGGElement, unknown, null, undefined>, props: ChartPluginProps) => void;
+  getOptions: (props: ChartPluginProps) => any;
+  render?: (g: any, props: any) => void;
 }

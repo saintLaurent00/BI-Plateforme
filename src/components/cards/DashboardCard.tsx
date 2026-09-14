@@ -10,9 +10,9 @@ import {
   Eye,
   Trash2
 } from 'lucide-react';
-import { Badge } from '../Badge';
+import { Badge } from '../ui/Badge';
 import { MiniDashboard } from './MiniDashboard';
-import { cn } from '../../lib/utils';
+import { cn } from '../../core/utils/utils';
 
 interface DashboardCardProps {
   dashboard: any;

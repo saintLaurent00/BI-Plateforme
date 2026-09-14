@@ -29,7 +29,8 @@ import {
   FormButtonGroup
 } from '../../components/ui/FormElements';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { executeQuery, getTables, getTableSchema, saveQuery, getSavedQueries, saveDatasetMetadata } from '../../core/utils/db';
+import { executeQuery, getTables, getTableSchema, saveQuery, getSavedQueries, getDataSources } from '../../core/utils/db';
+import { hifadihService } from '../../lib/hifadihService';
 import { cn } from '../../core/utils/utils';
 import { toast } from 'sonner';
 
@@ -77,6 +78,7 @@ export const SqlLab = () => {
   const [sql, setSql] = React.useState(isCreateMode ? "-- Écrivez votre requête de dataset ici\nSELECT * FROM sales_data LIMIT 100;" : "SELECT * FROM sqlite_master;");
   const [results, setResults] = React.useState<any[]>([]);
   const [tables, setTables] = React.useState<string[]>([]);
+  const [tableSearchText, setTableSearchText] = React.useState('');
   const [savedQueries, setSavedQueries] = React.useState<any[]>([]);
   const [selectedTable, setSelectedTable] = React.useState<string | null>(null);
   const [schema, setSchema] = React.useState<any[]>([]);
@@ -84,37 +86,66 @@ export const SqlLab = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [executionTime, setExecutionTime] = React.useState<number | null>(null);
   const [activeQueryId, setActiveQueryId] = React.useState<string | null>(null);
-  const [databases, setDatabases] = React.useState<any[]>([]);
-  const [selectedDatabase, setSelectedDatabase] = React.useState<any>({ id: 'local', database_name: 'Local_SQLite' });
+  const [databases, setDatabases] = React.useState<any[]>([{ id: 'local', database_name: 'Base Locale (SQLite)' }]);
+  const [selectedDatabase, setSelectedDatabase] = React.useState<any>({ id: 'local', database_name: 'Base Locale (SQLite)' });
   const [isDbSelectorOpen, setIsDbSelectorOpen] = React.useState(false);
   const [paramsModalOpen, setParamsModalOpen] = React.useState(false);
   const [queryParameters, setQueryParameters] = React.useState<Record<string, string>>({});
   const [paramKeys, setParamKeys] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    loadSchema();
+    loadDatabases();
     loadSavedQueries();
     loadHistory();
-    loadDatabases();
   }, []);
 
   const loadDatabases = async () => {
-    setDatabases([{ id: 'local', database_name: 'Local_SQLite' }]);
+    try {
+      const dbsRes = await hifadihService.getDatabases();
+      const dbs = dbsRes.result || [];
+      
+      let sqliteDbs: any[] = [];
+      try {
+        sqliteDbs = await getDataSources();
+      } catch (sqliteErr) {
+        console.error('Failed to load SQL data sources:', sqliteErr);
+      }
+
+      const formattedSqliteDbs = sqliteDbs.map((db: any) => ({
+        ...db,
+        database_name: db.name || db.databaseName || db.database_name || 'Base de données',
+      }));
+
+      const allDbs = [
+        { id: 'local', database_name: 'Base Locale (SQLite)' },
+        ...formattedSqliteDbs,
+        ...dbs
+      ];
+      setDatabases(allDbs);
+      setSelectedDatabase(allDbs[0]);
+      await loadSchemaForDatabase(allDbs[0]);
+    } catch (e) {
+      setDatabases([{ id: 'local', database_name: 'Base Locale (SQLite)' }]);
+    }
+  };
+
+  const loadSchemaForDatabase = async (dbObj: any) => {
+    if (!dbObj) return;
+    try {
+      const t = await getTables(dbObj.id);
+      if (dbObj.id === 'local') {
+        const businessTables = t.filter(x => !['charts', 'dashboards', 'saved_queries', 'roles', 'permissions', 'data_sources'].includes(x));
+        setTables(businessTables);
+      } else {
+        setTables(t);
+      }
+    } catch (err) {
+      console.error('Failed to load tables:', err);
+    }
   };
 
   const loadSchema = async () => {
-    if (selectedDatabase.id === 'local') {
-      try {
-        const t = await getTables();
-        setTables(t);
-      } catch (err) {
-        console.error('Failed to load tables:', err);
-      }
-    } else {
-      // For Superset, we'd ideally fetch tables for the selected DB
-      // For now, we'll keep it simple or show a message
-      setTables([]);
-    }
+    await loadSchemaForDatabase(selectedDatabase);
   };
 
   const loadSavedQueries = async () => {
@@ -128,7 +159,7 @@ export const SqlLab = () => {
 
   const handleTableClick = async (tableName: string) => {
     setSelectedTable(tableName);
-    const s = await getTableSchema(tableName);
+    const s = await getTableSchema(tableName, selectedDatabase.id);
     setSchema(s);
     setSql(`SELECT * FROM "${tableName}" LIMIT 100;`);
     setActiveQueryId(null);
@@ -141,7 +172,7 @@ export const SqlLab = () => {
   };
 
   const loadHistory = () => {
-    const h = localStorage.getItem('prism_sql_history');
+    const h = localStorage.getItem('hifadih_sql_history');
     if (h) setHistory(JSON.parse(h));
   };
 
@@ -149,7 +180,7 @@ export const SqlLab = () => {
     const newEntry = { id: crypto.randomUUID(), sql: query, time, success, timestamp: new Date().toISOString() };
     const newHistory = [newEntry, ...history].slice(0, 50);
     setHistory(newHistory);
-    localStorage.setItem('prism_sql_history', JSON.stringify(newHistory));
+    localStorage.setItem('hifadih_sql_history', JSON.stringify(newHistory));
   };
 
   const handleRun = async (params: Record<string, string> = {}) => {
@@ -177,17 +208,23 @@ export const SqlLab = () => {
       // Replace parameters in SQL
       let finalizedSql = sql;
       Object.entries(params).forEach(([key, value]) => {
-        // Simple string replacement for now. 
         finalizedSql = finalizedSql.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g'), value);
       });
 
-      const res = await executeQuery(finalizedSql);
+      // We always run through the real executeQuery targeting the chosen database container.
+      const res = await executeQuery(finalizedSql, selectedDatabase.id);
       setResults(res);
       const time = Math.round(performance.now() - start);
       setExecutionTime(time);
       addToHistory(finalizedSql, time, true);
       setActiveTab('results');
       setParamsModalOpen(false);
+
+      // Reload tables and schemas if we ran a schema mutation/DDL query
+      const isMutation = !/^\s*SELECT\b/i.test(finalizedSql);
+      if (isMutation) {
+        await loadSchemaForDatabase(selectedDatabase);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to execute query');
       setResults([]);
@@ -210,12 +247,14 @@ export const SqlLab = () => {
     try {
       const id = activeQueryId || crypto.randomUUID();
       if (saveType === 'dataset') {
-          await saveDatasetMetadata({
-              table_name: queryInfo.name,
+          // Logic for Hifadih BI internal datasets
+          await hifadihService.createDataset({
               name: queryInfo.name,
+              table_name: queryInfo.name,
+              database_id: selectedDatabase.id === 'local' ? 1 : selectedDatabase.id,
+              database: { id: selectedDatabase.id === 'local' ? 1 : selectedDatabase.id, database_name: selectedDatabase.database_name || 'Database' },
               sql: sql,
-              columns: [], // Will be auto-populated on first load
-              metrics: []
+              kind: 'virtual'
           });
       } else {
           await saveQuery({
@@ -237,7 +276,7 @@ export const SqlLab = () => {
       setIsModalOpen(false);
       loadSavedQueries();
       if (saveType === 'dataset') {
-          toast.success("Dataset enregistré avec succès");
+          toast.success("Dataset publié avec succès dans Hifadih BI");
           navigate('/datasets');
       } else {
           toast.success("Requête enregistrée avec succès");
@@ -277,7 +316,7 @@ export const SqlLab = () => {
                     onClick={() => {
                       setSelectedDatabase(db);
                       setIsDbSelectorOpen(false);
-                      loadSchema();
+                      loadSchemaForDatabase(db);
                     }}
                     className={cn(
                       "w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors flex items-center gap-2",
@@ -296,6 +335,8 @@ export const SqlLab = () => {
             <input 
               type="text" 
               placeholder="Search tables..." 
+              value={tableSearchText}
+              onChange={(e) => setTableSearchText(e.target.value)}
               className="input-minimal pl-9 py-2 text-xs"
             />
           </div>
@@ -322,15 +363,17 @@ export const SqlLab = () => {
             {tables.length === 0 ? (
               <p className="text-[10px] text-muted-foreground italic px-3">No tables found.</p>
             ) : (
-              tables.map(table => (
-                <SchemaItem 
-                  key={table} 
-                  name={table} 
-                  type="Table" 
-                  icon={TableIcon} 
-                  onClick={() => handleTableClick(table)}
-                />
-              ))
+              tables
+                .filter(table => table.toLowerCase().includes(tableSearchText.toLowerCase()))
+                .map(table => (
+                  <SchemaItem 
+                    key={table} 
+                    name={table} 
+                    type="Table" 
+                    icon={TableIcon} 
+                    onClick={() => handleTableClick(table)}
+                  />
+                ))
             )}
           </SchemaFolder>
           
@@ -418,7 +461,7 @@ export const SqlLab = () => {
             spellCheck={false}
           />
           <div className="absolute bottom-4 right-6 flex items-center gap-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            <span>SQLite WASM</span>
+            <span>{selectedDatabase.id === 'local' ? 'SQLite WASM' : 'Hifadih BI Engine'}</span>
             <span>UTF-8</span>
           </div>
         </div>

@@ -1,71 +1,73 @@
-import * as d3 from 'd3';
 import { ChartPluginProps } from '../../types';
 
-export default function PieChart(g: d3.Selection<SVGGElement, unknown, null, undefined>, props: ChartPluginProps) {
-  const { data, xAxis, yAxis, width, height, colorScale, showTooltip, moveTooltip, hideTooltip, type, onItemClick } = props;
-  const radius = Math.min(width, height) / 2;
-  
-  const pieG = g.append('g')
-    .attr('transform', `translate(${width / 2},${height / 2})`);
+export default function PieChart(props: ChartPluginProps) {
+  const { data, xAxis, yAxis, type } = props;
 
-  const pie = d3.pie<any>()
-    .value(d => Number(d[yAxis[0]]))
-    .sort(null);
+  const isDonut = type === 'Donut';
+  const metric = yAxis[0];
 
-  const arc = d3.arc<any>()
-    .innerRadius(type === 'Donut' ? radius * 0.6 : 0)
-    .outerRadius(radius)
-    .cornerRadius(8)
-    .padAngle(0.02);
+  const seriesData = data.map(d => ({
+    name: String(d[xAxis]),
+    value: d[metric]
+  }));
 
-  const arcHover = d3.arc<any>()
-    .innerRadius(type === 'Donut' ? radius * 0.6 : 0)
-    .outerRadius(radius * 1.05)
-    .cornerRadius(8)
-    .padAngle(0.02);
-
-  const arcs = pieG.selectAll('.arc')
-    .data(pie(data))
-    .enter().append('g')
-    .attr('class', 'arc');
-
-  const showLabels = props.config?.showLabels ?? true;
-
-  arcs.append('path')
-    .attr('d', arc)
-    .attr('fill', (d, i) => colorScale(String(i)))
-    .attr('cursor', 'pointer')
-    .style('transition', 'all 0.3s ease')
-    .on('mouseover', (e, d) => {
-      d3.select(e.currentTarget).transition().duration(200).attr('d', arcHover as any);
-      showTooltip(e, String(d.data[xAxis]), d.data[yAxis[0]], undefined, d.data);
-    })
-    .on('mousemove', moveTooltip)
-    .on('mouseout', (e) => {
-      d3.select(e.currentTarget).transition().duration(200).attr('d', arc as any);
-      hideTooltip();
-    })
-    .on('click', (e, d) => {
-      if (onItemClick) onItemClick(d.data);
-    });
-
-  if (showLabels) {
-    const labelArc = d3.arc<any>()
-      .innerRadius(radius * 0.8)
-      .outerRadius(radius * 0.8);
-
-    arcs.append('text')
-      .attr('transform', d => `translate(${labelArc.centroid(d)})`)
-      .attr('dy', '.35em')
-      .attr('text-anchor', 'middle')
-      .attr('class', 'text-[10px] font-bold fill-white')
-      .style('pointer-events', 'none')
-      .text(d => {
-        // Only show label if angle is large enough
-        if (d.endAngle - d.startAngle > 0.25) {
-          return String(d.data[xAxis]);
-        }
-        return '';
-      });
-  }
+  return {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      borderWidth: 1,
+      textStyle: {
+        color: '#fff',
+        fontSize: 11
+      },
+      padding: [12, 16],
+      borderRadius: 12,
+      formatter: '{b}: {c} ({d}%)'
+    },
+    legend: {
+      bottom: 0,
+      itemWidth: 10,
+      itemHeight: 10,
+      textStyle: {
+        color: '#64748b',
+        fontSize: 10
+      }
+    },
+    series: [
+      {
+        name: metric,
+        type: 'pie',
+        radius: isDonut ? ['40%', '70%'] : '70%',
+        center: ['50%', '45%'],
+        avoidLabelOverlap: true,
+        itemStyle: {
+          borderRadius: 8,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: false,
+          position: 'center'
+        },
+        emphasis: {
+          label: {
+            show: isDonut,
+            fontSize: 16,
+            fontWeight: 'bold',
+            formatter: '{b}\n{d}%'
+          },
+          scaleSize: 10
+        },
+        labelLine: {
+          show: false
+        },
+        data: seriesData,
+        animationType: 'scale',
+        animationEasing: 'elasticOut',
+        animationDuration: 1500
+      }
+    ]
+  };
 }

@@ -25,12 +25,16 @@ import {
 } from 'lucide-react';
 import { getCharts as getLocalCharts, getChart as getLocalChart, executeQuery } from '../../core/utils/db';
 import Papa from 'papaparse';
+import { hifadihService } from '../../lib/hifadihService';
 import { ChartCard } from '../../components/ui/cards/ChartCard';
+import { ChartCardSkeleton, ChartSkeleton, Skeleton } from '../../components/ui/Skeleton';
 import { Badge } from '../../components/ui/Badge';
 import { MiniChart } from '../../components/ui/cards/MiniChart';
 import { cn } from '../../core/utils/utils';
 import { AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
+import { exportToPDF } from '../../lib/pdfExport';
+import { FileText } from 'lucide-react';
 
 const FilterSection = ({ title, options }: any) => (
   <div className="space-y-4">
@@ -63,10 +67,24 @@ export const Charts = () => {
 
   const loadCharts = async () => {
     try {
+      setIsLoading(true);
+      const { result } = await hifadihService.getCharts();
+      
+      // Combiner avec les graphiques locaux
       const local = await getLocalCharts();
-      setCharts(local);
+      const combined = [...local];
+      
+      result.forEach((remote: any) => {
+        if (!combined.find(l => l.id === remote.id)) {
+          combined.push(remote);
+        }
+      });
+      
+      setCharts(combined);
     } catch (err) {
       console.error('Failed to load charts:', err);
+      const local = await getLocalCharts();
+      setCharts(local);
     } finally {
       setIsLoading(false);
     }
@@ -119,6 +137,18 @@ export const Charts = () => {
     } catch (err) {
       console.error('CSV Export failed:', err);
       toast.error("L'exportation CSV a échoué", { id: 'export-csv' });
+    }
+  };
+
+  const handleExportPDF = async (chart: any) => {
+    try {
+      toast.loading("Génération du PDF...", { id: 'export-pdf' });
+      const fileName = `${chart.name || 'Chart'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      await exportToPDF('chart-preview-container', { fileName });
+      toast.success("PDF exporté avec succès", { id: 'export-pdf' });
+    } catch (err) {
+      console.error('PDF Export failed:', err);
+      toast.error("L'exportation PDF a échoué", { id: 'export-pdf' });
     }
   };
 
@@ -230,8 +260,8 @@ export const Charts = () => {
           {/* Grid/List View */}
           {isLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-48 bg-muted animate-pulse rounded-lg"></div>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                <ChartCardSkeleton key={i} />
               ))}
             </div>
           ) : charts.length === 0 ? (
@@ -388,17 +418,20 @@ export const Charts = () => {
 
               <div className="flex-1 overflow-y-auto p-8 space-y-10">
                 {isDetailsLoading ? (
-                  <div className="space-y-8 animate-pulse">
-                    <div className="h-64 bg-muted rounded-2xl" />
+                  <div className="space-y-8 animate-in fade-in duration-200">
+                    <div className="h-64 border border-border/50 rounded-3xl overflow-hidden bg-white/60 p-4">
+                      <ChartSkeleton type={selectedChart.viz_type || selectedChart.chart_type} showHeader={false} />
+                    </div>
                     <div className="space-y-4">
-                      <div className="h-4 bg-muted w-3/4 rounded" />
-                      <div className="h-4 bg-muted w-1/2 rounded" />
+                      <Skeleton className="h-4 w-3/4 rounded-md" />
+                      <Skeleton className="h-4 w-1/2 rounded-md" />
+                      <Skeleton className="h-20 w-full rounded-xl" />
                     </div>
                   </div>
                 ) : (
                   <>
                     {/* Visual Preview */}
-                    <div className="h-64 bg-muted/30 rounded-3xl border border-border/50 flex items-center justify-center relative group overflow-hidden cursor-pointer" onClick={() => handleChartClick(selectedChart)}>
+                    <div id="chart-preview-container" className="h-64 bg-muted/30 rounded-3xl border border-border/50 flex items-center justify-center relative group overflow-hidden cursor-pointer bg-white" onClick={() => handleChartClick(selectedChart)}>
                       <div className="w-full h-full p-8 opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700">
                         <MiniChart type={selectedChart.viz_type || selectedChart.chart_type} />
                       </div>
@@ -506,9 +539,18 @@ export const Charts = () => {
                         <button 
                           onClick={() => handleExportCSV(selectedChart)}
                           className="flex items-center gap-3 p-4 bg-muted hover:bg-muted/80 rounded-2xl transition-all"
+                          title="Export CSV"
                         >
                           <Download className="w-4 h-4" />
                           <span className="text-xs font-bold">CSV</span>
+                        </button>
+                        <button 
+                          onClick={() => handleExportPDF(selectedChart)}
+                          className="flex items-center gap-3 p-4 bg-muted hover:bg-muted/80 rounded-2xl transition-all"
+                          title="Export PDF"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span className="text-xs font-bold">PDF</span>
                         </button>
                         <button 
                           onClick={() => {

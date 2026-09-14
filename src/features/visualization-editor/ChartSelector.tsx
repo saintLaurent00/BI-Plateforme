@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { getTables, getTableSchema } from '../../core/utils/db';
 import { Badge } from '../../components/ui/Badge';
+import { hifadihService } from '../../lib/hifadihService';
 import { Dataset } from '../../core/types';
 
 import { Stepper } from '../../components/ui/Stepper';
@@ -155,7 +156,10 @@ export const ChartSelector = () => {
 
   const loadData = async () => {
     try {
-      const localTables = await getTables();
+      const [localTables, hifadihResponse] = await Promise.all([
+        getTables(),
+        hifadihService.getDatasets().catch(() => ({ result: [] }))
+      ]);
       
       const localDs = localTables.map(t => ({
         id: t,
@@ -165,7 +169,15 @@ export const ChartSelector = () => {
         source: 'local'
       }));
 
-      setDatasets(localDs);
+      const remoteDs = hifadihResponse.result.map((ds: any) => ({
+        id: ds.id,
+        name: ds.table_name || ds.name,
+        type: ds.kind === 'physical' ? 'Physical' : 'Virtual',
+        kind: ds.kind,
+        source: 'hifadih'
+      }));
+
+      setDatasets([...localDs, ...remoteDs]);
     } catch (err) {
       console.error(err);
     }
@@ -174,7 +186,17 @@ export const ChartSelector = () => {
   const handleNext = () => {
     if (step === 1 && selectedDataset) setStep(2);
     else if (step === 2 && selectedType) {
-      getTableSchema(selectedDataset.id).then(setSchema);
+      if (selectedDataset.source === 'local') {
+        getTableSchema(selectedDataset.id).then(setSchema);
+      } else {
+        // Mock schema for remote datasets for now or fetch it if needed
+        setSchema([
+          { name: 'date', type: 'TIMESTAMP' },
+          { name: 'sales', type: 'FLOAT' },
+          { name: 'quantity', type: 'INT' },
+          { name: 'category', type: 'VARCHAR' }
+        ]);
+      }
       setStep(3);
     }
     else if (step === 3) handleCreate();

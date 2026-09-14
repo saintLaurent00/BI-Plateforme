@@ -58,7 +58,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({ data, rowDimension, colD
                     </td>
                   );
                 })}
-                <td className="px-4 py-2.5 text-sm font-bold text-prism-600 border-b border-slate-100 bg-prism-50">
+                <td className="px-4 py-2.5 text-sm font-bold text-hifadih-600 border-b border-slate-100 bg-hifadih-50">
                   {rowTotal.toLocaleString()}
                 </td>
               </tr>

@@ -1,5 +1,7 @@
 {
   "name": "Hifadih BI",
   "description": "Une plateforme moderne et performante d'exploration et de visualisation de données.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
+

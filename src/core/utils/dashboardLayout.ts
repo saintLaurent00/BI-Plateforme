@@ -120,7 +120,7 @@ export const createItem = (type: string, content?: any): LayoutItem => {
     parents: [],
     meta: {
       width: 12,
-      height: type === 'chart' ? 300 : (type === 'row' || type === 'column' ? 150 : undefined),
+      height: type === 'chart' ? 360 : (type === 'markdown' ? 180 : undefined),
       backgroundColor: 'transparent',
       title: type === 'tab' ? 'Tab title' : (type === 'tabs' ? 'Tabs' : undefined)
     },
@@ -202,4 +202,64 @@ export const moveItem = (
 
   console.log(`Move successful. New layout keys: ${Object.keys(nextLayout).length}`);
   return nextLayout;
+};
+
+/**
+ * Maps legacy layout format to normalized Hifadih Layout.
+ * Supports legacy formats for backward compatibility during migration.
+ */
+export const mapLegacyToHifadihLayout = (position: any): Layout => {
+  const layout: Layout = {};
+  
+  Object.keys(position).forEach(id => {
+    const component = position[id];
+    if (typeof component !== 'object' || !component.type) return;
+
+    layout[id] = {
+      id,
+      type: component.type,
+      children: component.children || [],
+      parents: component.parents || [],
+      meta: component.meta || {},
+      content: component.meta?.chartId ? { id: component.meta.chartId, name: component.meta.sliceName } : component.meta?.text
+    };
+  });
+
+  return layout;
+};
+
+/**
+ * Maps Hifadih's normalized Layout back to engine storage format.
+ */
+export const mapHifadihLayoutToEngine = (layout: Layout): any => {
+  const position: any = {};
+  
+  Object.keys(layout).forEach(id => {
+    const item = layout[id];
+    if (item.type === 'ROOT' || item.type === 'GRID') {
+      position[id] = {
+        id,
+        type: item.type,
+        children: item.children,
+        parents: item.parents,
+        meta: item.meta
+      };
+      return;
+    }
+
+    position[id] = {
+      id,
+      type: item.type,
+      children: item.children,
+      parents: item.parents,
+      meta: {
+        ...item.meta,
+        chartId: item.type === 'CHART' ? item.content?.id : undefined,
+        sliceName: item.type === 'CHART' ? item.content?.name : undefined,
+        text: (item.type === 'MARKDOWN' || item.type === 'HEADER') ? item.content : undefined
+      }
+    };
+  });
+
+  return position;
 };

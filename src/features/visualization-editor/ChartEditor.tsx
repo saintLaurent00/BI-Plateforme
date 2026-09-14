@@ -44,12 +44,13 @@ import {
 import { executeQuery, getTables, getTableSchema, saveChart } from '../../core/utils/db';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { Modal } from '../../components/ui/Modal';
-import { D3Chart } from '../../components/charts/D3Chart';
+import { EChartsChart } from '../../components/charts/EChartsChart';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { AIInsight } from '../../components/dashboard/AIInsight';
 import { aiService } from '../../lib/ai-service';
 import { toast } from 'sonner';
 import { getChartPlugin, chartPlugins } from '../../../plugins';
+import { ChartSkeleton } from '../../components/ui/Skeleton';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -221,29 +222,39 @@ const CollapsibleSection = ({ title, icon: Icon, children, defaultOpen = false }
 const CATEGORY_ICONS: Record<string, any> = {
   'Evolution': TrendingUp,
   'Distribution': BarChartIcon,
-  'Classement': BarChartIcon,
+  'Ranking': BarChartIcon,
   'Part-to-whole': PieChartIcon,
   'Flow': Activity,
   'Correlation': Activity,
-  'Correlation ': Activity,
-  'Ranking': BarChartIcon,
-  'Part du tout': PieChartIcon,
-  'Hiérarchie': Layers,
-  'Indicateurs': Hash,
-  'Carte': LayoutIcon,
+  'Hierarchical': Layers,
   'KPIs': Hash,
+  'Map': LayoutIcon,
 };
 
-const CHART_CATEGORIES = Array.from(new Set(chartPlugins.map(p => p.metadata.category).filter(Boolean))).map(cat => ({
-  name: cat as string,
+const CATEGORY_TRANSLATIONS: Record<string, string> = {
+  'Evolution': 'Évolution',
+  'Distribution': 'Distribution',
+  'Ranking': 'Classement',
+  'Part-to-whole': 'Part du tout',
+  'Flow': 'Flux',
+  'Correlation': 'Corrélation',
+  'Hierarchical': 'Hiérarchie',
+  'KPIs': 'Indicateurs',
+  'Map': 'Cartes',
+};
+
+const CHART_CATEGORIES = [{ name: 'Tout', icon: Layers }, ...Array.from(new Set(chartPlugins.map(p => p.metadata.category?.trim()).filter(Boolean))).map(cat => ({
+  name: CATEGORY_TRANSLATIONS[cat as string] || cat as string,
+  internalName: cat as string,
   icon: CATEGORY_ICONS[cat as string] || Layers
-}));
+}))];
 
 const CHART_TYPES = chartPlugins.map(p => ({
   label: p.metadata.name,
   type: p.type,
-  icon: CATEGORY_ICONS[p.metadata.category || ''] || Layers,
-  category: p.metadata.category || 'Evolution',
+  icon: CATEGORY_ICONS[p.metadata.category?.trim() || ''] || Layers,
+  category: p.metadata.category?.trim() || 'Evolution',
+  displayCategory: CATEGORY_TRANSLATIONS[p.metadata.category?.trim() || ''] || p.metadata.category?.trim() || 'Évolution',
   description: p.metadata.description || '',
   thumbnail: p.metadata.thumbnail,
 }));
@@ -256,13 +267,13 @@ export const ChartEditor = () => {
   const [activePreviewTab, setActivePreviewTab] = React.useState<'preview' | 'data' | 'sql'>('preview');
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
   const [chartSearch, setChartSearch] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState('Distribution');
+  const [selectedCategory, setSelectedCategory] = React.useState('Tout');
   
   const [datasets, setDatasets] = React.useState<any[]>([]);
-  const [selectedDataset, setSelectedDataset] = React.useState<{ name: string, id: string | number, source: 'local' }>({
+  const [selectedDataset, setSelectedDataset] = React.useState<{ name: string, id: string | number, source: 'local' | 'hifadih' }>({
     name: searchParams.get('dataset') || searchParams.get('table') || '',
     id: searchParams.get('datasetId') || searchParams.get('table') || '',
-    source: 'local'
+    source: (searchParams.get('source') as any) || 'local'
   });
   const [schema, setSchema] = React.useState<any[]>([]);
   const [xAxis, setXAxis] = React.useState<string[]>(() => {
@@ -319,47 +330,30 @@ export const ChartEditor = () => {
   const [customConfig, setCustomConfig] = React.useState<any>({
     showLegend: true,
     showGrid: true,
-    colorScheme: 'Superset Colors',
+    colorScheme: 'Hifadih Colors',
     labelType: 'Category Name',
     numberFormat: 'Adaptive formatting',
     showCellBars: true,
     pageLength: 10,
     searchBox: true,
     rowLimit: 1000,
-    customScript: `// D3 Custom Script
-// Available variables: d3, svg, data, width, height, margin, xAxis, yAxis, config, showTooltip, moveTooltip, hideTooltip
+    customScript: `// ECharts Custom Options
+// Retournez un objet d'options ECharts.
+// Variables disponibles: data, xAxis, yAxis, config
 
-const g = svg.append('g').attr('transform', \`translate(\${margin.left},\${margin.top})\`);
-const innerWidth = width - margin.left - margin.right;
-const innerHeight = height - margin.top - margin.bottom;
-
-// Example: Simple Bar Chart
-const x = d3.scaleBand()
-  .domain(data.map(d => String(d[xAxis])))
-  .range([0, innerWidth])
-  .padding(0.1);
-
-const y = d3.scaleLinear()
-  .domain([0, d3.max(data, d => d[yAxis[0]])])
-  .range([innerHeight, 0]);
-
-g.append('g')
-  .attr('transform', \`translate(0,\${innerHeight})\`)
-  .call(d3.axisBottom(x));
-
-g.append('g').call(d3.axisLeft(y));
-
-g.selectAll('rect')
-  .data(data)
-  .enter().append('rect')
-  .attr('x', d => x(String(d[xAxis])))
-  .attr('y', d => y(d[yAxis[0]]))
-  .attr('width', x.bandwidth())
-  .attr('height', d => innerHeight - y(d[yAxis[0]]))
-  .attr('fill', '#6366f1')
-  .on('mouseover', (e, d) => showTooltip(e, String(d[xAxis]), d[yAxis[0]]))
-  .on('mousemove', moveTooltip)
-  .on('mouseout', hideTooltip);`
+return {
+  xAxis: {
+    type: 'category',
+    data: data.map(d => String(d[xAxis]))
+  },
+  yAxis: {
+    type: 'value'
+  },
+  series: [{
+    data: data.map(d => d[yAxis[0]]),
+    type: 'bar'
+  }]
+};`
   });
 
   React.useEffect(() => {
@@ -546,7 +540,7 @@ g.selectAll('rect')
   };
 
   const filteredGalleryTypes = CHART_TYPES.filter(t => 
-    (t.category === selectedCategory) &&
+    (selectedCategory === 'Tout' || t.category === selectedCategory) &&
     (t.label.toLowerCase().includes(chartSearch.toLowerCase()))
   );
 
@@ -681,7 +675,7 @@ g.selectAll('rect')
                         {chartLabel}
                         <ChevronRight className="w-3 h-3 text-muted-foreground/40 group-hover:translate-x-1 transition-transform" />
                       </h4>
-                      <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">D3.js Core Library</p>
+                      <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">Apache ECharts Library</p>
                     </div>
                   </button>
                 </div>
@@ -808,7 +802,7 @@ g.selectAll('rect')
                               return (
                                 <FormSection key={control} label="Schéma de couleurs">
                                   <FormSelect 
-                                    value={customConfig.colorScheme || 'default'} 
+                                    value={customConfig.colorScheme} 
                                     onChange={(e) => setCustomConfig({ ...customConfig, colorScheme: e.target.value })}
                                     className="py-2.5 px-4 h-auto text-xs rounded-xl"
                                   >
@@ -819,30 +813,6 @@ g.selectAll('rect')
                                   </FormSelect>
                                 </FormSection>
                               );
-                            }
-                            if (['pie_type', 'line_type', 'bar_mode', 'orientation', 'shape'].includes(control)) {
-                              const configKey = control.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-                              const optionsMap: Record<string, string[]> = {
-                                'pie_type': ['Pie', 'Donut'],
-                                'line_type': ['Line', 'SmoothLine', 'StepLine', 'Area'],
-                                'bar_mode': ['Grouped', 'Stacked'],
-                                'orientation': ['Vertical', 'Horizontal'],
-                                'shape': ['circle', 'square', 'triangle']
-                              };
-                              const opts = optionsMap[control] || [];
-                              if (opts.length > 0) {
-                                return (
-                                  <FormSection key={control} label={control.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}>
-                                    <FormSelect 
-                                      value={customConfig[configKey] || opts[0]} 
-                                      onChange={(e) => setCustomConfig({ ...customConfig, [configKey]: e.target.value })}
-                                      className="py-2.5 px-4 h-auto text-xs rounded-xl"
-                                    >
-                                      {opts.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                    </FormSelect>
-                                  </FormSection>
-                                );
-                              }
                             }
                             if (control.startsWith('show_')) {
                               const configKey = control.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
@@ -893,12 +863,12 @@ g.selectAll('rect')
                   </>
                 )}
 
-                {chartType === 'Custom D3' && (
+                {chartType === 'Custom ECharts' && (
                   <CollapsibleSection title="Custom Configuration" icon={Settings2} defaultOpen={true}>
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                          D3.js Script
+                          ECharts Options Script
                         </label>
                         <textarea 
                           value={customConfig.customScript}
@@ -910,7 +880,7 @@ g.selectAll('rect')
                           spellCheck={false}
                         />
                         <p className="text-[9px] text-muted-foreground italic">
-                          Use d3, svg, data, width, height, margin, xAxis, yAxis to render.
+                          Return an ECharts options object. Available: data, xAxis, yAxis, config.
                         </p>
                       </div>
                     </div>
@@ -1042,33 +1012,27 @@ g.selectAll('rect')
                       exit={{ opacity: 0, scale: 1.02 }}
                       className="w-full h-full"
                     >
-                      {results.length > 0 ? (
-                        <div className="w-full h-full flex flex-col relative">
-                          <input 
-                            value={chartName}
-                            onChange={(e) => setChartName(e.target.value)}
-                            placeholder="Saisir le titre du graphique"
-                            className="bg-transparent border-none outline-none placeholder:text-muted-foreground/30 focus:ring-0 py-2 px-4 text-2xl font-black tracking-tight text-foreground text-center mb-6 hover:bg-muted/30 focus:bg-white focus:shadow-sm rounded-2xl shrink-0 transition-all z-20"
-                          />
-                          <div className="flex-1 min-h-[300px] relative z-10 w-full">
-                            <D3Chart 
-                              type={chartType}
-                              data={results}
-                              xAxis={(xAxis[0] as any)?.column || xAxis[0]} // Handle both objects and strings if necessary
-                              yAxis={yAxis.map(m => m.alias)}
-                              config={{
-                                ...customConfig,
-                                margin: { top: 40, right: customConfig.showLegend !== false ? 120 : 40, bottom: 60, left: 60 }
-                              }}
-                              onItemClick={(item) => {
-                                const label = (xAxis[0] as any)?.column || xAxis[0];
-                                toast.success(`Filtrage par ${label}: ${item[label]}`, {
-                                  description: "Le drill-down et le filtrage croisé sont en cours d'activation."
-                                });
-                              }}
-                            />
-                          </div>
+                      {isExecuting ? (
+                        <div className="w-full h-full p-6 flex items-center justify-center">
+                          <ChartSkeleton type={chartType} showHeader={false} />
                         </div>
+                      ) : results.length > 0 ? (
+                        <EChartsChart 
+                          type={chartType}
+                          data={results}
+                          xAxis={(xAxis[0] as any)?.column || xAxis[0]} // Handle both objects and strings if necessary
+                          yAxis={yAxis.map(m => m.alias)}
+                          config={{
+                            ...customConfig,
+                            margin: { top: 40, right: 40, bottom: 60, left: 60 }
+                          }}
+                          onItemClick={(item) => {
+                            const label = (xAxis[0] as any)?.column || xAxis[0];
+                            toast.success(`Filtrage par ${label}: ${item[label]}`, {
+                              description: "Le drill-down et le filtrage croisé sont en cours d'activation."
+                            });
+                          }}
+                        />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center gap-6">
                           <div className="w-24 h-24 rounded-full bg-accent/5 flex items-center justify-center animate-pulse">
@@ -1091,7 +1055,11 @@ g.selectAll('rect')
                       exit={{ opacity: 0, x: -20 }}
                       className="w-full h-full overflow-auto custom-scrollbar"
                     >
-                      {results.length > 0 ? (
+                      {isExecuting ? (
+                        <div className="p-6 w-full h-full">
+                          <ChartSkeleton type="table" showHeader={false} />
+                        </div>
+                      ) : results.length > 0 ? (
                         <table className="w-full text-left border-collapse">
                           <thead>
                             <tr>
@@ -1192,23 +1160,21 @@ g.selectAll('rect')
                       chartType === t.type ? "border-accent bg-accent/5" : "border-border bg-background hover:border-accent/40"
                     )}
                   >
-                    <div className="aspect-[16/10] bg-muted rounded-2xl overflow-hidden border border-border relative">
-                      <img 
-                        src={getChartImageUrl(t.label, 400, 250)} 
-                        alt={t.label}
-                        className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700"
-                        referrerPolicy="no-referrer"
-                      />
+                    <div className="aspect-[16/10] bg-muted/30 rounded-2xl overflow-hidden border border-border relative flex items-center justify-center group-hover:bg-accent/5 transition-all">
+                      <div className="w-16 h-16 rounded-2xl bg-background border border-border flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:border-accent/40 group-hover:shadow-accent/10 transition-all duration-500">
+                        <t.icon className="w-8 h-8 text-accent" />
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       {chartType === t.type && (
-                        <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow-xl scale-110">
-                          <Check className="w-4 h-4" />
+                        <div className="absolute top-3 right-3 w-6 h-6 bg-accent text-white rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
+                          <Check className="w-3 h-3" />
                         </div>
                       )}
                     </div>
                     <div>
                       <h4 className="text-sm font-black text-foreground tracking-tight">{t.label}</h4>
                       <div className="flex items-center gap-1.5 mt-1">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-60 tracking-wider">D3.js</span>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-60 tracking-wider">ECharts</span>
                         <div className="w-0.5 h-0.5 rounded-full bg-border"></div>
                         <span className="text-[10px] font-bold text-accent uppercase tracking-widest">{t.category}</span>
                       </div>

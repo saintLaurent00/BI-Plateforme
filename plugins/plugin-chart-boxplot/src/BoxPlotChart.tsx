@@ -1,24 +1,131 @@
-import * as d3 from 'd3';
 import { ChartPluginProps } from '../../types';
 
-export default function BoxPlotChart(g: d3.Selection<SVGGElement, unknown, null, undefined>, props: ChartPluginProps) {
-  const { data, xAxis, yAxis, width, height, colorScale } = props;
-  
-  const x = d3.scaleBand().range([0, width]).domain(data.map(d => String(d[xAxis]))).padding(0.4);
-  const y = d3.scaleLinear().range([height, 0]).domain([0, d3.max(data, d => d[yAxis[0]] * 1.5) || 100]);
+export default function BoxPlotChart(props: ChartPluginProps) {
+  const { data, xAxis, yAxis } = props;
 
-  g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x));
-  g.append('g').call(d3.axisLeft(y));
+  // Manual calculation of box plot data per category
+  const categories = Array.from(new Set(data.map(d => String(d[xAxis]))));
+  const metric = yAxis[0];
 
-  const boxG = g.selectAll('.box').data(data).enter().append('g').attr('transform', d => `translate(${x(String(d[xAxis]))},0)`);
+  const boxData = categories.map(cat => {
+    const values = data
+      .filter(d => String(d[xAxis]) === cat)
+      .map(d => d[metric])
+      .sort((a, b) => a - b);
+    
+    if (values.length === 0) return [0, 0, 0, 0, 0];
 
-  boxG.append('line')
-    .attr('x1', x.bandwidth() / 2).attr('x2', x.bandwidth() / 2)
-    .attr('y1', d => y(d[yAxis[0]] * 0.8)).attr('y2', d => y(d[yAxis[0]] * 1.2))
-    .attr('stroke', 'currentColor');
+    const q1 = values[Math.floor(values.length * 0.25)];
+    const median = values[Math.floor(values.length * 0.5)];
+    const q3 = values[Math.floor(values.length * 0.75)];
+    const min = values[0];
+    const max = values[values.length - 1];
 
-  boxG.append('rect')
-    .attr('x', 0).attr('y', d => y(d[yAxis[0]] * 1.1))
-    .attr('width', x.bandwidth()).attr('height', d => y(d[yAxis[0]] * 0.9) - y(d[yAxis[0]] * 1.1))
-    .attr('fill', (d, i) => colorScale(String(i))).attr('stroke', 'black');
+    return [min, q1, median, q3, max];
+  });
+
+  return {
+    backgroundColor: 'transparent',
+    title: [
+      {
+        text: metric,
+        left: 'center',
+        top: 0,
+        textStyle: {
+          color: '#64748b',
+          fontSize: 12,
+          fontWeight: 'normal'
+        }
+      }
+    ],
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      borderWidth: 1,
+      textStyle: {
+        color: '#fff',
+        fontSize: 11
+      },
+      padding: [12, 16],
+      borderRadius: 12,
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    grid: {
+      left: '10%',
+      right: '10%',
+      bottom: '15%',
+      top: '15%'
+    },
+    xAxis: {
+      type: 'category',
+      data: categories,
+      boundaryGap: true,
+      nameGap: 30,
+      splitArea: {
+        show: false
+      },
+      axisLabel: {
+        color: '#64748b',
+        fontSize: 10
+      },
+      splitLine: {
+        show: false
+      },
+      axisLine: {
+        lineStyle: { color: 'rgba(0,0,0,0.1)' }
+      }
+    },
+    yAxis: {
+      type: 'value',
+      name: 'Value',
+      splitArea: {
+        show: true
+      },
+      axisLabel: {
+        color: '#64748b',
+        fontSize: 10
+      },
+      splitLine: {
+        lineStyle: {
+          color: 'rgba(0,0,0,0.05)',
+          type: 'dashed'
+        }
+      }
+    },
+    series: [
+      {
+        name: 'Box',
+        type: 'boxplot',
+        data: boxData,
+        itemStyle: {
+           color: 'rgba(99, 102, 241, 0.1)',
+           borderColor: '#6366f1',
+           borderWidth: 1.5
+        },
+        emphasis: {
+            itemStyle: {
+                color: 'rgba(99, 102, 241, 0.2)',
+                borderWidth: 2,
+                shadowBlur: 10,
+                shadowColor: 'rgba(0,0,0,0.1)'
+            }
+        },
+        tooltip: {
+          formatter: (param: any) => {
+            return [
+              'Category ' + param.name + ': ',
+              'Upper: ' + param.data[5],
+              'Q3: ' + param.data[4],
+              'Median: ' + param.data[3],
+              'Q1: ' + param.data[2],
+              'Lower: ' + param.data[1]
+            ].join('<br/>');
+          }
+        }
+      }
+    ]
+  };
 }

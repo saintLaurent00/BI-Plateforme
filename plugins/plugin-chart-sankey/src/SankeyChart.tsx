@@ -1,25 +1,70 @@
-import * as d3 from 'd3';
-import { sankey as d3Sankey, sankeyLinkHorizontal } from 'd3-sankey';
 import { ChartPluginProps } from '../../types';
 
-export default function SankeyChart(g: d3.Selection<SVGGElement, unknown, null, undefined>, props: ChartPluginProps) {
-  const { data, xAxis, yAxis, width, height, colorScale } = props;
-  const nodes: any[] = [];
-  const links: any[] = [];
-  const nodeMap = new Map();
-  let nodeIdx = 0;
+export default function SankeyChart(props: ChartPluginProps) {
+  const { data, xAxis, yAxis } = props;
+
+  // Assuming data structure: source, target, value
+  // In the D3 version it was mocking targets. 
+  // We'll try to find 'source' and 'target' keys or use xAxis and xAxis2 if available.
   
-  data.slice(0, 10).forEach(d => {
-    const src = String(d[xAxis]);
-    const tgt = "Target " + Math.floor(Math.random() * 3);
-    if (!nodeMap.has(src)) { nodeMap.set(src, nodeIdx++); nodes.push({ name: src }); }
-    if (!nodeMap.has(tgt)) { nodeMap.set(tgt, nodeIdx++); nodes.push({ name: tgt }); }
-    links.push({ source: nodeMap.get(src), target: nodeMap.get(tgt), value: Number(d[yAxis[0]]) || 10 });
+  const nodesSet = new Set<string>();
+  const links: any[] = [];
+  const metric = yAxis[0];
+
+  data.forEach(d => {
+    const source = String(d[xAxis]);
+    const target = d.target ? String(d.target) : `Category ${Math.floor(Math.random() * 5)}`; // Fallback mock if data is incomplete
+    
+    nodesSet.add(source);
+    nodesSet.add(target);
+    
+    links.push({
+      source,
+      target,
+      value: Number(d[metric]) || 1
+    });
   });
 
-  const sankey = d3Sankey().nodeWidth(15).nodePadding(10).extent([[1, 1], [width - 1, height - 6]]);
-  const { nodes: sNodes, links: sLinks } = sankey({ nodes: nodes.map(d => ({ ...d })), links: links.map(d => ({ ...d })) });
+  const nodes = Array.from(nodesSet).map(name => ({ name }));
 
-  g.append('g').attr('stroke', '#000').attr('stroke-opacity', 0.2).selectAll('path').data(sLinks).enter().append('path').attr('d', sankeyLinkHorizontal()).attr('stroke-width', d => Math.max(1, (d as any).width)).attr('fill', 'none').attr('stroke', (d, i) => colorScale(String(i)));
-  g.append('g').selectAll('rect').data(sNodes).enter().append('rect').attr('x', d => (d as any).x0).attr('y', d => (d as any).y0).attr('height', d => (d as any).y1 - (d as any).y0).attr('width', d => (d as any).x1 - (d as any).x0).attr('fill', (d, i) => colorScale(String(i))).attr('rx', 2);
+  return {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'item',
+      triggerOn: 'mousemove',
+      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      borderWidth: 1,
+      textStyle: {
+        color: '#fff',
+        fontSize: 11
+      },
+      padding: [12, 16],
+      borderRadius: 12
+    },
+    series: [
+      {
+        type: 'sankey',
+        data: nodes,
+        links: links,
+        emphasis: {
+          focus: 'adjacency'
+        },
+        lineStyle: {
+          color: 'gradient',
+          curveness: 0.5
+        },
+        label: {
+          color: '#64748b',
+          fontSize: 10,
+          fontWeight: 'bold'
+        },
+        itemStyle: {
+           borderWidth: 1,
+           borderColor: '#fff',
+           borderRadius: 4
+        }
+      }
+    ]
+  };
 }

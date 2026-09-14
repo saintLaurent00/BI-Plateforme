@@ -1,75 +1,124 @@
-import * as d3 from 'd3';
 import { ChartPluginProps } from '../../types';
 
-export default function ScatterChart(g: d3.Selection<SVGGElement, unknown, null, undefined>, props: ChartPluginProps) {
-  const { data, xAxis, yAxis, width, height, colorScale, showTooltip, moveTooltip, hideTooltip, onItemClick } = props;
+export default function ScatterChart(props: ChartPluginProps) {
+  const { data, xAxis, yAxis, type } = props;
 
-  const clipId = `clip-${Math.random().toString(36).substr(2, 9)}`;
-  const svgNode = g.node()?.ownerSVGElement;
-  const svg = d3.select(svgNode || null);
-  
-  if (svgNode) {
-    svg.append('defs')
-      .append('clipPath')
-      .attr('id', clipId)
-      .append('rect')
-      .attr('width', width)
-      .attr('height', height);
-  }
+  const metricX = xAxis;
+  const metricY = yAxis[0];
+  const isBubble = type === 'Bubble';
+  const sizeMetric = yAxis[1] || metricY;
 
-  const chartArea = g.append('g').attr('clip-path', `url(#${clipId})`);
+  const seriesData = data.map(d => [
+    d[metricX],
+    d[metricY],
+    d[sizeMetric],
+    d[xAxis] // Label
+  ]);
 
-  const x = d3.scaleLinear().domain([0, d3.max(data, d => d[xAxis] as number) || 0]).nice().range([0, width]);
-  const y = d3.scaleLinear().domain([0, d3.max(data, d => d[yAxis[0]] as number) || 0]).nice().range([height, 0]);
-  
-  const xAxisG = g.append('g').attr('transform', `translate(0,${height})`);
-  const xAxisObj = d3.axisBottom(x);
-  xAxisG.call(xAxisObj);
-
-  const yAxisG = g.append('g');
-  const yAxisObj = d3.axisLeft(y);
-  yAxisG.call(yAxisObj);
-  
-  const pointsG = chartArea.append('g');
-
-  const renderPoints = (currentX: any, currentY: any) => {
-    pointsG.selectAll('circle').remove();
-    pointsG.selectAll('circle').data(data).enter().append('circle')
-      .attr('cx', d => currentX(d[xAxis]))
-      .attr('cy', d => currentY(d[yAxis[0]]))
-      .attr('r', 6)
-      .attr('fill', (d, i) => colorScale(String(i)))
-      .attr('fill-opacity', 0.7)
-      .attr('cursor', 'pointer')
-      .on('mouseover', (e, d) => {
-        d3.select(e.currentTarget).attr('fill-opacity', 1).attr('r', 9);
-        showTooltip(e, String(d[xAxis]), d[yAxis[0]], undefined, d);
-      })
-      .on('mousemove', moveTooltip)
-      .on('mouseout', (e) => {
-        d3.select(e.currentTarget).attr('fill-opacity', 0.7).attr('r', 6);
-        hideTooltip();
-      })
-      .on('click', (e, d) => {
-        if (onItemClick) onItemClick(d);
-      });
+  return {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(15, 23, 42, 0.9)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      borderWidth: 1,
+      textStyle: {
+        color: '#fff',
+        fontSize: 11
+      },
+      padding: [12, 16],
+      borderRadius: 12,
+      formatter: (params: any) => {
+        const val = params.value;
+        return `
+          <div class="space-y-1">
+            <div class="text-[10px] font-black uppercase tracking-widest text-slate-400">${params.seriesName || 'Point'}</div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-xs text-slate-300">${metricX}:</span>
+              <span class="text-xs font-bold font-mono">${val[0]}</span>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-xs text-slate-300">${metricY}:</span>
+              <span class="text-xs font-bold font-mono">${val[1]}</span>
+            </div>
+            ${isBubble ? `
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-xs text-slate-300">${sizeMetric}:</span>
+              <span class="text-xs font-bold font-mono">${val[2]}</span>
+            </div>
+            ` : ''}
+          </div>
+        `;
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '10%',
+      top: '10%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'value',
+      name: metricX,
+      nameLocation: 'middle',
+      nameGap: 25,
+      nameTextStyle: {
+        color: '#64748b',
+        fontSize: 10
+      },
+      splitLine: {
+        lineStyle: {
+          color: 'rgba(0,0,0,0.05)',
+          type: 'dashed'
+        }
+      },
+      axisLabel: {
+        color: '#64748b',
+        fontSize: 10
+      }
+    },
+    yAxis: {
+      type: 'value',
+      name: metricY,
+      nameTextStyle: {
+          color: '#64748b',
+          fontSize: 10
+      },
+      splitLine: {
+        lineStyle: {
+          color: 'rgba(0,0,0,0.05)',
+          type: 'dashed'
+        }
+      },
+      axisLabel: {
+        color: '#64748b',
+        fontSize: 10
+      }
+    },
+    series: [
+      {
+        name: 'Data Points',
+        type: 'scatter',
+        data: seriesData,
+        symbolSize: (data: any) => {
+          if (!isBubble) return 10;
+          return Math.sqrt(data[2]) * 2; // Simple scaling for bubble
+        },
+        itemStyle: {
+          color: 'rgba(99, 102, 241, 0.6)',
+          borderColor: 'rgba(99, 102, 241, 1)',
+          borderWidth: 1
+        },
+        emphasis: {
+          itemStyle: {
+            color: 'rgba(99, 102, 241, 0.9)',
+            shadowBlur: 10,
+            shadowColor: 'rgba(0, 0, 0, 0.3)'
+          }
+        },
+        animationDuration: 1500
+      }
+    ]
   };
-
-  renderPoints(x, y);
-
-  const zoom = d3.zoom<SVGSVGElement, unknown>()
-    .scaleExtent([0.5, 20])
-    .on('zoom', (event) => {
-      const newX = event.transform.rescaleX(x);
-      const newY = event.transform.rescaleY(y);
-      
-      xAxisG.call(xAxisObj.scale(newX));
-      yAxisG.call(yAxisObj.scale(newY));
-        
-      renderPoints(newX, newY);
-    });
-
-  if (svg) {
-    svg.call(zoom as any);
-  }
 }

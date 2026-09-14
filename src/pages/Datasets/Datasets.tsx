@@ -26,7 +26,7 @@ import {
 import { Badge } from '../../components/ui/Badge';
 import { AIInsight } from '../../components/dashboard/AIInsight';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getDataset, deleteDataset, saveDatasetMetadata } from '../../core/utils/db';
+import { hifadihService } from '../../lib/hifadihService';
 import { Modal } from '../../components/ui/Modal';
 import { FormSection, FormInput, FormTextarea, FormActions, FormButton } from '../../components/ui/FormElements';
 import { toast } from 'sonner';
@@ -34,7 +34,7 @@ import { cn } from '../../core/utils/utils';
 import { Dataset, DatasetColumn, DatasetMetric } from '../../core/types';
 
 const HealthMetric = ({ label, value, score, icon: Icon }: any) => (
-  <div className="glass-panel p-5 flex items-center gap-4">
+  <div className="hifadih-glass p-5 flex items-center gap-4">
     <div className={cn(
       "p-3 rounded-xl",
       score > 90 ? "bg-emerald-500/10 text-emerald-500" : score > 70 ? "bg-amber-500/10 text-amber-500" : "bg-rose-500/10 text-rose-500"
@@ -77,8 +77,8 @@ export const Datasets = () => {
   const loadDataset = async () => {
     setIsLoading(true);
     try {
-      const ds = await getDataset(id!);
-      setDataset(ds as any);
+      const ds = await hifadihService.getDataset(id!);
+      setDataset(ds);
     } catch (err) {
       toast.error("Impossible de charger le dataset.");
     } finally {
@@ -90,7 +90,7 @@ export const Datasets = () => {
     if (!id) return;
     const loadingToast = toast.loading("Suppression du dataset...");
     try {
-      await deleteDataset(id);
+      await hifadihService.deleteDataset(id);
       toast.success("Dataset supprimé avec succès.", { id: loadingToast });
       navigate('/datasets');
     } catch (err) {
@@ -101,7 +101,7 @@ export const Datasets = () => {
     }
   };
 
-  const handleUpdateColumn = async (updatedCol: DatasetColumn) => {
+  const handleUpdateColumn = (updatedCol: DatasetColumn) => {
     if (!dataset) return;
     let newCols = [...dataset.columns];
     if (editingColumn && !isCalculatedColumn) {
@@ -109,15 +109,13 @@ export const Datasets = () => {
     } else {
         newCols.push({ ...updatedCol, isCalculated: true });
     }
-    const updatedDataset = { ...dataset, columns: newCols };
-    setDataset(updatedDataset);
-    await saveDatasetMetadata(updatedDataset);
+    setDataset({ ...dataset, columns: newCols });
     setEditingColumn(null);
     setIsCalculatedColumn(false);
     toast.success("Configuration sauvegardée.");
   };
 
-  const handleSaveMetric = async (metric: DatasetMetric) => {
+  const handleSaveMetric = (metric: DatasetMetric) => {
     if (!dataset) return;
     let newMetrics = [...dataset.metrics];
     if (editingMetric) {
@@ -125,9 +123,7 @@ export const Datasets = () => {
     } else {
         newMetrics.push(metric);
     }
-    const updatedDataset = { ...dataset, metrics: newMetrics };
-    setDataset(updatedDataset);
-    await saveDatasetMetadata(updatedDataset);
+    setDataset({ ...dataset, metrics: newMetrics });
     setEditingMetric(null);
     toast.success("Métrique mise à jour.");
   };
@@ -201,7 +197,7 @@ export const Datasets = () => {
                         className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
                     >
                         <div className="lg:col-span-8 space-y-6">
-                            <div className="prism-card overflow-hidden">
+                            <div className="hifadih-card overflow-hidden">
                                 <div className="p-4 border-b border-border bg-muted/20 flex items-center justify-between">
                                     <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Catalogue des colonnes</h3>
                                     <button 
@@ -218,7 +214,7 @@ export const Datasets = () => {
                                         {
                                             key: 'name',
                                             label: 'Colonne',
-                                            render: (val, row) => (
+                                            render: (val: any, row: any) => (
                                                 <div className="flex items-center gap-4">
                                                     <div className={cn(
                                                         "w-9 h-9 rounded-xl flex items-center justify-center text-[10px] font-black shrink-0",
@@ -275,7 +271,7 @@ export const Datasets = () => {
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         exit={{ opacity: 0, x: 20 }}
-                                        className="prism-card p-6 space-y-6 border-accent/30"
+                                        className="hifadih-card p-6 space-y-6 border-accent/30"
                                     >
                                         <div className="flex items-center justify-between border-b border-border pb-4 -mx-2 px-2">
                                             <h3 className="font-bold text-foreground">Edition: {isCalculatedColumn ? 'Nouvelle Colonne' : editingColumn.name}</h3>
@@ -328,7 +324,7 @@ export const Datasets = () => {
                                         key="col-empty"
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
-                                        className="prism-card p-10 text-center space-y-4 border-dashed"
+                                        className="hifadih-card p-10 text-center space-y-4 border-dashed"
                                     >
                                         <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto opacity-40">
                                             <Settings2 className="w-8 h-8" />
@@ -350,7 +346,7 @@ export const Datasets = () => {
                         className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
                     >
                          <div className="lg:col-span-8 space-y-6">
-                            <div className="prism-card overflow-hidden">
+                            <div className="hifadih-card overflow-hidden">
                                 <div className="p-4 border-b border-border bg-muted/20 flex items-center justify-between">
                                     <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Métriques agrégées</h3>
                                     <button 
@@ -369,7 +365,7 @@ export const Datasets = () => {
                                                 {
                                                     key: 'name',
                                                     label: 'Métrique',
-                                                    render: (val, row) => (
+                                                    render: (val: any, row: any) => (
                                                         <div className="flex items-center gap-4">
                                                             <div className="w-9 h-9 bg-accent/10 rounded-xl flex items-center justify-center text-accent shrink-0">
                                                                 <Braces className="w-4.5 h-4.5" />
@@ -427,7 +423,7 @@ export const Datasets = () => {
                                         key="metric-edit"
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
-                                        className="prism-card p-6 space-y-6"
+                                        className="hifadih-card p-6 space-y-6"
                                     >
                                         <h3 className="font-bold text-foreground">Config Métrique</h3>
                                         <div className="space-y-4">
@@ -480,7 +476,7 @@ export const Datasets = () => {
                         animate={{ opacity: 1 }}
                         className="space-y-6"
                     >
-                        <div className="prism-card">
+                        <div className="hifadih-card">
                             <div className="p-4 border-b border-border flex items-center justify-between">
                                 <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Source SQL Definition</h3>
                                 <button 
@@ -504,7 +500,7 @@ export const Datasets = () => {
                         key="settings"
                         className="max-w-2xl mx-auto space-y-8"
                     >
-                        <div className="prism-card p-10 space-y-8">
+                        <div className="hifadih-card p-10 space-y-8">
                             <h3 className="text-2xl font-bold tracking-tight">Paramètres Généraux</h3>
                             <div className="space-y-6">
                                 <FormSection label="Nom du Dataset">

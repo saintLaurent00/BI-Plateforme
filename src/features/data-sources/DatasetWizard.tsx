@@ -26,7 +26,7 @@ export const DatasetWizard = () => {
           <motion.button 
             whileHover={{ y: -5 }}
             onClick={() => navigate('/datasets/new/physical')}
-            className="group relative glass-panel p-10 text-left space-y-8 overflow-hidden hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/5 transition-all duration-500"
+            className="group relative hifadih-card p-10 text-left space-y-8 overflow-hidden hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/5 transition-all duration-500"
           >
             <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all duration-500">
               <Database className="w-8 h-8" />
@@ -52,7 +52,7 @@ export const DatasetWizard = () => {
           <motion.button 
             whileHover={{ y: -5 }}
             onClick={() => navigate('/sql-lab?mode=create_dataset')}
-            className="group relative glass-panel p-10 text-left space-y-8 overflow-hidden hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/5 transition-all duration-500"
+            className="group relative hifadih-card p-10 text-left space-y-8 overflow-hidden hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/5 transition-all duration-500"
           >
             <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all duration-500">
               <ArrowUpRight className="w-8 h-8" />

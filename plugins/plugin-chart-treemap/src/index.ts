@@ -10,12 +10,11 @@ export const TreemapPlugin: ChartPlugin = {
     name: 'Treemap',
     description: 'Visualizes hierarchical data using nested rectangles.',
     category: 'Part-to-whole',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Treemap/images/thumbnail.png',
+
   },
   buildQuery,
   controlPanel,
-  render: (g, props) => {
-    const transformedProps = transformProps(props);
-    TreemapChart(g, transformedProps);
+  getOptions: (props) => {
+    return TreemapChart(props);
   }
 };

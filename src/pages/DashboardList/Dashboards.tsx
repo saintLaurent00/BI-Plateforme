@@ -23,7 +23,9 @@ import {
 } from '../../components/ui/FormElements';
 import { getDashboards as getLocalDashboards, saveDashboard, deleteDashboard } from '../../core/utils/db';
 import { DASHBOARD_TEMPLATES, DashboardTemplate } from '../../constants/templates';
+import { hifadihService } from '../../lib/hifadihService';
 import { DashboardCard } from '../../components/ui/cards/DashboardCard';
+import { DashboardCardSkeleton } from '../../components/ui/Skeleton';
 import { cn } from '../../core/utils/utils';
 import { Check } from 'lucide-react';
 import { toast } from 'sonner';
@@ -68,10 +70,25 @@ export const Dashboards = () => {
 
   const loadDashboards = async () => {
     try {
+      setIsLoading(true);
+      const { result } = await hifadihService.getDashboards();
+      
+      // Combiner avec les dashboards locaux si nécessaire ou prioriser Hifadih
+      const local = await getLocalDashboards();
+      
+      // Pour l'UX, on fusionne ou on préfère les données du service
+      const combined = [...local];
+      result.forEach((remote: any) => {
+        if (!combined.find(l => l.id === remote.id)) {
+          combined.push(remote);
+        }
+      });
+      
+      setDashboards(combined);
+    } catch (err) {
+      console.error('Failed to load dashboards:', err);
       const local = await getLocalDashboards();
       setDashboards(local);
-    } catch (err) {
-      console.error('Failed to load local dashboards:', err);
     } finally {
       setIsLoading(false);
     }
@@ -210,8 +227,8 @@ export const Dashboards = () => {
         {/* Grid/List View */}
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-48 bg-muted animate-pulse rounded-lg"></div>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+              <DashboardCardSkeleton key={i} />
             ))}
           </div>
         ) : filteredDashboards.length === 0 ? (

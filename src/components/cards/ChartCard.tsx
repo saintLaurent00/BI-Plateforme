@@ -11,9 +11,9 @@ import {
   Table as TableIcon,
   Activity
 } from 'lucide-react';
-import { Badge } from '../Badge';
+import { Badge } from '../ui/Badge';
 import { MiniChart } from './MiniChart';
-import { cn } from '../../lib/utils';
+import { cn } from '../../core/utils/utils';
 
 interface ChartCardProps {
   chart: any;

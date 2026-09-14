@@ -32,7 +32,8 @@ import {
   UserPlus,
   Trash2,
   Chrome,
-  Github
+  Github,
+  Loader2
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
@@ -44,8 +45,11 @@ import {
   FormActions, 
   FormButton,
   FormLabel,
-  FormButtonGroup
+  FormButtonGroup,
+  FormCheckbox,
+  FormSwitch
 } from '../../components/ui/FormElements';
+import { hifadihService } from '../../lib/hifadihService';
 import { 
   getRoles as getLocalRoles, 
   saveRole as saveLocalRole, 
@@ -125,10 +129,11 @@ export const Admin = () => {
   const [activeSection, setActiveSection] = React.useState<'users' | 'groups' | 'roles' | 'rls' | 'sessions' | 'audit' | 'sources' | 'security' | 'settings' | 'reports' | 'screening' | 'auth'>(sectionFromUrl || 'users');
   const [activeTab, setActiveTab] = React.useState<'list' | 'wizard'>('list');
   const [isLoading, setIsLoading] = React.useState(true);
-  const [rolesData, setRolesData] = React.useState<any[]>([]);
-  const [databasesData, setDatabasesData] = React.useState<any[]>([]);
-  const [reportsData, setReportsData] = React.useState<any[]>([]);
-  const [logsData, setLogsData] = React.useState<any[]>([]);
+  const [hifadihUsers, setHifadihUsers] = React.useState<any[]>([]);
+  const [hifadihRoles, setHifadihRoles] = React.useState<any[]>([]);
+  const [hifadihDatabases, setHifadihDatabases] = React.useState<any[]>([]);
+  const [hifadihReports, setHifadihReports] = React.useState<any[]>([]);
+  const [hifadihLogs, setHifadihLogs] = React.useState<any[]>([]);
 
   const engines = [
     { id: 'postgresql', name: 'PostgreSQL', icon: Database, color: 'text-blue-500', bg: 'bg-blue-500/10' },
@@ -181,16 +186,34 @@ export const Admin = () => {
   const loadSectionData = async () => {
     setIsLoading(true);
     
+    // Load local data regardless of Hifadih configuration for some sections
     try {
       if (activeSection === 'roles') {
         const localRoles = await getLocalRoles();
-        setRolesData(localRoles);
+        setHifadihRoles(localRoles);
       } else if (activeSection === 'sources') {
         const localSources = await getLocalDataSources();
-        setDatabasesData(localSources);
+        setHifadihDatabases(localSources);
       }
     } catch (err) {
-      console.error('Failed to load data:', err);
+      console.error('Failed to load local data:', err);
+    }
+
+    try {
+      if (activeSection === 'users') {
+        const { result } = await hifadihService.getUsers();
+        setHifadihUsers(result || []);
+      } else if (activeSection === 'reports') {
+        const { result } = await hifadihService.getReports();
+        setHifadihReports(result || []);
+      } else if (activeSection === 'audit') {
+        const { result } = await hifadihService.getLogs();
+        setHifadihLogs(result || []);
+      }
+    } catch (err) {
+      if (activeSection === 'users') setHifadihUsers([]);
+      if (activeSection === 'reports') setHifadihReports([]);
+      if (activeSection === 'audit') setHifadihLogs([]);
     } finally {
       setIsLoading(false);
     }
@@ -211,9 +234,49 @@ export const Admin = () => {
   const [selectedGroup, setSelectedGroup] = React.useState<any>(null);
   const [selectedDatabase, setSelectedDatabase] = React.useState<any>(null);
   const [isDatabaseModalOpen, setIsDatabaseModalOpen] = React.useState(false);
-  const [newUser, setNewUser] = React.useState({ name: '', email: '', role: 'Viewer' });
-  const [newRole, setNewRole] = React.useState({ name: '', description: '', permissions: [] });
-  const [newGroup, setNewGroup] = React.useState({ name: '', description: '', members: 0 });
+  const [newUser, setNewUser] = React.useState({ 
+    first_name: '',
+    last_name: '',
+    username: 'admin',
+    is_active: true,
+    email: '', 
+    role: 'Viewer',
+    roles: 'Viewer',
+    groups: 'Default Group',
+    password: '',
+    confirm_password: '',
+    name: '',
+    job_title: '',
+    department: '',
+    section: '',
+    region: '',
+    zone: '',
+    branch: '',
+    site_location: '',
+    manager_name: '',
+    phone: ''
+  });
+  const [newRole, setNewRole] = React.useState({ 
+    name: '', 
+    description: '', 
+    permissions: [] as string[],
+    scope_level: 'Global',
+    department: '',
+    section: '',
+    region: '',
+    zone: ''
+  });
+  const [newGroup, setNewGroup] = React.useState({ 
+    name: '', 
+    description: '', 
+    members: 0,
+    department: '',
+    section: '',
+    region: '',
+    zone: '',
+    branch: '',
+    leader_name: ''
+  });
 
   const handleConnectDatabase = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -303,9 +366,54 @@ export const Admin = () => {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Invitation envoyée (Simulé)');
-    setIsInviteModalOpen(false);
-    setNewUser({ name: '', email: '', role: 'Viewer' });
+    try {
+      const firstName = newUser.first_name || newUser.name.split(' ')[0] || 'User';
+      const lastName = newUser.last_name || newUser.name.split(' ').slice(1).join(' ') || '.';
+      await hifadihService.createUser({
+        first_name: firstName,
+        last_name: lastName,
+        username: newUser.username || newUser.email,
+        email: newUser.email,
+        active: newUser.is_active,
+        roles: [newUser.role || 'Viewer'],
+        job_title: newUser.job_title,
+        department: newUser.department,
+        section: newUser.section,
+        region: newUser.region,
+        zone: newUser.zone,
+        branch: newUser.branch,
+        site_location: newUser.site_location,
+        manager_name: newUser.manager_name,
+        phone: newUser.phone,
+      });
+      toast.success('User saved successfully');
+      setIsInviteModalOpen(false);
+      setNewUser({ 
+        first_name: '',
+        last_name: '',
+        username: 'admin',
+        is_active: true,
+        email: '', 
+        role: 'Viewer',
+        roles: 'Viewer',
+        groups: 'Default Group',
+        password: '',
+        confirm_password: '',
+        name: '',
+        job_title: '',
+        department: '',
+        section: '',
+        region: '',
+        zone: '',
+        branch: '',
+        site_location: '',
+        manager_name: '',
+        phone: ''
+      });
+      loadSectionData();
+    } catch (err) {
+      console.error('Failed to save user:', err);
+    }
   };
 
   const handleEdit = (user: any) => {
@@ -320,13 +428,43 @@ export const Admin = () => {
 
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Utilisateur mis à jour (Simulé)');
-    setIsEditModalOpen(false);
+    try {
+      const [firstName, ...lastNameParts] = (selectedUser.name || '').split(' ');
+      const lastName = lastNameParts.join(' ') || '.';
+      await hifadihService.updateUser(selectedUser.id, {
+        id: selectedUser.id,
+        first_name: firstName,
+        last_name: lastName,
+        active: selectedUser.status === 'Active',
+        job_title: selectedUser.job_title,
+        department: selectedUser.department,
+        section: selectedUser.section,
+        region: selectedUser.region,
+        zone: selectedUser.zone,
+        branch: selectedUser.branch,
+        site_location: selectedUser.site_location,
+        manager_name: selectedUser.manager_name,
+        phone: selectedUser.phone,
+        bio: selectedUser.bio
+      });
+      toast.success('User updated successfully');
+      setIsEditModalOpen(false);
+      loadSectionData();
+    } catch (err) {
+      console.error('Failed to update user:', err);
+    }
   };
 
   const handleDeleteUser = async () => {
-    toast.success('Utilisateur supprimé (Simulé)');
-    setIsDeleteModalOpen(false);
+    try {
+      await hifadihService.deleteUser(selectedUser.id);
+      toast.success('User deleted successfully');
+      setIsDeleteModalOpen(false);
+      loadSectionData();
+    } catch (err) {
+      toast.error('Failed to delete user');
+      console.error('Failed to delete user:', err);
+    }
   };
 
   const handleCreateRole = async (e: React.FormEvent) => {
@@ -336,12 +474,17 @@ export const Admin = () => {
         id: selectedRole?.id,
         name: newRole.name,
         description: newRole.description,
-        permissions: newRole.permissions
+        permissions: newRole.permissions,
+        scope_level: newRole.scope_level,
+        department: newRole.department,
+        section: newRole.section,
+        region: newRole.region,
+        zone: newRole.zone
       });
       toast.success(selectedRole ? 'Role updated' : 'Role created successfully');
       setIsRoleModalOpen(false);
       setSelectedRole(null);
-      setNewRole({ name: '', description: '', permissions: [] });
+      setNewRole({ name: '', description: '', permissions: [], scope_level: 'Global', department: '', section: '', region: '', zone: '' });
       loadSectionData();
     } catch (err) {
       toast.error('Failed to save role');
@@ -366,30 +509,35 @@ export const Admin = () => {
     setNewRole({
       name: role.name,
       description: role.description,
-      permissions: role.permissions || []
+      permissions: role.permissions || [],
+      scope_level: role.scope_level || 'Global',
+      department: role.department || '',
+      section: role.section || '',
+      region: role.region || '',
+      zone: role.zone || ''
     });
     setIsRoleModalOpen(true);
   };
 
   const users = [
-    { name: "Sarah Chen", email: "sarah.chen@prism.io", role: "Admin", status: "Active", lastActive: "2m ago" },
-    { name: "Mike Ross", email: "mike.ross@prism.io", role: "Editor", status: "Active", lastActive: "15m ago" },
-    { name: "Alex Kim", email: "alex.kim@prism.io", role: "Viewer", status: "Inactive", lastActive: "2d ago" },
-    { name: "Emma Wilson", email: "emma.wilson@prism.io", role: "Editor", status: "Active", lastActive: "1h ago" },
-    { name: "John Doe", email: "john.doe@prism.io", role: "Viewer", status: "Active", lastActive: "5m ago" },
-    { name: "Laurent O.", email: "laurent.o@prism.io", role: "Admin", status: "Active", lastActive: "Now" },
+    { name: "Sarah Chen", email: "sarah.chen@hifadih.ai", role: "Admin", status: "Active", lastActive: "2m ago", job_title: "Lead Data Architect", department: "Data Engineering", section: "Analytics Infra", region: "Littoral", zone: "Zone Nord", branch: "Siège Principal", site_location: "Tour Hifadih", manager_name: "Laurent O.", phone: "+225 07 00 00 01" },
+    { name: "Mike Ross", email: "mike.ross@hifadih.ai", role: "Editor", status: "Active", lastActive: "15m ago", job_title: "Senior BI Analyst", department: "Business Intelligence", section: "Reporting Direction", region: "Abidjan Sud", zone: "Zone Est", branch: "Agence Plateau", site_location: "Immeuble Pyramide", manager_name: "Sarah Chen", phone: "+225 07 00 00 02" },
+    { name: "Alex Kim", email: "alex.kim@hifadih.ai", role: "Viewer", status: "Inactive", lastActive: "2d ago", job_title: "Financial Controller", department: "Finance & Accounting", section: "Contrôle de Gestion", region: "Centre", zone: "Zone Ouest", branch: "Succursale Yamoussoukro", site_location: "Centre Affaires", manager_name: "Laurent O.", phone: "+225 07 00 00 03" },
+    { name: "Emma Wilson", email: "emma.wilson@hifadih.ai", role: "Editor", status: "Active", lastActive: "1h ago", job_title: "Operations Manager", department: "Operations", section: "Logistique & Supply", region: "Nord", zone: "Zone B", branch: "Hub San Pedro", site_location: "Port Autonome", manager_name: "Sarah Chen", phone: "+225 07 00 00 04" },
+    { name: "John Doe", email: "john.doe@hifadih.ai", role: "Viewer", status: "Active", lastActive: "5m ago", job_title: "Marketing Specialist", department: "Marketing", section: "Digital Growth", region: "Abidjan Nord", zone: "Zone A", branch: "Agence Cocody", site_location: "Riviera 3", manager_name: "Mike Ross", phone: "+225 07 00 00 05" },
+    { name: "Laurent O.", email: "laurent.o@hifadih.ai", role: "Admin", status: "Active", lastActive: "Now", job_title: "VP Analytics", department: "Direction Générale", section: "Stratégie & Data", region: "Global", zone: "Zone Capitale", branch: "Headquarters", site_location: "Siège Social", manager_name: "Board of Directors", phone: "+225 07 00 00 00" },
   ];
 
   const roles = [
-    { name: "Admin", description: "Full system access and management", permissions: ["All"], users: 12 },
-    { name: "Editor", description: "Can create and edit dashboards/charts", permissions: ["Read", "Write", "Delete"], users: 45 },
-    { name: "Viewer", description: "Read-only access to dashboards", permissions: ["Read"], users: 1227 },
+    { name: "Admin", description: "Full system access and management", permissions: ["All"], users: 12, scope_level: "Global", department: "Direction", section: "Stratégie", region: "Toutes Régions", zone: "Capitale" },
+    { name: "Editor", description: "Can create and edit dashboards/charts", permissions: ["Read", "Write", "Delete"], users: 45, scope_level: "Regional", department: "Analytics", section: "Production", region: "Abidjan & Littoral", zone: "Zone Sud" },
+    { name: "Viewer", description: "Read-only access to dashboards", permissions: ["Read"], users: 1227, scope_level: "Sectional", department: "Métiers", section: "Opérations", region: "Régional", zone: "Locale" },
   ];
 
   const groups = [
-    { name: "Marketing", description: "Marketing team dashboards and data", members: 24, created: "2023-10-12" },
-    { name: "Engineering", description: "Core engineering metrics and logs", members: 56, created: "2023-09-05" },
-    { name: "Executive", description: "High-level KPI dashboards", members: 8, created: "2023-11-20" },
+    { name: "Marketing", description: "Marketing team dashboards and data", members: 24, created: "2023-10-12", department: "Marketing & Com", section: "Acquisition", region: "Abidjan", zone: "Zone Nord", branch: "Plateau", leader_name: "Emma Wilson" },
+    { name: "Engineering", description: "Core engineering metrics and logs", members: 56, created: "2023-09-05", department: "IT & Data", section: "DevOps & Cloud", region: "Littoral", zone: "Zone A", branch: "Tech Hub", leader_name: "Sarah Chen" },
+    { name: "Executive", description: "High-level KPI dashboards", members: 8, created: "2023-11-20", department: "Direction Générale", section: "Gouvernance", region: "Global", zone: "Zone Capitale", branch: "Headquarters", leader_name: "Laurent O." },
   ];
 
   return (
@@ -426,7 +574,7 @@ export const Admin = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="glass-panel p-6 flex items-center gap-5 group hover:border-accent/30 transition-all duration-500">
+              <div className="hifadih-card p-6 flex items-center gap-5 group hover:border-accent/30 transition-all duration-500">
                 <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-accent-foreground transition-all duration-500 shadow-sm">
                   <Users className="w-5 h-5" />
                 </div>
@@ -435,7 +583,7 @@ export const Admin = () => {
                   <h4 className="text-2xl font-semibold tracking-tight text-foreground">1,284</h4>
                 </div>
               </div>
-              <div className="glass-panel p-6 flex items-center gap-5 group hover:border-emerald-500/30 transition-all duration-500">
+              <div className="hifadih-card p-6 flex items-center gap-5 group hover:border-emerald-500/30 transition-all duration-500">
                 <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-500 shadow-sm">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
@@ -444,7 +592,7 @@ export const Admin = () => {
                   <h4 className="text-2xl font-semibold tracking-tight text-foreground">42</h4>
                 </div>
               </div>
-              <div className="glass-panel p-6 flex items-center gap-5 group hover:border-rose-500/30 transition-all duration-500">
+              <div className="hifadih-card p-6 flex items-center gap-5 group hover:border-rose-500/30 transition-all duration-500">
                 <div className="w-10 h-10 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-all duration-500 shadow-sm">
                   <XCircle className="w-5 h-5" />
                 </div>
@@ -456,34 +604,71 @@ export const Admin = () => {
             </div>
 
             {/* Users Table */}
-            <div className="prism-card overflow-hidden">
+            <div className="hifadih-card overflow-hidden">
               {isLoading ? (
                 <div className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center gap-3">
-                    <Activity className="w-8 h-8 text-accent animate-spin" />
-                    <p className="text-sm text-muted-foreground font-medium">Initialisation des données...</p>
+                    <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                    <p className="text-sm text-muted-foreground font-medium">Synchronisation avec Hifadih...</p>
                   </div>
                 </div>
               ) : (
                 <DataTable 
                   showSearch={false}
-                  data={users}
+                  data={hifadihUsers.length > 0 ? hifadihUsers.map(u => ({
+                    ...u,
+                    name: `${u.first_name} ${u.last_name}`,
+                    role: u.roles?.[0]?.name || 'User',
+                    status: u.active ? 'Active' : 'Inactive',
+                    lastActive: u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Never'
+                  })) : users}
                   columns={[
                     {
                       key: 'name',
                       label: 'Identité',
                       render: (val, row) => (
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-[180px]">
                           <div className="w-8 h-8 rounded-full bg-muted border border-border overflow-hidden shadow-sm shrink-0">
                             <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${val}`} alt={val} />
                           </div>
                           <div>
                             <h5 className="font-bold text-foreground text-xs leading-none">{val}</h5>
-                            <div className="flex items-center gap-1 text-muted-foreground mt-1">
+                            {row.job_title && <p className="text-[10px] text-accent font-medium mt-0.5">{row.job_title}</p>}
+                            <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
                               <Mail className="w-2.5 h-2.5" />
                               <span className="text-[10px]">{row.email}</span>
                             </div>
                           </div>
+                        </div>
+                      )
+                    },
+                    {
+                      key: 'department',
+                      label: 'Département / Section',
+                      render: (_, row) => (
+                        <div>
+                          <p className="text-xs font-bold text-foreground">{row.department || '-'}</p>
+                          <p className="text-[10px] text-muted-foreground font-medium">{row.section || '-'}</p>
+                        </div>
+                      )
+                    },
+                    {
+                      key: 'region',
+                      label: 'Région / Zone',
+                      render: (_, row) => (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-semibold text-foreground">{row.region || '-'}</span>
+                          {row.zone && <Badge variant="neutral" className="text-[8px] px-1.5 py-0 w-fit">{row.zone}</Badge>}
+                        </div>
+                      )
+                    },
+                    {
+                      key: 'branch',
+                      label: 'Branche / Site',
+                      render: (_, row) => (
+                        <div>
+                          <p className="text-xs font-medium text-foreground">{row.branch || '-'}</p>
+                          <p className="text-[10px] text-muted-foreground">{row.site_location || '-'}</p>
                         </div>
                       )
                     },
@@ -532,7 +717,7 @@ export const Admin = () => {
                 />
               )}
               <div className="px-6 py-4 bg-muted/30 border-t border-border flex items-center justify-between">
-                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Affiche 6 sur 1,284 utilisateurs</p>
+                <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">Affiche {hifadihUsers.length || 6} sur 1,284 utilisateurs</p>
                 <div className="flex items-center gap-2">
                   <button className="px-3 py-1 bg-background border border-border rounded-lg text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 cursor-not-allowed">Précédent</button>
                   <button className="px-3 py-1 bg-background border border-border rounded-lg text-[9px] font-black uppercase tracking-widest text-foreground hover:bg-muted transition-all">Suivant</button>
@@ -561,11 +746,11 @@ export const Admin = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {isLoading ? (
                 [1, 2, 3].map(i => (
-                  <div key={i} className="prism-card p-6 h-48 animate-pulse bg-muted/30"></div>
+                  <div key={i} className="hifadih-card p-6 h-48 animate-pulse bg-muted/30"></div>
                 ))
-              ) : rolesData.length > 0 ? (
-                rolesData.map((role, i) => (
-                  <div key={i} className="prism-card p-6 space-y-4 group hover:border-accent/30 transition-all">
+              ) : hifadihRoles.length > 0 ? (
+                hifadihRoles.map((role, i) => (
+                  <div key={i} className="hifadih-card p-6 space-y-4 group hover:border-accent/30 transition-all">
                     <div className="flex items-center justify-between">
                       <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center text-accent">
                         <ShieldCheck className="w-5 h-5" />
@@ -607,7 +792,7 @@ export const Admin = () => {
                 ))
               ) : (
                 roles.map((role, i) => (
-                  <div key={i} className="prism-card p-6 space-y-4 group hover:border-accent/30 transition-all">
+                  <div key={i} className="hifadih-card p-6 space-y-4 group hover:border-accent/30 transition-all">
                     <div className="flex items-center justify-between">
                       <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center text-accent">
                         <ShieldCheck className="w-5 h-5" />
@@ -656,19 +841,22 @@ export const Admin = () => {
               </button>
             </div>
 
-            <div className="prism-card overflow-hidden">
+            <div className="hifadih-card overflow-hidden">
               <DataTable 
                 data={groups}
                 columns={[
                   {
                     key: 'name',
                     label: 'Group Identity',
-                    render: (val) => (
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all">
+                    render: (val, row: any) => (
+                      <div className="flex items-center gap-4 min-w-[160px]">
+                        <div className="w-10 h-10 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all shrink-0">
                           <Users2 className="w-5 h-5" />
                         </div>
-                        <span className="font-bold text-foreground text-sm tracking-tight">{val}</span>
+                        <div>
+                          <span className="font-bold text-foreground text-sm tracking-tight block">{val}</span>
+                          {row.leader_name && <span className="text-[10px] text-accent font-semibold">Chef: {row.leader_name}</span>}
+                        </div>
                       </div>
                     )
                   },
@@ -676,6 +864,31 @@ export const Admin = () => {
                     key: 'description',
                     label: 'Strategic Focus',
                     render: (val) => <span className="text-xs text-muted-foreground font-medium">{val}</span>
+                  },
+                  {
+                    key: 'department',
+                    label: 'Département / Section',
+                    render: (_, row: any) => (
+                      <div>
+                        <p className="text-xs font-bold text-foreground">{row.department || '-'}</p>
+                        <p className="text-[10px] text-muted-foreground">{row.section || '-'}</p>
+                      </div>
+                    )
+                  },
+                  {
+                    key: 'region',
+                    label: 'Région / Zone',
+                    render: (_, row: any) => (
+                      <div>
+                        <p className="text-xs font-semibold text-foreground">{row.region || '-'}</p>
+                        <p className="text-[10px] text-muted-foreground">{row.zone || '-'}</p>
+                      </div>
+                    )
+                  },
+                  {
+                    key: 'branch',
+                    label: 'Branche',
+                    render: (_, row: any) => <span className="text-xs text-muted-foreground font-medium">{row.branch || '-'}</span>
                   },
                   {
                     key: 'members',
@@ -729,7 +942,7 @@ export const Admin = () => {
                 { table: 'HR_RECORDS', policy: 'Department Isolation', clause: 'dept_id = {{ user.dept_id }}', status: 'Active', description: 'Ensures HR records are only visible to members of the same department.' },
                 { table: 'FINANCIALS', policy: 'Managerial Override', clause: 'clearance_level >= 5', status: 'Draft', description: 'Restricts sensitive financial data to users with high clearance levels.' },
               ].map((rls, i) => (
-                <div key={i} className="prism-card p-8 flex items-center justify-between group hover:border-accent/30 transition-all duration-500">
+                <div key={i} className="hifadih-card p-8 flex items-center justify-between group hover:border-accent/30 transition-all duration-500">
                   <div className="flex items-center gap-8">
                     <div className="w-14 h-14 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all duration-500">
                       <Lock className="w-6 h-6" />
@@ -783,7 +996,7 @@ export const Admin = () => {
               </button>
             </div>
 
-            <div className="prism-card overflow-hidden">
+            <div className="hifadih-card overflow-hidden">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-muted/30">
@@ -796,9 +1009,9 @@ export const Admin = () => {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {[
-                    { name: 'Laurent O.', email: 'laurent.o@prism.io', device: 'Chrome on macOS', ip: '192.168.1.1', location: 'Paris, FR', started: '2m ago' },
-                    { name: 'Sarah Chen', email: 'sarah.chen@prism.io', device: 'Safari on iPhone', ip: '172.16.0.45', location: 'San Francisco, US', started: '15m ago' },
-                    { name: 'Mike Ross', email: 'mike.ross@prism.io', device: 'Firefox on Windows', ip: '10.0.0.12', location: 'New York, US', started: '1h ago' },
+                    { name: 'Laurent O.', email: 'laurent.o@hifadih.ai', device: 'Chrome on macOS', ip: '192.168.1.1', location: 'Paris, FR', started: '2m ago' },
+                    { name: 'Sarah Chen', email: 'sarah.chen@hifadih.ai', device: 'Safari on iPhone', ip: '172.16.0.45', location: 'San Francisco, US', started: '15m ago' },
+                    { name: 'Mike Ross', email: 'mike.ross@hifadih.ai', device: 'Firefox on Windows', ip: '10.0.0.12', location: 'New York, US', started: '1h ago' },
                   ].map((session, i) => (
                     <tr key={i} className="hover:bg-muted/30 transition-colors group">
                       <td className="px-8 py-6">
@@ -856,7 +1069,7 @@ export const Admin = () => {
               </div>
             </div>
 
-            <div className="prism-card overflow-hidden">
+            <div className="hifadih-card overflow-hidden">
               <div className="p-4 border-b border-border bg-muted/10 flex items-center gap-4">
                 <div className="relative flex-1 group">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-accent" />
@@ -889,8 +1102,8 @@ export const Admin = () => {
                         </div>
                       </td>
                     </tr>
-                  ) : logsData.length > 0 ? (
-                    logsData.map((log, i) => (
+                  ) : hifadihLogs.length > 0 ? (
+                    hifadihLogs.map((log, i) => (
                       <tr key={i} className="hover:bg-muted/30 transition-colors group">
                         <td className="px-8 py-6">
                           <span className="text-[10px] font-mono text-muted-foreground">{new Date(log.dttm).toLocaleString()}</span>
@@ -920,7 +1133,7 @@ export const Admin = () => {
                       { time: '2026-04-09 14:15:05', user: 'Sarah Chen', action: 'RLS_POLICY_UPDATE', target: 'SALES_DATA', status: 'Success' },
                       { time: '2026-04-09 13:02:44', user: 'Mike Ross', action: 'QUERY_EXECUTION', target: 'FINANCIALS', status: 'Success' },
                       { time: '2026-04-09 12:55:10', user: 'Unknown', action: 'LOGIN_FAILURE', target: 'System', status: 'Failed' },
-                      { time: '2026-04-09 11:30:22', user: 'Laurent O.', action: 'USER_INVITE', target: 'alex.kim@prism.io', status: 'Success' },
+                      { time: '2026-04-09 11:30:22', user: 'Laurent O.', action: 'USER_INVITE', target: 'alex.kim@hifadih.ai', status: 'Success' },
                     ].map((log, i) => (
                       <tr key={i} className="hover:bg-muted/30 transition-colors group">
                         <td className="px-8 py-6">
@@ -977,7 +1190,7 @@ export const Admin = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="prism-card p-8 space-y-4">
+              <div className="hifadih-card p-8 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                     <ShieldCheck className="w-5 h-5" />
@@ -995,7 +1208,7 @@ export const Admin = () => {
                 </div>
               </div>
 
-              <div className="prism-card p-8 space-y-4">
+              <div className="hifadih-card p-8 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
                     <Database className="w-5 h-5" />
@@ -1013,7 +1226,7 @@ export const Admin = () => {
                 </div>
               </div>
 
-              <div className="prism-card p-8 space-y-4">
+              <div className="hifadih-card p-8 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400">
                     <Users className="w-5 h-5" />
@@ -1032,7 +1245,7 @@ export const Admin = () => {
               </div>
             </div>
 
-            <div className="prism-card p-8">
+            <div className="hifadih-card p-8">
               <h4 className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em] mb-8">Screening Checklist</h4>
               <div className="space-y-6">
                 {[
@@ -1079,7 +1292,7 @@ export const Admin = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Google SSO */}
-              <div className="prism-card p-8 space-y-6">
+              <div className="hifadih-card p-8 space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center text-accent">
@@ -1132,7 +1345,7 @@ export const Admin = () => {
               </div>
 
               {/* GitHub SSO */}
-              <div className="prism-card p-8 space-y-6">
+              <div className="hifadih-card p-8 space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center text-foreground border border-border/50">
@@ -1174,7 +1387,7 @@ export const Admin = () => {
               </div>
 
               {/* LDAP Configuration */}
-              <div className="prism-card p-8 space-y-6 lg:col-span-2">
+              <div className="hifadih-card p-8 space-y-6 lg:col-span-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center text-accent">
@@ -1314,13 +1527,13 @@ export const Admin = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {isLoading ? (
                   [1, 2, 3].map(i => (
-                    <div key={i} className="prism-card p-8 h-64 animate-pulse bg-muted/30"></div>
+                    <div key={i} className="hifadih-card p-8 h-64 animate-pulse bg-muted/30"></div>
                   ))
-                ) : databasesData.length > 0 ? (
-                  databasesData.map((db, i) => {
+                ) : hifadihDatabases.length > 0 ? (
+                  hifadihDatabases.map((db, i) => {
                     const engine = engines.find(e => e.id === (db.engine || db.backend)?.toLowerCase()) || engines[0];
                     return (
-                      <div key={i} className="prism-card p-6 group hover:border-accent/30 transition-all duration-500 relative overflow-hidden">
+                      <div key={i} className="hifadih-card p-6 group hover:border-accent/30 transition-all duration-500 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
                         
                         <div className="flex items-start justify-between mb-6 relative z-10">
@@ -1386,7 +1599,7 @@ export const Admin = () => {
                     )
                   })
                 ) : (
-                  <div className="col-span-full py-24 text-center glass-panel border-dashed p-12">
+                  <div className="col-span-full py-24 text-center hifadih-card border-dashed p-12">
                      <div className="max-w-md mx-auto space-y-6">
                         <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
                             <Database className="w-10 h-10 text-muted-foreground" />
@@ -1451,7 +1664,7 @@ export const Admin = () => {
 
                     {/* Form Wizard */}
                     <div className="lg:col-span-8 flex flex-col min-h-[600px]">
-                        <div className="flex-1 prism-card p-10">
+                        <div className="flex-1 hifadih-card p-10">
                             {wizardStep === 1 && (
                                 <motion.div 
                                     initial={{ opacity: 0, x: 20 }}
@@ -1599,7 +1812,7 @@ export const Admin = () => {
                                             {newDatabase.useSshTunnel && (
                                                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
                                                     <FormSection label="SSH Host">
-                                                        <FormInput value={newDatabase.sshHost} onChange={(e) => setNewDatabase({...newDatabase, sshHost: e.target.value})} placeholder="bastion.prism.io" />
+                                                        <FormInput value={newDatabase.sshHost} onChange={(e) => setNewDatabase({...newDatabase, sshHost: e.target.value})} placeholder="bastion.hifadih.ai" />
                                                     </FormSection>
                                                     <FormSection label="SSH User">
                                                         <FormInput value={newDatabase.sshUser} onChange={(e) => setNewDatabase({...newDatabase, sshUser: e.target.value})} placeholder="ubuntu" />
@@ -1709,7 +1922,7 @@ export const Admin = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-8">
-                <div className="prism-card p-6 space-y-6">
+                <div className="hifadih-card p-6 space-y-6">
                   <h4 className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Politiques de Sécurité Actives</h4>
                   <div className="space-y-3">
                     {[
@@ -1733,7 +1946,7 @@ export const Admin = () => {
                   </div>
                 </div>
 
-                <div className="prism-card p-6 space-y-6">
+                <div className="hifadih-card p-6 space-y-6">
                   <div className="flex items-center justify-between">
                     <h4 className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Événements Récents</h4>
                     <button className="text-[9px] font-black text-accent uppercase tracking-widest hover:opacity-70 transition-colors">Voir Tous les logs</button>
@@ -1763,7 +1976,7 @@ export const Admin = () => {
               </div>
 
               <div className="space-y-8">
-                <div className="prism-card p-8 bg-foreground text-background space-y-6 overflow-hidden relative">
+                <div className="hifadih-card p-8 bg-foreground text-background space-y-6 overflow-hidden relative">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl -mr-16 -mt-16" />
                   <div className="w-12 h-12 bg-background/10 rounded-2xl flex items-center justify-center border border-background/20 relative z-10">
                     <ShieldCheck className="w-6 h-6" />
@@ -1786,7 +1999,7 @@ export const Admin = () => {
                     </div>
                   </div>
                 </div>
-                <div className="prism-card p-6 space-y-6">
+                <div className="hifadih-card p-6 space-y-6">
                   <h4 className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Conformité</h4>
                   <div className="space-y-3">
                     {['SOC2 Type II', 'GDPR', 'HIPAA'].map((comp, i) => (
@@ -1815,7 +2028,7 @@ export const Admin = () => {
               <p className="text-muted-foreground text-sm">Global settings and environment parameters</p>
             </div>
 
-            <div className="prism-card p-10 space-y-12">
+            <div className="hifadih-card p-10 space-y-12">
               <div className="space-y-8">
                 <h4 className="text-xs font-black text-muted-foreground uppercase tracking-[0.2em]">Identity & Branding</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -1888,7 +2101,7 @@ export const Admin = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="prism-card p-8 flex items-center gap-6 group hover:border-accent/30 transition-all">
+              <div className="hifadih-card p-8 flex items-center gap-6 group hover:border-accent/30 transition-all">
                 <div className="w-14 h-14 bg-accent/10 rounded-2xl flex items-center justify-center text-accent">
                   <Bell className="w-7 h-7" />
                 </div>
@@ -1897,7 +2110,7 @@ export const Admin = () => {
                   <h4 className="text-3xl font-black text-foreground">12</h4>
                 </div>
               </div>
-              <div className="prism-card p-8 flex items-center gap-6 group hover:border-accent/30 transition-all">
+              <div className="hifadih-card p-8 flex items-center gap-6 group hover:border-accent/30 transition-all">
                 <div className="w-14 h-14 bg-accent/10 rounded-2xl flex items-center justify-center text-accent">
                   <Calendar className="w-7 h-7" />
                 </div>
@@ -1906,7 +2119,7 @@ export const Admin = () => {
                   <h4 className="text-3xl font-black text-foreground">24</h4>
                 </div>
               </div>
-              <div className="prism-card p-8 flex items-center gap-6 group hover:border-accent/30 transition-all">
+              <div className="hifadih-card p-8 flex items-center gap-6 group hover:border-accent/30 transition-all">
                 <div className="w-14 h-14 bg-accent/10 rounded-2xl flex items-center justify-center text-accent">
                   <FileText className="w-7 h-7" />
                 </div>
@@ -1917,7 +2130,7 @@ export const Admin = () => {
               </div>
             </div>
 
-            <div className="prism-card overflow-hidden">
+            <div className="hifadih-card overflow-hidden">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-muted/30 border-b border-border">
@@ -1940,8 +2153,8 @@ export const Admin = () => {
                         </div>
                       </td>
                     </tr>
-                  ) : reportsData.length > 0 ? (
-                    reportsData.map((report, i) => (
+                  ) : hifadihReports.length > 0 ? (
+                    hifadihReports.map((report, i) => (
                       <tr key={i} className="hover:bg-muted/30 transition-colors group">
                         <td className="px-8 py-6">
                           <span className="font-bold text-foreground text-sm">{report.name}</span>
@@ -2001,37 +2214,108 @@ export const Admin = () => {
           </motion.div>
         )}
 
-      {/* Invite User Modal */}
+      {/* Invite/Add User Modal */}
       <Modal 
         isOpen={isInviteModalOpen} 
         onClose={() => setIsInviteModalOpen(false)} 
-        title="Invite New User"
+        title={
+          <div className="flex items-center gap-2">
+            <Plus className="w-4 h-4 text-emerald-600" />
+            <span>Add User</span>
+          </div>
+        }
+        maxWidth="md"
       >
-        <form onSubmit={handleInvite} className="space-y-8">
-          <FormSection label="Full Name">
+        <form onSubmit={handleInvite} className="space-y-4">
+          <FormSection label="First name" required>
             <FormInput 
-              value={newUser.name}
-              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-              placeholder="e.g. Harvey Specter" 
+              value={newUser.first_name}
+              onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })}
+              placeholder="Enter the user's first name" 
               required
             />
           </FormSection>
 
-          <FormSection label="Work Email">
+          <FormSection label="Last name" required>
+            <FormInput 
+              value={newUser.last_name}
+              onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })}
+              placeholder="Enter the user's last name" 
+              required
+            />
+          </FormSection>
+
+          <FormSection label="Username" required>
+            <FormInput 
+              value={newUser.username}
+              onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+              placeholder="Enter username" 
+              required
+            />
+          </FormSection>
+
+          <div className="py-0.5">
+            <FormCheckbox 
+              checked={newUser.is_active}
+              onChange={(checked) => setNewUser({ ...newUser, is_active: checked })}
+              label="Is active?"
+            />
+          </div>
+
+          <FormSection label="Email" required>
             <FormInput 
               type="email" 
               value={newUser.email}
               onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-              placeholder="harvey@pearson-specter.com" 
+              placeholder="Enter the user's email" 
               required
             />
           </FormSection>
 
-          <FormSection label="Access Role">
-            <FormButtonGroup 
-              options={['Viewer', 'Editor', 'Admin']}
-              value={newUser.role}
-              onChange={(role) => setNewUser({ ...newUser, role })}
+          <FormSection label="Roles">
+            <FormSelect
+              value={newUser.roles}
+              onChange={(e) => setNewUser({ ...newUser, roles: e.target.value, role: e.target.value })}
+            >
+              <option value="" disabled>Select roles</option>
+              <option value="Admin">Admin</option>
+              <option value="Editor">Editor</option>
+              <option value="Viewer">Viewer</option>
+              <option value="Alpha">Alpha</option>
+              <option value="Gamma">Gamma</option>
+            </FormSelect>
+          </FormSection>
+
+          <FormSection label="Groups">
+            <FormSelect
+              value={newUser.groups}
+              onChange={(e) => setNewUser({ ...newUser, groups: e.target.value })}
+            >
+              <option value="" disabled>Select groups</option>
+              <option value="Default Group">Default Group</option>
+              <option value="Finance Team">Finance Team</option>
+              <option value="Data Analysts">Data Analysts</option>
+              <option value="Executive Board">Executive Board</option>
+            </FormSelect>
+          </FormSection>
+
+          <FormSection label="Password" required>
+            <FormInput 
+              type="password"
+              value={newUser.password}
+              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              placeholder="Enter password" 
+              required
+            />
+          </FormSection>
+
+          <FormSection label="Confirm Password" required>
+            <FormInput 
+              type="password"
+              value={newUser.confirm_password}
+              onChange={(e) => setNewUser({ ...newUser, confirm_password: e.target.value })}
+              placeholder="Confirm the user's password" 
+              required
             />
           </FormSection>
 
@@ -2040,15 +2324,14 @@ export const Admin = () => {
               variant="secondary"
               type="button"
               onClick={() => setIsInviteModalOpen(false)}
-              className="flex-1"
             >
               Cancel
             </FormButton>
             <FormButton 
               type="submit"
-              className="flex-1"
+              variant="primary"
             >
-              Send Invitation
+              Save
             </FormButton>
           </FormActions>
         </form>
@@ -2061,7 +2344,7 @@ export const Admin = () => {
         title="Edit User Details"
       >
         {selectedUser && (
-          <form onSubmit={handleUpdateUser} className="space-y-8">
+          <form onSubmit={handleUpdateUser} className="space-y-6">
             <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-2xl mb-2">
               <div className="w-12 h-12 rounded-full bg-background border border-border overflow-hidden shadow-sm">
                 <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedUser.name}`} alt={selectedUser.name} />
@@ -2070,6 +2353,80 @@ export const Admin = () => {
                 <h4 className="font-bold text-foreground">{selectedUser.name}</h4>
                 <p className="text-xs text-muted-foreground">{selectedUser.email}</p>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormSection label="Job Title / Poste">
+                <FormInput 
+                  value={selectedUser.job_title || ''}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, job_title: e.target.value })}
+                  placeholder="e.g. Lead BI Analyst" 
+                />
+              </FormSection>
+
+              <FormSection label="Phone / Téléphone">
+                <FormInput 
+                  value={selectedUser.phone || ''}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, phone: e.target.value })}
+                  placeholder="+225 07 00 00 00" 
+                />
+              </FormSection>
+
+              <FormSection label="Department / Département">
+                <FormInput 
+                  value={selectedUser.department || ''}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, department: e.target.value })}
+                  placeholder="e.g. Finance" 
+                />
+              </FormSection>
+
+              <FormSection label="Section / Secteur">
+                <FormInput 
+                  value={selectedUser.section || ''}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, section: e.target.value })}
+                  placeholder="e.g. Audit Interne" 
+                />
+              </FormSection>
+
+              <FormSection label="Region / Région">
+                <FormInput 
+                  value={selectedUser.region || ''}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, region: e.target.value })}
+                  placeholder="e.g. Abidjan Sud" 
+                />
+              </FormSection>
+
+              <FormSection label="Zone / Territoire">
+                <FormInput 
+                  value={selectedUser.zone || ''}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, zone: e.target.value })}
+                  placeholder="e.g. Zone A" 
+                />
+              </FormSection>
+
+              <FormSection label="Branch / Agence">
+                <FormInput 
+                  value={selectedUser.branch || ''}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, branch: e.target.value })}
+                  placeholder="e.g. Agence Cocody" 
+                />
+              </FormSection>
+
+              <FormSection label="Site Location">
+                <FormInput 
+                  value={selectedUser.site_location || ''}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, site_location: e.target.value })}
+                  placeholder="e.g. Tour Hifadih Floor 4" 
+                />
+              </FormSection>
+
+              <FormSection label="Manager Name" className="md:col-span-2">
+                <FormInput 
+                  value={selectedUser.manager_name || ''}
+                  onChange={(e) => setSelectedUser({ ...selectedUser, manager_name: e.target.value })}
+                  placeholder="e.g. VP Analytics Laurent O." 
+                />
+              </FormSection>
             </div>
 
             <FormSection label="Access Role">
@@ -2152,19 +2509,66 @@ export const Admin = () => {
         onClose={() => {
           setIsRoleModalOpen(false);
           setSelectedRole(null);
-          setNewRole({ name: '', description: '', permissions: [] });
+          setNewRole({ name: '', description: '', permissions: [], scope_level: 'Global', department: '', section: '', region: '', zone: '' });
         }} 
         title={selectedRole ? "Edit Role" : "Create New Role"}
       >
-        <form onSubmit={handleCreateRole} className="space-y-8">
-          <FormSection label="Role Name">
-            <FormInput 
-              value={newRole.name}
-              onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
-              placeholder="e.g. Data Analyst" 
-              required
-            />
-          </FormSection>
+        <form onSubmit={handleCreateRole} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormSection label="Role Name">
+              <FormInput 
+                value={newRole.name}
+                onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
+                placeholder="e.g. Data Analyst" 
+                required
+              />
+            </FormSection>
+
+            <FormSection label="Scope Level / Portée">
+              <FormSelect
+                value={newRole.scope_level}
+                onChange={(e) => setNewRole({ ...newRole, scope_level: e.target.value })}
+              >
+                <option value="Global">Global</option>
+                <option value="Regional">Regional</option>
+                <option value="Departmental">Departmental</option>
+                <option value="Sectional">Sectional</option>
+              </FormSelect>
+            </FormSection>
+
+            <FormSection label="Department / Département">
+              <FormInput 
+                value={newRole.department}
+                onChange={(e) => setNewRole({ ...newRole, department: e.target.value })}
+                placeholder="e.g. Direction Métiers" 
+              />
+            </FormSection>
+
+            <FormSection label="Section / Secteur">
+              <FormInput 
+                value={newRole.section}
+                onChange={(e) => setNewRole({ ...newRole, section: e.target.value })}
+                placeholder="e.g. Reporting" 
+              />
+            </FormSection>
+
+            <FormSection label="Region / Région">
+              <FormInput 
+                value={newRole.region}
+                onChange={(e) => setNewRole({ ...newRole, region: e.target.value })}
+                placeholder="e.g. Littoral" 
+              />
+            </FormSection>
+
+            <FormSection label="Zone / Territoire">
+              <FormInput 
+                value={newRole.zone}
+                onChange={(e) => setNewRole({ ...newRole, zone: e.target.value })}
+                placeholder="e.g. Zone A" 
+              />
+            </FormSection>
+          </div>
+
           <FormSection label="Description">
             <FormTextarea 
               value={newRole.description}
@@ -2209,7 +2613,7 @@ export const Admin = () => {
               type="submit"
               className="flex-1"
             >
-              {selectedRole ? 'Update Role' : 'Create Importance Role'}
+              {selectedRole ? 'Update Role' : 'Create Role'}
             </FormButton>
           </FormActions>
         </form>
@@ -2221,19 +2625,67 @@ export const Admin = () => {
         onClose={() => setIsGroupModalOpen(false)} 
         title="Create New Group"
       >
-        <form onSubmit={(e) => { e.preventDefault(); setIsGroupModalOpen(false); }} className="space-y-8">
-          <FormSection label="Group Name">
-            <FormInput 
-              placeholder="e.g. Finance Team" 
-              required
-            />
-          </FormSection>
+        <form onSubmit={(e) => { e.preventDefault(); setIsGroupModalOpen(false); }} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormSection label="Group Name">
+              <FormInput 
+                value={newGroup.name}
+                onChange={(e) => setNewGroup({ ...newGroup, name: e.target.value })}
+                placeholder="e.g. Finance Team" 
+                required
+              />
+            </FormSection>
+
+            <FormSection label="Chef de Groupe / Leader">
+              <FormInput 
+                value={newGroup.leader_name}
+                onChange={(e) => setNewGroup({ ...newGroup, leader_name: e.target.value })}
+                placeholder="e.g. Sarah Chen" 
+              />
+            </FormSection>
+
+            <FormSection label="Department / Département">
+              <FormInput 
+                value={newGroup.department}
+                onChange={(e) => setNewGroup({ ...newGroup, department: e.target.value })}
+                placeholder="e.g. Marketing" 
+              />
+            </FormSection>
+
+            <FormSection label="Section / Secteur">
+              <FormInput 
+                value={newGroup.section}
+                onChange={(e) => setNewGroup({ ...newGroup, section: e.target.value })}
+                placeholder="e.g. Acquisition" 
+              />
+            </FormSection>
+
+            <FormSection label="Region / Région">
+              <FormInput 
+                value={newGroup.region}
+                onChange={(e) => setNewGroup({ ...newGroup, region: e.target.value })}
+                placeholder="e.g. Abidjan" 
+              />
+            </FormSection>
+
+            <FormSection label="Branch / Agence">
+              <FormInput 
+                value={newGroup.branch}
+                onChange={(e) => setNewGroup({ ...newGroup, branch: e.target.value })}
+                placeholder="e.g. Plateau" 
+              />
+            </FormSection>
+          </div>
+
           <FormSection label="Description">
             <FormTextarea 
+              value={newGroup.description}
+              onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
               placeholder="What dashboards will this group access?" 
               required
             />
           </FormSection>
+
           <FormActions>
             <FormButton 
               variant="secondary"

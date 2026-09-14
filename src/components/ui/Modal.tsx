@@ -5,12 +5,12 @@ import { X } from 'lucide-react';
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  title: React.ReactNode;
   children: React.ReactNode;
   maxWidth?: string;
 }
 
-export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'lg' }: ModalProps) => {
+export const Modal = ({ isOpen, onClose, title, children, maxWidth = '2xl' }: ModalProps) => {
   const maxWidthClass = {
     'sm': 'max-w-sm',
     'md': 'max-w-md',
@@ -23,7 +23,7 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'lg' }: Mod
     '6xl': 'max-w-6xl',
     '7xl': 'max-w-7xl',
     'full': 'max-w-full'
-  }[maxWidth] || 'max-w-lg';
+  }[maxWidth] || 'max-w-2xl';
 
   return (
     <AnimatePresence>
@@ -35,30 +35,30 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'lg' }: Mod
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60]"
+            className="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-[60]"
           />
           
           {/* Modal Container */}
-          <div className="fixed inset-0 flex items-center justify-center z-[70] p-4 pointer-events-none">
+          <div className="fixed inset-0 flex items-center justify-center z-[70] p-4 sm:p-6 pointer-events-none">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className={`w-full ${maxWidthClass} bg-white rounded-3xl shadow-2xl shadow-slate-900/20 overflow-hidden pointer-events-auto`}
+              exit={{ opacity: 0, scale: 0.96, y: 12 }}
+              className={`w-full ${maxWidthClass} bg-background border border-border/80 rounded-3xl shadow-2xl overflow-hidden pointer-events-auto text-foreground flex flex-col max-h-[88vh]`}
             >
               {/* Header */}
-              <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <h3 className="text-xl font-bold text-slate-900 tracking-tight">{title}</h3>
+              <div className="px-6 py-3.5 border-b border-border/80 flex items-center justify-between bg-muted/30 shrink-0">
+                <h3 className="text-base font-bold text-foreground tracking-tight">{title}</h3>
                 <button 
                   onClick={onClose}
-                  className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+                  className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4.5 h-4.5" />
                 </button>
               </div>
               
               {/* Content */}
-              <div className="p-8">
+              <div className="p-6 overflow-y-auto custom-scrollbar">
                 {children}
               </div>
             </motion.div>

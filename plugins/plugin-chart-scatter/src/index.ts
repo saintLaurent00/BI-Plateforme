@@ -10,12 +10,11 @@ export const ScatterChartPlugin: ChartPlugin = {
     name: 'Scatter Plot',
     description: 'Visualizes the relationship between two numerical sets.',
     category: 'Correlation',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Scatter/images/thumbnail.png',
+
   },
   buildQuery,
   controlPanel,
-  render: (g, props) => {
-    const transformedProps = transformProps(props);
-    ScatterChart(g, transformedProps);
+  getOptions: (props) => {
+    return ScatterChart(props);
   }
 };

@@ -18,12 +18,13 @@ import {
   Server
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getTables, getTableSchema, executeQuery } from '../../core/utils/db';
+import { getTables, getTableSchema, executeQuery, getDataSources } from '../../core/utils/db';
 import { Badge } from '../../components/ui/Badge';
 import { Stepper } from '../../components/ui/Stepper';
 import { FormSection, FormInput, FormSelect, FormActions, FormButton } from '../../components/ui/FormElements';
 import { cn } from '../../core/utils/utils';
 import { toast } from 'sonner';
+import { hifadihService } from '../../lib/hifadihService';
 
 export const PhysicalDatasetWizard = () => {
   const navigate = useNavigate();
@@ -69,18 +70,229 @@ export const PhysicalDatasetWizard = () => {
   }, [selectedDatabaseId]);
 
   const loadDatabases = async () => {
-    setDatabases([{ id: 'local', database_name: 'Base Locale (SQLite)' }]);
+    try {
+        const dbsRes = await hifadihService.getDatabases();
+        const dbs = dbsRes.result || [];
+        
+        let sqliteDbs: any[] = [];
+        try {
+          sqliteDbs = await getDataSources();
+        } catch (sqliteErr) {
+          console.error('Failed to load SQL data sources:', sqliteErr);
+        }
+
+        const formattedSqliteDbs = sqliteDbs.map((db: any) => ({
+          ...db,
+          database_name: db.name || db.databaseName || db.database_name || 'Base de données',
+        }));
+
+        setDatabases([
+          ...formattedSqliteDbs,
+          ...dbs, 
+          { id: 'local', database_name: 'Base Locale (SQLite)' }
+        ]);
+    } catch (e) {
+        try {
+          const sqliteDbs = await getDataSources();
+          const formattedSqliteDbs = sqliteDbs.map((db: any) => ({
+            ...db,
+            database_name: db.name || db.databaseName || db.database_name || 'Base de données',
+          }));
+          setDatabases([...formattedSqliteDbs, { id: 'local', database_name: 'Base Locale (SQLite)' }]);
+        } catch (err) {
+          setDatabases([{ id: 'local', database_name: 'Base Locale (SQLite)' }]);
+        }
+    }
+  };
+
+  const MOCK_SCHEMAS: Record<string, { name: string; type: string; notnull?: number; pk?: number }[]> = {
+    commandes: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'client_id', type: 'INTEGER' },
+      { name: 'date_commande', type: 'TEXT' },
+      { name: 'montant_total', type: 'REAL' },
+      { name: 'statut', type: 'TEXT' }
+    ],
+    clients: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'nom', type: 'TEXT' },
+      { name: 'email', type: 'TEXT' },
+      { name: 'ville', type: 'TEXT' },
+      { name: 'pays', type: 'TEXT' }
+    ],
+    produits: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'nom_produit', type: 'TEXT' },
+      { name: 'categorie', type: 'TEXT' },
+      { name: 'prix_unitaire', type: 'REAL' },
+      { name: 'stock_disponible', type: 'INTEGER' }
+    ],
+    details_commandes: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'commande_id', type: 'INTEGER' },
+      { name: 'produit_id', type: 'INTEGER' },
+      { name: 'quantite', type: 'INTEGER' },
+      { name: 'prix_facture', type: 'REAL' }
+    ],
+    regions_vente: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'nom_region', type: 'TEXT' },
+      { name: 'responsable', type: 'TEXT' },
+      { name: 'objectif_annuel', type: 'REAL' }
+    ],
+    transactions: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'compte_id', type: 'INTEGER' },
+      { name: 'date_transaction', type: 'TEXT' },
+      { name: 'description', type: 'TEXT' },
+      { name: 'montant', type: 'REAL' },
+      { name: 'type_transaction', type: 'TEXT' }
+    ],
+    budgets: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'categorie_id', type: 'INTEGER' },
+      { name: 'annee', type: 'INTEGER' },
+      { name: 'mois', type: 'INTEGER' },
+      { name: 'montant_alloue', type: 'REAL' }
+    ],
+    comptes_bancaires: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'libelle', type: 'TEXT' },
+      { name: 'type_compte', type: 'TEXT' },
+      { name: 'solde_actuel', type: 'REAL' },
+      { name: 'devise', type: 'TEXT' }
+    ],
+    categories_depenses: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'nom_categorie', type: 'TEXT' },
+      { name: 'limite_mensuelle', type: 'REAL' }
+    ],
+    flux_tresorerie: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'periode', type: 'TEXT' },
+      { name: 'entrees', type: 'REAL' },
+      { name: 'sorties', type: 'REAL' }
+    ],
+    employes: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'nom_complet', type: 'TEXT' },
+      { name: 'email', type: 'TEXT' },
+      { name: 'date_embauche', type: 'TEXT' },
+      { name: 'departement_id', type: 'INTEGER' },
+      { name: 'statut', type: 'TEXT' }
+    ],
+    departements: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'nom_departement', type: 'TEXT' },
+      { name: 'manager_id', type: 'INTEGER' },
+      { name: 'budget_annuel', type: 'REAL' }
+    ],
+    salaires: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'employe_id', type: 'INTEGER' },
+      { name: 'salaire_base', type: 'REAL' },
+      { name: 'primes', type: 'REAL' },
+      { name: 'date_effet', type: 'TEXT' }
+    ],
+    conges_absences: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'employe_id', type: 'INTEGER' },
+      { name: 'type_conge', type: 'TEXT' },
+      { name: 'date_debut', type: 'TEXT' },
+      { name: 'date_fin', type: 'TEXT' },
+      { name: 'statut_validation', type: 'TEXT' }
+    ],
+    evaluations: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'employe_id', type: 'INTEGER' },
+      { name: 'annee_review', type: 'INTEGER' },
+      { name: 'note_performance', type: 'INTEGER' },
+      { name: 'commentaire', type: 'TEXT' }
+    ],
+    utilisateurs: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'pseudo', type: 'TEXT' },
+      { name: 'email', type: 'TEXT' },
+      { name: 'role', type: 'TEXT' },
+      { name: 'derniere_connexion', type: 'TEXT' }
+    ],
+    stocks: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'produit_id', type: 'INTEGER' },
+      { name: 'quantite_stock', type: 'INTEGER' },
+      { name: 'seuil_alerte', type: 'INTEGER' }
+    ],
+    factures: [
+      { name: 'id', type: 'INTEGER', pk: 1 },
+      { name: 'client_id', type: 'INTEGER' },
+      { name: 'numero_facture', type: 'TEXT' },
+      { name: 'montant_du', type: 'REAL' },
+      { name: 'date_echeance', type: 'TEXT' },
+      { name: 'statut_paiement', type: 'TEXT' }
+    ]
+  };
+
+  const MOCK_PREVIEWS: Record<string, Record<string, any>[]> = {
+    commandes: [
+      { id: 1, client_id: 101, date_commande: '2026-06-01', montant_total: 150.50, statut: 'Léguée' },
+      { id: 2, client_id: 102, date_commande: '2026-06-02', montant_total: 89.99, statut: 'En cours' },
+      { id: 3, client_id: 103, date_commande: '2026-06-03', montant_total: 420.00, statut: 'Payée' },
+      { id: 4, client_id: 104, date_commande: '2026-06-04', montant_total: 75.00, statut: 'Annulée' },
+      { id: 5, client_id: 105, date_commande: '2026-06-05', montant_total: 110.20, statut: 'Payée' }
+    ],
+    clients: [
+      { id: 101, nom: 'Société Dupont', email: 'dupont@exist.fr', ville: 'Paris', pays: 'France' },
+      { id: 102, nom: 'Jean Martin', email: 'j.martin@mail.com', ville: 'Lyon', pays: 'France' },
+      { id: 103, nom: 'Marta Gomez', email: 'marta@gomez.es', ville: 'Madrid', pays: 'Espagne' },
+      { id: 104, nom: 'Paul Smith', email: 'psmith@tech.co.uk', ville: 'Londres', pays: 'Royaume-Uni' },
+      { id: 105, nom: 'Alice Müller', email: 'alice@mueller.de', ville: 'Berlin', pays: 'Allemagne' }
+    ],
+    produits: [
+      { id: 201, nom_produit: 'Licence SaaS Hifadih', categorie: 'Logiciel', prix_unitaire: 1200.00, stock_disponible: 999 },
+      { id: 202, nom_produit: 'Pack Installation & Audit', categorie: 'Service', prix_unitaire: 1500.00, stock_disponible: 150 },
+      { id: 203, nom_produit: 'Module AI Pro Add-on', categorie: 'Logiciel', prix_unitaire: 450.00, stock_disponible: 999 },
+      { id: 204, nom_produit: 'Formation Équipe (1 jour)', categorie: 'Service', prix_unitaire: 800.00, stock_disponible: 50 },
+      { id: 205, nom_produit: 'Support Dédié 24/7 (Annuel)', categorie: 'Assistance', prix_unitaire: 3000.00, stock_disponible: 12 }
+    ],
+    details_commandes: [
+      { id: 1, commande_id: 1, produit_id: 201, quantite: 1, prix_facture: 1200.00 },
+      { id: 2, commande_id: 1, produit_id: 203, quantite: 2, prix_facture: 900.00 },
+      { id: 3, commande_id: 2, produit_id: 204, quantite: 1, prix_facture: 800.00 },
+      { id: 4, commande_id: 3, produit_id: 202, quantite: 1, prix_facture: 1500.00 },
+      { id: 5, commande_id: 3, produit_id: 205, quantite: 1, prix_facture: 3000.00 }
+    ],
+    regions_vente: [
+      { id: 10, nom_region: 'Île-de-France', responsable: 'Sophie Leray', objectif_annuel: 500000 },
+      { id: 11, nom_region: 'Auvergne-Rhône-Alpes', responsable: 'Marc Dubois', objectif_annuel: 350000 },
+      { id: 12, nom_region: 'Europe Occidentale', responsable: 'Carlos Mendez', objectif_annuel: 1200000 },
+      { id: 13, nom_region: 'Amérique du Nord', responsable: 'Johnathan Doe', objectif_annuel: 2000000 }
+    ],
+    transactions: [
+      { id: 1, compte_id: 1, date_transaction: '2026-06-01', description: 'Licence logicielle Hifadih', montant: 1200.00, type_transaction: 'CREDIT' },
+      { id: 2, compte_id: 1, date_transaction: '2026-06-02', description: 'Hosting infrastructure AWS', montant: -450.25, type_transaction: 'DEBIT' },
+      { id: 3, compte_id: 2, date_transaction: '2026-06-03', description: 'Abonnement Marketing Tools', montant: -99.00, type_transaction: 'DEBIT' },
+      { id: 4, compte_id: 1, date_transaction: '2026-06-04', description: 'Facture Client #40922', montant: 5500.00, type_transaction: 'CREDIT' },
+      { id: 5, compte_id: 3, date_transaction: '2026-06-05', description: 'Remboursement Taxes', montant: 185.00, type_transaction: 'CREDIT' }
+    ],
+    utilisateurs: [
+      { id: 1, pseudo: 'admin', email: 'admin@hifadih.com', role: 'Administrateur', derniere_connexion: '2026-06-11 14:22' },
+      { id: 2, pseudo: 'laurent', email: 'ouattaralaurent69@gmail.com', role: 'Analyste senior', derniere_connexion: '2026-06-12 09:30' }
+    ]
+  };
+
+  const getSchemaForTable = async (table: string) => {
+    return await getTableSchema(table, selectedDatabaseId);
   };
 
   const loadTables = async (dbId: string) => {
     setIsLoading(true);
     try {
+        const allTables = await getTables(dbId);
         if (dbId === 'local') {
-            const t = await getTables();
-            setTables(t);
+            const businessTables = allTables.filter(t => !['charts', 'dashboards', 'saved_queries', 'roles', 'permissions', 'data_sources'].includes(t));
+            setTables(businessTables);
         } else {
-            const t = await getTables(); 
-            setTables(t);
+            setTables(allTables);
         }
     } catch (e) {
         setTables([]);
@@ -101,7 +313,7 @@ export const PhysicalDatasetWizard = () => {
     setIsLoading(true);
     const schemas: Record<string, any[]> = {};
     for (const table of selectedTables) {
-      schemas[table] = await getTableSchema(table);
+      schemas[table] = await getSchemaForTable(table);
     }
 
     const detectedJoins: any[] = [];
@@ -145,7 +357,7 @@ export const PhysicalDatasetWizard = () => {
     setIsLoading(true);
     const allCols: any[] = [];
     for (const table of selectedTables) {
-      const schema = await getTableSchema(table);
+      const schema = await getSchemaForTable(table);
       schema.forEach(col => {
         allCols.push({
           table,
@@ -159,7 +371,7 @@ export const PhysicalDatasetWizard = () => {
     setColumns(allCols);
     
     try {
-        const sample = await executeQuery(`SELECT * FROM "${selectedTables[0]}" LIMIT 5`);
+        const sample = await executeQuery(`SELECT * FROM "${selectedTables[0]}" LIMIT 5`, selectedDatabaseId);
         setDataPreview(sample);
     } catch (e) {
         setDataPreview([]);
@@ -170,7 +382,36 @@ export const PhysicalDatasetWizard = () => {
   };
 
   const handleSave = async () => {
-      toast.success("Dataset physique créé avec succès !");
+      const selectedDbObj = databases.find(db => String(db.id) === String(selectedDatabaseId));
+      const dbName = selectedDbObj ? (selectedDbObj.database_name || selectedDbObj.name || 'Base de données') : 'Base Locale';
+
+      const newDataset = {
+        name: datasetName || `Analyse ${selectedTables.join(' & ')}`,
+        type: 'Physical',
+        owner: 'Admin',
+        lastModified: new Date().toLocaleDateString('fr-FR'),
+        health: 98,
+        table_name: selectedTables[0],
+        tables_included: selectedTables,
+        joins: joins,
+        columns: columns.filter(c => c.visible).map(c => ({
+          name: c.displayName,
+          originalName: c.originalName,
+          table: c.table,
+          type: c.type
+        })),
+        database_id: selectedDatabaseId,
+        database_name: dbName,
+        default_where: defaultWhere,
+      };
+
+      try {
+        await hifadihService.createDataset(newDataset);
+        toast.success("Dataset physique créé avec succès !");
+      } catch (err) {
+        console.error("Failed to save dataset:", err);
+        toast.error("Erreur lors de la création du dataset (Local)");
+      }
       navigate('/datasets');
   };
 
@@ -249,7 +490,7 @@ export const PhysicalDatasetWizard = () => {
                                     key={db.id}
                                     onClick={() => setSelectedDatabaseId(String(db.id))}
                                     className={cn(
-                                        "p-6 glass-panel text-left space-y-4 group transition-all duration-300 relative overflow-hidden",
+                                        "p-6 hifadih-glass text-left space-y-4 group transition-all duration-300 relative overflow-hidden",
                                         selectedDatabaseId === String(db.id) 
                                             ? "border-accent bg-accent/5 ring-4 ring-accent/5" 
                                             : "hover:border-accent/30"
@@ -304,7 +545,7 @@ export const PhysicalDatasetWizard = () => {
                                                 key={table}
                                                 onClick={() => handleTableToggle(table)}
                                                 className={cn(
-                                                    "p-4 glass-panel text-left space-y-3 group transition-all duration-300 relative",
+                                                    "p-4 hifadih-glass text-left space-y-3 group transition-all duration-300 relative",
                                                     selectedTables.includes(table) ? "border-accent bg-accent/5 ring-2 ring-accent/5" : "hover:border-accent/30"
                                                 )}
                                             >
@@ -355,7 +596,7 @@ export const PhysicalDatasetWizard = () => {
                         </div>
                         {joins.length > 0 ? (
                         joins.map((join, i) => (
-                            <div key={i} className="glass-panel p-6 flex items-center justify-between group hover:border-accent/30 transition-all border-l-4 border-l-accent">
+                            <div key={i} className="hifadih-glass p-6 flex items-center justify-between group hover:border-accent/30 transition-all border-l-4 border-l-accent">
                             <div className="flex items-center gap-8 flex-1">
                                 <div className="text-center space-y-2 flex-1">
                                     <div className="p-3 bg-muted rounded-xl font-bold border border-border text-sm">{join.leftTable}</div>
@@ -400,7 +641,7 @@ export const PhysicalDatasetWizard = () => {
                             <Eye className="w-4 h-4 text-accent" />
                             <h3 className="text-xs font-black uppercase tracking-widest text-foreground">Aperçu du résultat joint</h3>
                         </div>
-                        <div className="prism-card overflow-hidden h-64 overflow-auto">
+                        <div className="hifadih-card overflow-hidden h-64 overflow-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead className="sticky top-0 z-10 bg-muted/90 backdrop-blur-sm border-b border-border">
                                     <tr>
@@ -433,7 +674,7 @@ export const PhysicalDatasetWizard = () => {
                     </div>
                   </div>
 
-                  <div className="glass-panel p-6 space-y-6">
+                  <div className="hifadih-glass p-6 space-y-6">
                     <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Aperçu du Modèle</h4>
                     <div className="space-y-3">
                         {selectedTables.map(t => (
@@ -496,7 +737,7 @@ export const PhysicalDatasetWizard = () => {
 
                 {activeSubTab === 'cols' && (
                   <div className="space-y-8">
-                    <div className="prism-card overflow-hidden">
+                    <div className="hifadih-card overflow-hidden">
                         <div className="p-6 border-b border-border bg-muted/50 flex items-center justify-between">
                             <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground italic">Catalogue des colonnes</h3>
                             <div className="flex gap-4 items-center">
@@ -563,7 +804,7 @@ export const PhysicalDatasetWizard = () => {
                                 <Eye className="w-4 h-4 text-accent" />
                                 <h3 className="text-xs font-black uppercase tracking-widest text-foreground">Aperçu direct (5 premières lignes)</h3>
                             </div>
-                            <div className="prism-card overflow-hidden">
+                            <div className="hifadih-card overflow-hidden">
                                 <div className="max-w-full overflow-x-auto">
                                     <table className="w-full text-left border-collapse">
                                         <thead>
@@ -630,7 +871,7 @@ export const PhysicalDatasetWizard = () => {
                    <p className="text-muted-foreground font-light text-lg">Donnez un nom clair à votre nouveau dataset physique pour qu'il soit facilement identifiable.</p>
                 </div>
 
-                <div className="space-y-6 glass-panel p-10">
+                <div className="space-y-6 hifadih-glass p-10">
                     <FormSection label="Nom du Dataset">
                         <FormInput 
                             value={datasetName}

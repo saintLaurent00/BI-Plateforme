@@ -180,7 +180,7 @@ export const PhysicalDatasetEdit = () => {
                      </div>
                   </div>
 
-                  <div className="prism-card overflow-hidden">
+                  <div className="hifadih-card overflow-hidden">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-muted/50 border-b border-border">
@@ -245,7 +245,7 @@ export const PhysicalDatasetEdit = () => {
 
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {metrics.map((metric, i) => (
-                        <div key={i} className="glass-panel p-6 space-y-4 hover:border-accent/40 transition-all group">
+                        <div key={i} className="hifadih-glass p-6 space-y-4 hover:border-accent/40 transition-all group">
                            <div className="flex items-center justify-between">
                               <div className="p-3 bg-accent/10 text-accent rounded-xl">
                                  {metric.type === 'count' ? <Search className="w-5 h-5" /> : <Calculator className="w-5 h-5" />}

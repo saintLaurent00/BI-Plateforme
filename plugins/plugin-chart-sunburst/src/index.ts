@@ -7,7 +7,7 @@ export const SunburstPlugin: ChartPlugin = {
     name: 'Rayonnement (Sunburst)',
     description: 'Visualise les données hiérarchiques sous forme de cercles concentriques.',
     category: 'Part-to-whole',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Sunburst/images/thumbnail.png',
+
   },
   controlPanel: {
     controlPanelSections: [
@@ -21,5 +21,5 @@ export const SunburstPlugin: ChartPlugin = {
       },
     ],
   },
-  render: (g, props) => SunburstChart(g, props),
+  getOptions: (props) => SunburstChart(props),
 };

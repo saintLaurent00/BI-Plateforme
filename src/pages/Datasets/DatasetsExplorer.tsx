@@ -29,14 +29,15 @@ import {
 } from '../../components/ui/FormElements';
 import { Link, useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
-import { importCSV, getTables, deleteDataset } from '../../core/utils/db';
+import { importCSV, getTables } from '../../core/utils/db';
+import { hifadihService } from '../../lib/hifadihService';
 import { cn } from '../../core/utils/utils';
 
 const DatasetListItem = ({ id, name, type, owner, lastModified, health, onDelete }: any) => (
   <motion.div 
     initial={{ opacity: 0, x: -10 }}
     animate={{ opacity: 1, x: 0 }}
-    className="glass-panel p-4 group hover:border-accent/30 transition-all duration-300 flex items-center gap-6"
+    className="hifadih-card p-4 group hover:border-accent/30 transition-all duration-300 flex items-center gap-6"
   >
     <div className="w-10 h-10 bg-muted rounded-xl flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all duration-300 shrink-0">
       <Database className="w-4 h-4" />
@@ -111,7 +112,7 @@ export const DatasetsExplorer = () => {
   const [importStatus, setImportStatus] = React.useState<'idle' | 'parsing' | 'importing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = React.useState('');
   const [localTables, setLocalTables] = React.useState<string[]>([]);
-  const [metadataDatasets, setMetadataDatasets] = React.useState<any[]>([]);
+  const [hifadihDatasets, setHifadihDatasets] = React.useState<any[]>([]);
   const [databases, setDatabases] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [datasetToDelete, setDatasetToDelete] = React.useState<any>(null);
@@ -130,25 +131,14 @@ export const DatasetsExplorer = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const { initDatabase } = await import('../../core/utils/db');
-      const { db } = await initDatabase();
-      const tables = await getTables();
+      const [tables, dsResponse, dbResponse] = await Promise.all([
+        getTables(),
+        hifadihService.getDatasets().catch(() => ({ result: [] })),
+        hifadihService.getDatabases().catch(() => ({ result: [] }))
+      ]);
       setLocalTables(tables);
-      
-      const res = db.exec("SELECT * FROM dataset_metadata ORDER BY created_at DESC");
-      if (res.length > 0) {
-        const { columns, values } = res[0];
-        const datasets = values.map(row => {
-          const obj: any = {};
-          columns.forEach((col, i) => obj[col] = row[i]);
-          return obj;
-        });
-        setMetadataDatasets(datasets);
-      } else {
-        setMetadataDatasets([]);
-      }
-      
-      setDatabases([{ id: 1, database_name: 'Local SQLite' }]);
+      setHifadihDatasets(dsResponse.result);
+      setDatabases(dbResponse.result);
     } catch (err) {
       console.error('Data load error:', err);
     } finally {
@@ -189,27 +179,24 @@ export const DatasetsExplorer = () => {
   };
 
   const filteredDatasets = [
-    ...localTables
-      .filter(table => !metadataDatasets.some(meta => meta.table_name === table))
-      .map(table => ({
-        name: table,
-        id: table,
-        type: "Physical",
-        owner: "Local User",
-        lastModified: "À l'instant",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        health: 100
-      })),
-    ...metadataDatasets.map(ds => ({
-      name: ds.name || ds.table_name,
-      id: ds.id || ds.table_name,
-      type: ds.sql ? 'Virtual' : 'Physical',
-      owner: 'Admin',
-      created_at: ds.created_at,
-      updated_at: ds.created_at,
-      lastModified: 'Récemment',
-      health: 95
+    ...localTables.map(table => ({
+      name: table,
+      type: "Physical",
+      owner: "Local User",
+      lastModified: "À l'instant",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      health: 100
+    })),
+    ...hifadihDatasets.map(ds => ({
+      name: ds.table_name || ds.name,
+      id: ds.id,
+      type: ds.kind === 'physical' ? 'Physical' : 'Virtual',
+      owner: ds.owner || 'Hifadih BI',
+      created_at: ds.created_on || null,
+      updated_at: ds.changed_on || null,
+      lastModified: ds.changed_on_delta_humanized || 'Récemment',
+      health: ds.healthScore || 95
     }))
   ].filter(ds => {
     const matchesSearch = ds.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -222,14 +209,20 @@ export const DatasetsExplorer = () => {
   const handleDelete = async () => {
     if (!datasetToDelete) return;
     
-    const loadingToast = toast.loading("Suppression du dataset...");
-    try {
-      await deleteDataset(datasetToDelete.id || datasetToDelete.name);
-      toast.success("Dataset supprimé avec succès.", { id: loadingToast });
-      loadData();
-    } catch (err) {
-      toast.error("Erreur lors de la suppression.", { id: loadingToast });
-      console.error('Delete error:', err);
+    // If it's a hifadih dataset
+    if (datasetToDelete.id) {
+      const loadingToast = toast.loading("Suppression du dataset...");
+      try {
+        await hifadihService.deleteDataset(datasetToDelete.id);
+        toast.success("Dataset supprimé avec succès.", { id: loadingToast });
+        loadData();
+      } catch (err) {
+        toast.error("Erreur lors de la suppression.", { id: loadingToast });
+        console.error('Delete error:', err);
+      }
+    } else {
+      // Local table deletion
+      toast.info("La suppression des tables locales n'est pas supportée dans cette version.");
     }
     
     setIsDeleteModalOpen(false);
@@ -410,7 +403,7 @@ export const DatasetsExplorer = () => {
               {
                 key: 'actions',
                 label: 'Actions',
-                render: (_, row) => (
+                render: (_, row: any) => (
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <Link 
                       to={`/datasets/edit/${row.id || row.name}`}
@@ -431,7 +424,7 @@ export const DatasetsExplorer = () => {
                 )
               }
             ]}
-            onRowClick={(row) => navigate(`/datasets/${row.id || row.name}`)}
+            onRowClick={(row: any) => navigate(`/datasets/${row.id || row.name}`)}
           />
         ) : (
           <div className="py-24 text-center border border-dashed border-border rounded-2xl">

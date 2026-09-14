@@ -28,26 +28,22 @@ export const chartPlugins: ChartPlugin[] = [
   { ...BarChartPlugin, type: 'StackedBar', metadata: { 
     ...BarChartPlugin.metadata, 
     name: 'Stacked Bar', 
-    description: 'Compares parts of a whole across categories using stacked segments.',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/legacy-plugin-chart-bar/src/images/thumbnail.png' 
+    description: 'Compares parts of a whole across categories using stacked segments.'
   } },
   { ...BarChartPlugin, type: 'GroupedBar', metadata: { 
     ...BarChartPlugin.metadata, 
     name: 'Grouped Bar', 
-    description: 'Compares multiple metrics side-by-side across categories.',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/legacy-plugin-chart-bar/src/images/thumbnail.png' 
+    description: 'Compares multiple metrics side-by-side across categories.'
   } },
   { ...PieChartPlugin, type: 'Donut', metadata: { 
     ...PieChartPlugin.metadata, 
     name: 'Donut Chart', 
-    description: 'A variation of the pie chart with a hollow center, often used for KPIs.',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Pie/images/thumbnail.png' 
+    description: 'A variation of the pie chart with a hollow center, often used for KPIs.'
   } },
   { ...LineChartPlugin, type: 'Area', metadata: { 
     ...LineChartPlugin.metadata, 
     name: 'Area Chart', 
-    description: 'Visualizes quantitative data over time with a shaded area below the line.',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/plugin-chart-echarts/src/Line/images/thumbnail.png' 
+    description: 'Visualizes quantitative data over time with a shaded area below the line.'
   } },
 ];
 

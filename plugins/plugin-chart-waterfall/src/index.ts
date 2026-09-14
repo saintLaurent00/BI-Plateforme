@@ -7,7 +7,7 @@ export const WaterfallPlugin: ChartPlugin = {
     name: 'Cascade (Waterfall)',
     description: 'Visualise l\'effet cumulatif de valeurs positives et négatives.',
     category: 'Flow',
-    thumbnail: 'https://raw.githubusercontent.com/apache/superset/master/superset-frontend/plugins/legacy-plugin-chart-waterfall/src/images/thumbnail.png',
+
   },
   controlPanel: {
     controlPanelSections: [
@@ -21,5 +21,5 @@ export const WaterfallPlugin: ChartPlugin = {
       },
     ],
   },
-  render: (g, props) => WaterfallChart(g, props),
+  getOptions: (props) => WaterfallChart(props),
 };
