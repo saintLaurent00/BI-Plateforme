@@ -36,8 +36,10 @@ BI-Plateforme/
 │   ├── plugins/           # Registre des plugins côté application
 │   ├── package.json
 │   ├── vite.config.ts
-│   ├── tsconfig.json
-│   └── docker-compose.yml # Infrastructure locale actuelle
+│   └── tsconfig.json
+├── infrastructure/        # Infrastructure locale
+│   └── docker/
+│       └── docker-compose.yml
 └── plugins/               # Packages de plugins de visualisation
     ├── plugin-chart-bar/
     ├── plugin-chart-line/
@@ -116,17 +118,17 @@ npm run lint
 
 ### Infrastructure locale
 
-Depuis `frontend/` :
+Depuis la racine du dépôt :
 
 ```bash
-docker compose up -d
-docker compose ps
+docker compose -f infrastructure/docker/docker-compose.yml up -d
+docker compose -f infrastructure/docker/docker-compose.yml ps
 ```
 
 Arrêt :
 
 ```bash
-docker compose down
+docker compose -f infrastructure/docker/docker-compose.yml down
 ```
 
 ## Documentation
