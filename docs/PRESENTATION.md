@@ -45,7 +45,6 @@ Le dépôt fournit principalement le frontend :
 - administration ;
 - documentation ;
 - plugins de visualisation ;
-- Hifadih AI.
 
 ---
 
@@ -146,15 +145,6 @@ Centralise :
 
 ## Slide 10 — IA
 
-**Hifadih AI** accompagne l'expérience BI :
-
-- exploration ;
-- explication des résultats ;
-- synthèses ;
-- briefing de dashboard ;
-- assistance à l'analyse.
-
-Les capacités IA doivent respecter le contexte et les permissions de données.
 
 ---
 
