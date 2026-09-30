@@ -107,7 +107,7 @@ const RecursiveElement = ({ element, theme, parentType }: { element: any; theme:
         borderWidth: element.meta?.borderWidth !== undefined ? `${element.meta.borderWidth}px` : undefined,
         borderStyle: element.meta?.borderStyle || undefined,
         gridColumn: `span ${width} / span ${width}`,
-        minHeight: (element.type === 'chart' || element.type === 'row' || element.type === 'column') ? (element.meta?.height || (element.type === 'chart' ? 360 : undefined)) : undefined,
+        // minHeight: (element.type === 'chart' || element.type === 'row' || element.type === 'column') ? (element.meta?.height || (element.type === 'chart' ? 360 : undefined)) : undefined,
       }}
     >
       {element.type === 'header' && (
