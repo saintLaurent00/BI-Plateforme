@@ -16,7 +16,11 @@ export const AIChat = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
   const [isLoading, setIsLoading] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
-  const ai = React.useMemo(() => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }), []);
+  const apiKey = process.env.GEMINI_API_KEY;
+  const ai = React.useMemo(
+    () => (apiKey ? new GoogleGenAI({ apiKey }) : null),
+    [apiKey]
+  );
 
   React.useEffect(() => {
     if (scrollRef.current) {
@@ -34,6 +38,17 @@ export const AIChat = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
     setIsLoading(true);
 
     try {
+      if (!ai) {
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'model',
+            text: "L'assistant IA n'est pas configuré sur cette prévisualisation. L'IA sera fournie par le backend Hifadih BI."
+          }
+        ]);
+        return;
+      }
+
       const response = await ai.models.generateContent({ 
         model: "gemini-3-flash-preview",
         contents: userMessage,
