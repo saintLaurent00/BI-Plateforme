@@ -24,7 +24,6 @@ import {
   Settings2
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
-import { AIInsight } from '../../components/dashboard/AIInsight';
 import { useParams, useNavigate } from 'react-router-dom';
 import { hifadihService } from '../../lib/hifadihService';
 import { Modal } from '../../components/ui/Modal';
@@ -459,10 +458,6 @@ export const Datasets = () => {
                                         </div>
                                     </motion.div>
                                 ) : (
-                                    <AIInsight 
-                                        title="Besoin d'aide ?"
-                                        insight="Les métriques vous permettent de définir des calculs complexes une seule fois. Par exemple, créez un 'Taux de Conversion' en divisant les ventes par le nombre de clics."
-                                    />
                                 )}
                             </AnimatePresence>
                          </div>
