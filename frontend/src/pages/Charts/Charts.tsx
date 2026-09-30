@@ -518,7 +518,7 @@ export const Charts = () => {
                     <div className="space-y-4 pt-10 border-t border-border">
                       <div className="flex items-center justify-between">
                         <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Contexte & Intelligence</h4>
-                        <button className="text-[9px] font-bold text-accent px-2 py-1 bg-accent/10 rounded-md">AI Insights</button>
+                        
                       </div>
                       <p className="text-sm text-muted-foreground leading-relaxed font-light italic">
                         {selectedChart.description || "Aucune description stratégique fournie pour cette visualisation. Utilisez l'éditeur pour ajouter du contexte et améliorer la collaboration."}
