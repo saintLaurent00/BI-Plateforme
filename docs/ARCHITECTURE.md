@@ -22,7 +22,6 @@ Son architecture actuelle repose sur :
 - un système de **plugins de graphiques** ;
 - **localStorage** pour une partie de la persistance applicative ;
 - **SQL.js + IndexedDB** pour une base SQLite exécutée dans le navigateur ;
-- **Google GenAI** pour les fonctions IA ;
 - **Docker Compose** pour PostgreSQL, Valkey et MailDev en environnement local.
 
 Le dépôt contient également un ancien fichier Go nommé 'platform_config.go', mais **aucun serveur Go n'est actuellement présent ni lancé par les scripts du frontend**.
@@ -44,7 +43,6 @@ Le dépôt contient également un ancien fichier Go nommé 'platform_config.go',
 │  │      │    ├── Sidebar                                           │  │
 │  │      │    ├── Topbar                                            │  │
 │  │      │    ├── Theme                                             │  │
-│  │      │    └── AI Chat                                           │  │
 │  │      │                                                          │  │
 │  │      ├── Pages                                                  │  │
 │  │      ├── Features                                               │  │
@@ -55,8 +53,8 @@ Le dépôt contient également un ancien fichier Go nommé 'platform_config.go',
 │                              │                                        │
 │             ┌────────────────┼─────────────────┐                      │
 │             │                │                 │                      │
-│             ▼                ▼                 ▼                      │
-│       localStorage      SQL.js / SQLite    Google GenAI              │
+│             ▼                ▼                                      │
+│       localStorage      SQL.js / SQLite                             │
 │             │                │                 │                      │
 │             │                ▼                 │                      │
 │             │            IndexedDB            │                      │
@@ -88,7 +86,7 @@ n'utilise pas encore PostgreSQL/Valkey/MailDev comme backend applicatif.
 │  data-sources + visualization-editor │
 ├──────────────────────────────────────┤
 │  3. Application Services             │
-│  hifadihService + AI + PDF           │
+│  hifadihService + PDF                 │
 ├──────────────────────────────────────┤
 │  4. Domain / Contracts               │
 │  DTOs + types                        │
@@ -97,7 +95,7 @@ n'utilise pas encore PostgreSQL/Valkey/MailDev comme backend applicatif.
 │  localStorage + SQL.js + IndexedDB  │
 ├──────────────────────────────────────┤
 │  6. External Infrastructure          │
-│  GenAI + Docker services             │
+│  Docker services                      │
 └──────────────────────────────────────┘
 ~~~
 
@@ -137,7 +135,6 @@ src/features/
 ~~~text
 src/lib/
 ├── hifadihService.ts
-├── ai-service.ts
 └── pdfExport.ts
 ~~~
 
@@ -735,74 +732,6 @@ L'application actuelle ne possède toutefois pas encore de moteur backend qui im
 
 ---
 
-# 16. IA
-
-Deux zones principales utilisent l'IA.
-
-## AIService
-
-~~~text
-src/lib/ai-service.ts
-~~~
-
-Fonctions actuelles :
-
-~~~text
-getChartRecommendation()
-analyzeData()
-~~~
-
-Le service utilise Google GenAI.
-
-### Recommandation de graphique
-
-~~~text
-Dataset columns
-      ↓
-AIService
-      ↓
-Gemini
-      ↓
-JSON
-      ↓
-chartType
-xAxis
-yAxis
-reasoning
-~~~
-
-### Analyse de données
-
-~~~text
-Dataset sample
-      ↓
-AIService
-      ↓
-Gemini
-      ↓
-3 insights
-~~~
-
-L'analyse envoie actuellement un échantillon limité des données.
-
-## AIChat
-
-~~~text
-src/components/layout/AIChat.tsx
-~~~
-
-Le chat IA est intégré au Layout et accessible globalement.
-
-## Dashboard AI
-
-~~~text
-src/components/dashboard/
-├── AIBriefing.tsx
-└── AIInsight.tsx
-~~~
-
----
-
 # 17. Export PDF
 
 ~~~text
@@ -1165,8 +1094,7 @@ BI-Plateforme/
 │   │
 │   ├── lib/
 │   │   ├── hifadihService.ts
-│   │   ├── ai-service.ts
-│   │   └── pdfExport.ts
+│   │   │   └── pdfExport.ts
 │   │
 │   └── pages/
 │       ├── Admin/
@@ -1248,7 +1176,6 @@ Il doit donc être considéré comme **legacy / artefact de l'ancienne architect
 | Browser storage | localStorage | état persistant simple |
 | CSV | PapaParse | import |
 | PDF | jsPDF / html2canvas | export |
-| AI | Google GenAI | intelligence artificielle |
 | Infrastructure | Docker Compose | services locaux |
 | DB locale infra | PostgreSQL | future persistance serveur |
 | Cache infra | Valkey | futur cache/queue |
@@ -1266,7 +1193,6 @@ React Router
 localStorage
 IndexedDB
 SQL.js
-Google GenAI
 PapaParse
 ECharts
 Recharts
@@ -1325,10 +1251,6 @@ Le moteur SQL actuel n'est pas encore un véritable query engine distant.
 ### Secrets
 
 Les opérations sensibles doivent être déplacées côté backend.
-
-### IA
-
-Les appels IA doivent à terme être protégés derrière le backend.
 
 ### Infrastructure
 
@@ -1482,7 +1404,6 @@ React + TypeScript
         ├── BI Features
         ├── localStorage
         ├── SQL.js / IndexedDB
-        ├── AI
         └── Plugins
 ~~~
 
