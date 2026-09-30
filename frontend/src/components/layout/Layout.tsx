@@ -30,13 +30,11 @@ import {
   Moon,
   BookOpen
 } from 'lucide-react';
-import { AIChat } from './AIChat';
 import { cn } from '../../core/utils/utils';
 
 export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(window.innerWidth >= 1024);
-  const [isChatOpen, setIsChatOpen] = React.useState(false);
   const [isAdminExpanded, setIsAdminExpanded] = React.useState(location.pathname.startsWith('/admin'));
   const [theme, setTheme] = React.useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
@@ -302,22 +300,6 @@ export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLo
           </div>
         </main>
 
-        {/* AI Chat */}
-        <button 
-          onClick={() => setIsChatOpen(!isChatOpen)}
-          className={cn(
-            "fixed bottom-6 right-6 z-40 w-10 h-10 rounded-md shadow-sm border border-border flex items-center justify-center transition-all active:scale-95 group overflow-hidden bg-background hover:bg-muted",
-            isChatOpen && "rotate-90 bg-foreground text-background border-foreground"
-          )}
-        >
-          {isChatOpen ? (
-            <X className="w-4 h-4" />
-          ) : (
-            <Sparkles className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-          )}
-        </button>
-
-        <AIChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       </div>
     </div>
   );
