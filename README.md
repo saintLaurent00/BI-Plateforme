@@ -23,7 +23,7 @@
 - catalogue de datasets ;
 - administration ;
 - plugins de visualisation extensibles ;
-- assistance à l'analyse avec **Hifadih AI**.
+- exploration et visualisation interactive des données.
 
 Le dépôt est actuellement centré sur le **frontend React/TypeScript**. La cible backend est un **backend unique en Rust**.
 
