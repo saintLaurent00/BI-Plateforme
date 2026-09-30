@@ -1,16 +1,16 @@
 import { ChartPlugin } from './types';
-import { BarChartPlugin } from './plugin-chart-bar/src';
-import { LineChartPlugin } from './plugin-chart-line/src';
-import { PieChartPlugin } from './plugin-chart-pie/src';
-import { RadarChartPlugin } from './plugin-chart-radar/src';
-import { ScatterChartPlugin } from './plugin-chart-scatter/src';
-import { HeatmapPlugin } from './plugin-chart-heatmap/src';
-import { SankeyPlugin } from './plugin-chart-sankey/src';
-import { TreemapPlugin } from './plugin-chart-treemap/src';
-import { BoxPlotPlugin } from './plugin-chart-boxplot/src';
-import { FunnelPlugin } from './plugin-chart-funnel/src';
-import { SunburstPlugin } from './plugin-chart-sunburst/src';
-import { WaterfallPlugin } from './plugin-chart-waterfall/src';
+import { BarChartPlugin } from '../../plugins/plugin-chart-bar/src';
+import { LineChartPlugin } from '../../plugins/plugin-chart-line/src';
+import { PieChartPlugin } from '../../plugins/plugin-chart-pie/src';
+import { RadarChartPlugin } from '../../plugins/plugin-chart-radar/src';
+import { ScatterChartPlugin } from '../../plugins/plugin-chart-scatter/src';
+import { HeatmapPlugin } from '../../plugins/plugin-chart-heatmap/src';
+import { SankeyPlugin } from '../../plugins/plugin-chart-sankey/src';
+import { TreemapPlugin } from '../../plugins/plugin-chart-treemap/src';
+import { BoxPlotPlugin } from '../../plugins/plugin-chart-boxplot/src';
+import { FunnelPlugin } from '../../plugins/plugin-chart-funnel/src';
+import { SunburstPlugin } from '../../plugins/plugin-chart-sunburst/src';
+import { WaterfallPlugin } from '../../plugins/plugin-chart-waterfall/src';
 
 export const chartPlugins: ChartPlugin[] = [
   BarChartPlugin,
