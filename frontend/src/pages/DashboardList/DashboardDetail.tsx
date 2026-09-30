@@ -95,8 +95,8 @@ const RecursiveElement = ({ element, theme, parentType }: { element: any; theme:
         element.type === 'chart' ? (
           cn(
             "group relative overflow-hidden rounded-none transition-all duration-500",
-            theme.cardStyle === 'elevated' ? 'p-8 shadow-xl bg-background border border-border hover:border-accent/10 transition-all' : 
-            theme.cardStyle === 'bordered' ? 'p-8 border border-border bg-background hover:border-accent/20' : 'p-8 bg-background border border-border/10'
+            theme.cardStyle === 'elevated' ? 'p-2 shadow-xl bg-background border border-border hover:border-accent/10 transition-all' : 
+            theme.cardStyle === 'bordered' ? 'p-2 border border-border bg-background hover:border-accent/20' : 'p-8 bg-background border border-border/10'
           )
         ) : element.type === 'row' || element.type === 'column' || element.type === 'tabs' ? '' : 'p-8',
         isInGrid ? cn(gridClass, "min-w-0") : "w-full"
