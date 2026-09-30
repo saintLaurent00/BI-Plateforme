@@ -4,7 +4,7 @@ import path from 'node:path';
 import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
-  const base = process.env.GITHUB_ACTIONS === 'true' ? '/BI-Plateforme/' : '/';
+  const base = './';
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
