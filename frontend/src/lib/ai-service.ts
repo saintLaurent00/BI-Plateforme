@@ -1,14 +1,25 @@
 import { GoogleGenAI } from "@google/genai";
 
 export class AIService {
-  private ai: any;
+  private ai: GoogleGenAI | null = null;
 
-  constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  private getClient(): GoogleGenAI {
+    if (this.ai) return this.ai;
+
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
+      throw new Error(
+        "Gemini AI is not configured in this browser build. Configure the AI through the backend."
+      );
+    }
+
+    this.ai = new GoogleGenAI({ apiKey });
+    return this.ai;
   }
 
   async getChartRecommendation(columns: any[]) {
-    const response = await this.ai.models.generateContent({
+    const response = await this.getClient().models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Tu es un expert en Business Intelligence pour Hifadih BI. Analyse ces colonnes d'un dataset et recommande le meilleur type de graphique (Bar, Line, Pie, Area, Scatter) et quels champs utiliser pour l'axe X et l'axe Y. Réponds en JSON avec les clés 'chartType', 'xAxis', 'yAxis', 'reasoning' (en français).
       
@@ -27,7 +38,7 @@ export class AIService {
 
   async analyzeData(data: any[]) {
     const summary = data.slice(0, 10); // Send a sample
-    const response = await this.ai.models.generateContent({
+    const response = await this.getClient().models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Tu es l'IA de Hifadih BI. Analyse cet échantillon de données et donne 3 insights clés en français pour un tableau de bord professionnel.
       
