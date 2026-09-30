@@ -1,72 +1,53 @@
-# 🤝 Guide de Contribution
+# Guide de contribution
 
-## Workflow de Développement
+## Structure
 
-### Avant de Coder
-
-1. Vérifier le tableau de suivi dans l'issue de planification
-2. S'assurer que la dépendance bloquante est complétée
-3. Ouvrir une branche : `git checkout -b feat/ID-XX-description`
-
-### Pendant le Développement
-
-- **Chaque fichier = une unité atomique testable**
-- Tests requis pour chaque module
-- Commits granulaires avec message descriptif
-- Push des changements régulièrement
-
-### Tests
-
-```bash
-# Tests Go
-cd gateway-auth-go && go test ./...
-cd ../metadata-semantic-go && go test ./...
-
-# Tests Rust
-cd ../query-engine-rust && cargo test
-cd ../orchestrator-sync-rust && cargo test
-```
-
-### Pull Request
-
-1. Référencer l'ID de tâche : "Closes #XX"
-2. Décrire brièvement les changements
-3. Marquer comme draft si incomplet
-4. Attendre la review avant merge
-
-## Structure des Répertoires
-
-```
+```text
 BI-Plateforme/
-├── platform_config.go           # Configuration centrale
-├── docker-compose.yml           # Infrastructure
-├── gateway-auth-go/             # Authentification
-│   ├── ent/                     # Schémas DAO
-│   ├── internal/auth/           # Logique auth
-│   └── cmd/                     # Point d'entrée
-├── metadata-semantic-go/        # Métadonnées BI
-│   ├── ent/                     # Schémas DAO
-│   ├── internal/permission/     # Validateur RLS
-│   └── cmd/
-├── query-engine-rust/           # Moteur SQL
-│   ├── src/parser/              # Template + RLS + AST
-│   ├── src/executor/            # Pushdown
-│   └── Cargo.toml
-├── orchestrator-sync-rust/      # Tâches de fond
-│   ├── src/renderer/            # Snapshots
-│   ├── src/mailing/             # Dispatcher
-│   └── Cargo.toml
-└── dbt-models/                  # Transformations
+├── docs/                  # Documentation
+├── frontend/              # Application React/TypeScript
+│   ├── src/
+│   ├── plugins/           # Registre des plugins
+│   ├── package.json
+│   └── vite.config.ts
+└── plugins/               # Packages de visualisation
+    └── plugin-chart-*/
 ```
 
-## Checklist de Validation
+## Workflow
 
-- [ ] Code compilable sans erreur
-- [ ] Tests unitaires passants
-- [ ] Aucune variable d'environnement orpheline
-- [ ] Documentation à jour (docstrings, README)
-- [ ] Tableau de suivi mis à jour (PR description)
+1. Lire le [README](../README.md).
+2. Consulter `docs/ARCHITECTURE.md` et `docs/ROADMAP.md`.
+3. Créer une branche dédiée :
+   ```bash
+   git checkout -b feat/description
+   ```
+4. Modifier uniquement le périmètre nécessaire.
+5. Vérifier le frontend :
+   ```bash
+   cd frontend
+   npm install
+   npm run lint
+   npm run build
+   ```
+6. Documenter les changements qui affectent l'architecture ou les contrats.
+7. Ouvrir une Pull Request avec une description claire.
 
-## Questions?
+## Plugins
 
-Ouvrire une issue avec le label `question` ou discuter dans les discussions.
+Les packages de visualisation indépendants sont dans `/plugins`. Le registre utilisé par l'application est dans `/frontend/plugins`.
+
+Les plugins sont consommés directement par le code frontend via leurs sources TypeScript. Ils ne constituent pas actuellement un workspace npm du frontend.
+
+## Backend Rust
+
+Le backend Rust n'est pas encore présent dans l'arborescence active. Lorsqu'il sera introduit, son organisation devra suivre l'architecture documentée avant d'ajouter de nouveaux services.
+
+## Checklist
+
+- [ ] Le code compile.
+- [ ] `npm run lint` passe.
+- [ ] `npm run build` passe.
+- [ ] Les variables d'environnement nécessaires sont documentées.
+- [ ] La documentation est à jour si nécessaire.
+- [ ] Aucun fichier généré ou secret n'est ajouté au dépôt.
