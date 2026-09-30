@@ -27,8 +27,6 @@ import {
   Info,
   Check,
   Palette,
-  Sparkles,
-  Loader2,
   Search
 } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
@@ -46,8 +44,6 @@ import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { Modal } from '../../components/ui/Modal';
 import { EChartsChart } from '../../components/charts/EChartsChart';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { AIInsight } from '../../components/dashboard/AIInsight';
-import { aiService } from '../../lib/ai-service';
 import { toast } from 'sonner';
 import { getChartPlugin, chartPlugins } from '../../../plugins';
 import { ChartSkeleton } from '../../components/ui/Skeleton';
@@ -299,32 +295,6 @@ export const ChartEditor = () => {
   
   const [calcColName, setCalcColName] = React.useState('');
   const [calcColSql, setCalcColSql] = React.useState('');
-  const [isRecommending, setIsRecommending] = React.useState(false);
-
-  const handleRecommend = async () => {
-    if (!schema.length) return;
-    setIsRecommending(true);
-    try {
-      const rec = await aiService.getChartRecommendation(schema);
-      if (rec) {
-        setChartType(rec.chartType || 'Bar');
-        if (rec.xAxis && schema.find(s => s.name === rec.xAxis)) {
-          setXAxis([rec.xAxis]);
-        }
-        if (rec.yAxis && schema.find(s => s.name === rec.yAxis)) {
-          setYAxis([{ column: rec.yAxis, agg: 'SUM', alias: rec.yAxis }]);
-        }
-        toast.success(`Hifadih AI recommande : ${rec.chartType}`, {
-          description: rec.reasoning
-        });
-      }
-    } catch (err) {
-      console.error('Recommendation failed:', err);
-      toast.error('Hifadih AI n\'a pas pu générer de recommandation.');
-    } finally {
-      setIsRecommending(false);
-    }
-  };
 
   // Customization options
   const [customConfig, setCustomConfig] = React.useState<any>({
@@ -922,14 +892,6 @@ return {
             </div>
 
             <div className="flex items-center gap-4">
-              <button 
-                onClick={handleRecommend}
-                disabled={isRecommending}
-                className="flex items-center gap-2 px-4 py-2 bg-accent/5 text-accent hover:bg-accent hover:text-accent-foreground rounded-xl text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50 group border border-accent/20"
-              >
-                {isRecommending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />}
-                IA Suggest
-              </button>
               <div className="h-6 w-px bg-border" />
               <FormButton variant="primary" onClick={handleSave} className="px-6 py-2.5 rounded-2xl text-[10px] uppercase font-black tracking-widest shadow-lg shadow-accent/20">
                 <Save className="w-4 h-4" />
