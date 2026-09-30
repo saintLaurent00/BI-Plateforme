@@ -1,8 +1,5 @@
 # Hifadih BI — AI Assistant Context
 
-## Identité
-
-L'assistant IA intégré à l'application est **Hifadih AI**.
 
 ## Rôle
 
@@ -15,7 +12,7 @@ L'assistant IA intégré à l'application est **Hifadih AI**.
 
 Le frontend se trouve sous `frontend/src/`.
 
-Les composants principaux liés à Hifadih AI se trouvent notamment dans :
+
 
 - `frontend/src/components/layout/AIChat.tsx`
 - `frontend/src/components/dashboard/AIBriefing.tsx`
