@@ -71,7 +71,7 @@ Le dépôt contient également un ancien fichier Go nommé 'platform_config.go',
 └────────────────────┘  └────────────────────┘  └────────────────────┘
 
 NOTE:
-Les conteneurs existent dans docker-compose.yml, mais le frontend actuel
+Les conteneurs existent dans infrastructure/docker/docker-compose.yml, mais le frontend actuel
 n'utilise pas encore PostgreSQL/Valkey/MailDev comme backend applicatif.
 ~~~
 
@@ -1026,7 +1026,7 @@ ECharts / D3 / custom renderer
 
 # 22. Infrastructure Docker actuelle
 
-Le fichier 'docker-compose.yml' définit trois services.
+Le fichier 'infrastructure/docker/docker-compose.yml' définit trois services.
 
 ## PostgreSQL
 
@@ -1185,7 +1185,7 @@ BI-Plateforme/
 │   └── plugin-chart-*/
 │
 ├── docs/
-├── docker-compose.yml
+├── infrastructure/docker/docker-compose.yml
 ├── package.json
 ├── vite.config.ts
 ├── tsconfig.json
