@@ -98,7 +98,7 @@ const RecursiveElement = ({ element, theme, parentType }: { element: any; theme:
             theme.cardStyle === 'elevated' ? 'p-2 shadow-xl bg-background border border-border hover:border-accent/10 transition-all' : 
             theme.cardStyle === 'bordered' ? 'p-2 border border-border bg-background hover:border-accent/20' : 'p-8 bg-background border border-border/10'
           )
-        ) : element.type === 'row' || element.type === 'column' || element.type === 'tabs' ? '' : 'p-8',
+        ) : element.type === 'row' || element.type === 'column' || element.type === 'tabs' ? '' : 'p-2',
         isInGrid ? cn(gridClass, "min-w-0") : "w-full"
       )}
       style={{ 
