@@ -322,7 +322,6 @@ Layout
 │   ├── Notifications
 │   └── User / Logout
 │
-└── AIChat
 ~~~
 
 Le thème est stocké dans 'localStorage'.
@@ -360,8 +359,6 @@ src/pages/DashboardEditor/
 - collision ;
 - configuration ;
 - affichage de charts ;
-- briefing IA ;
-- insights IA.
 
 ## Modèle
 
