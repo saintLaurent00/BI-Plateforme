@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # PostgreSQL : Base de données principale pour IAM + Métadonnées
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    container_name: bi-postgres
+    environment:
+      POSTGRES_DB: "bi-db"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Valkey (Redis) : Cache + Message Queue pour le moteur Rust
+  valkey:
+    image: valkey/valkey:latest
+    restart: always
+    container_name: bi-valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    command: valkey-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MailDev : Serveur SMTP local pour tests d'envoi de rapports
+  maildev:
+    image: maildev/maildev
+    restart: always
+    container_name: bi-maildev
+    ports:
+      - "1025:1025"  # SMTP
+      - "1080:1080"  # Web UI
+    environment:
+      MAILDEV_INCOMING_USER: "test"
+      MAILDEV_INCOMING_PASS: "test"
+
+volumes:
+  pg_data:
+    driver: local
+  valkey_data:
+    driver: local
+
+networks:
+  default:
+    name: bi-network
+    driver: bridge
