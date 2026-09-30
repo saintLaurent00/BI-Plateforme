@@ -60,7 +60,6 @@ import { hifadihService } from '../../lib/hifadihService';
 import { DashboardChart } from '../../components/dashboard/DashboardChart';
 import ReactMarkdown from 'react-markdown';
 import { mapLegacyToHifadihLayout, denormalizeLayout } from '../../core/utils/dashboardLayout';
-import { AIBriefing } from '../../components/dashboard/AIBriefing';
 import { cn } from '../../core/utils/utils';
 import { toast } from 'sonner';
 import { exportToPDF } from '../../lib/pdfExport';
