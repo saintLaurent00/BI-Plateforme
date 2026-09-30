@@ -457,8 +457,7 @@ export const Datasets = () => {
                                             <FormButton className="flex-1" onClick={() => handleSaveMetric(editingMetric)}>Enregistrer</FormButton>
                                         </div>
                                     </motion.div>
-                                ) : (
-                                )}
+                                ) : null}
                             </AnimatePresence>
                          </div>
                     </motion.div>
