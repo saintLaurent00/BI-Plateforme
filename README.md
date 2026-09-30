@@ -7,6 +7,12 @@
 [![Backend cible](https://img.shields.io/badge/Backend%20cible-Rust-orange?logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Status](https://img.shields.io/badge/Status-In%20Development-yellow)](https://github.com/saintLaurent00/BI-Plateforme)
 
+## Aperçu
+
+**Démo en ligne :** [Ouvrir l'aperçu Hifadih BI](https://saintlaurent00.github.io/BI-Plateforme/)
+
+> L'aperçu est déployé automatiquement depuis la branche `main` via GitHub Pages.
+
 ## À propos
 
 **Hifadih BI** est une plateforme BI destinée à réunir dans un même environnement :
