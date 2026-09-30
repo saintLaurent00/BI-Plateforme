@@ -1,82 +1,81 @@
 # Hifadih BI
 
-> Plateforme moderne d'exploration, de visualisation et d'analyse de données, avec une interface BI riche et une architecture backend cible en Rust.
+> Plateforme de Business Intelligence pour explorer, visualiser et analyser les données dans une interface moderne, extensible et orientée analytics.
 
-[![Frontend](https://img.shields.io/badge/frontend-React%2019%20%2B%20TypeScript-61DAFB)](https://react.dev/)
-[![Build](https://img.shields.io/badge/build-Vite-646CFF)](https://vite.dev/)
-[![Backend%20cible](https://img.shields.io/badge/backend-Rust-orange)](https://www.rust-lang.org/)
+[![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![Build](https://img.shields.io/badge/Build-Vite-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![Backend cible](https://img.shields.io/badge/Backend%20cible-Rust-orange?logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Status](https://img.shields.io/badge/Status-In%20Development-yellow)](https://github.com/saintLaurent00/BI-Plateforme)
 
-## Vue d'ensemble
+## À propos
 
-**Hifadih BI** est une plateforme de Business Intelligence conçue pour explorer des datasets, construire des visualisations et dashboards interactifs, exécuter des requêtes et assister l'analyse avec l'IA.
+**Hifadih BI** est une plateforme BI destinée à réunir dans un même environnement :
 
-Le dépôt actuel contient principalement le **frontend React/TypeScript** et les briques UI. La direction technique est désormais un **backend entièrement Rust**.
+- exploration et préparation de données ;
+- création de visualisations et de dashboards ;
+- requêtes SQL ;
+- catalogue de datasets ;
+- administration et gestion des fonctionnalités BI ;
+- plugins de visualisation extensibles ;
+- assistance à l'analyse avec **Hifadih AI** ;
+- import, traitement et export de données côté client.
 
-> **État au 30 septembre 2026 :** les anciens documents décrivaient des services Go/Rust qui ne correspondent plus à l'arborescence actuelle. Cette documentation distingue donc les composants existants des composants backend Rust à construire.
+Le dépôt est actuellement centré sur le **frontend React/TypeScript**. L'évolution prévue du système est un **backend entièrement en Rust**.
 
-## Fonctionnalités du frontend
+> **État du projet — 30 septembre 2026**  
+> Le backend Rust est une cible d'architecture et n'est pas encore présent dans l'arborescence actuelle.
 
-- Authentification de démonstration
-- Home et navigation BI
-- Dashboards et dashboard editor
-- Catalogue et éditeur de visualisations
-- Exploration et création de datasets
-- SQL Lab
-- Administration
-- Documentation intégrée
-- Plugins de graphiques
-- Assistance **Hifadih AI**
-- Import et traitement de données côté client
-- Export PDF
+---
 
-## Architecture cible
+## Architecture
 
 ```text
-                         ┌──────────────────────────┐
-                         │       Hifadih BI UI      │
-                         │ React + TypeScript + Vite│
-                         └────────────┬─────────────┘
-                                      │ HTTPS / JSON
-                                      ▼
-                         ┌──────────────────────────┐
-                         │      Rust API / BFF      │
-                         │ Axum + Tokio + Serde     │
-                         └──────┬────────┬──────────┘
-                                │        │
-                    ┌───────────┘        └──────────────┐
-                    ▼                                   ▼
-             ┌──────────────┐                    ┌──────────────┐
-             │ PostgreSQL   │                    │    Valkey    │
-             │ IAM + Meta   │                    │ Cache / Jobs │
-             └──────────────┘                    └──────────────┘
-                                │
-                                ▼
-                         ┌──────────────────┐
-                         │ Query / Analytics │
-                         │     Rust         │
-                         └──────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                         Hifadih BI                           │
+│                    React + TypeScript                       │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ HTTPS / JSON
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                         Rust API                            │
+│                  Axum + Tokio + Serde                       │
+└───────────────┬──────────────────────────────┬──────────────┘
+                │                              │
+                ▼                              ▼
+        ┌───────────────┐              ┌───────────────┐
+        │  PostgreSQL   │              │    Valkey     │
+        │ IAM + Metadata│              │ Cache + Jobs  │
+        └───────────────┘              └───────────────┘
+                │
+                ▼
+        ┌───────────────────┐
+        │ Query / Analytics │
+        │       Rust        │
+        └───────────────────┘
 ```
 
-Voir [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+Architecture détaillée : **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)**
 
-## Stack actuelle
+---
+
+## Stack
 
 ### Frontend
 
-- React 19
-- TypeScript 5.8
-- Vite 6
-- React Router 7
-- Tailwind CSS 4
-- ECharts, Recharts, D3
-- Motion / Anime.js
-- React DnD / @hello-pangea/dnd
-- SQL.js
-- PapaParse
-- jsPDF / html2canvas
-- Google GenAI SDK
+| Domaine | Technologies |
+|---|---|
+| UI | React 19, TypeScript |
+| Build | Vite 6 |
+| Routing | React Router 7 |
+| Styling | Tailwind CSS 4 |
+| Visualisation | ECharts, Recharts, D3 |
+| Interaction | Motion, Anime.js, React DnD |
+| Data local | SQL.js, IndexedDB |
+| Import | PapaParse |
+| Export | jsPDF, html2canvas |
+| IA | Google GenAI SDK |
 
-### Infrastructure locale
+### Infrastructure
 
 - PostgreSQL 15
 - Valkey
@@ -94,15 +93,39 @@ Voir [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 - Valkey
 - tracing
 
-Le backend Rust n'est pas encore présent dans l'arborescence actuelle : il s'agit de la cible d'architecture.
+---
 
-## Démarrage
+## Structure du dépôt
+
+```text
+BI-Plateforme/
+│
+├── docs/                 # Documentation du projet
+├── frontend/             # Architecture frontend cible
+├── plugins/              # Plugins de visualisation
+├── src/                  # Code frontend actuellement présent
+│
+├── README.md             # Présentation du projet
+├── package.json          # Dépendances et scripts
+├── vite.config.ts        # Configuration Vite
+├── tsconfig.json         # Configuration TypeScript
+├── docker-compose.yml    # Infrastructure locale
+├── .env.example          # Variables d'environnement exemple
+├── CONTRIBUTING.md       # Guide de contribution
+└── AGENTS.md             # Instructions pour assistants IA
+```
+
+La documentation détaillée est volontairement regroupée dans **[docs/](./docs/)** afin de garder la page principale lisible.
+
+---
+
+## Démarrage rapide
 
 ### Prérequis
 
 - Node.js récent
 - npm ou Bun
-- Docker + Docker Compose
+- Docker et Docker Compose
 
 ### Installation
 
@@ -118,28 +141,21 @@ npm install
 npm run dev
 ```
 
-Vite écoute sur le port **3000**.
+L'application est disponible sur **http://localhost:3000**.
 
-### Build et vérification
+### Vérification
 
 ```bash
 npm run build
 npm run lint
 ```
 
-### Infrastructure
+### Infrastructure locale
 
 ```bash
 docker compose up -d
 docker compose ps
 ```
-
-| Service | Port | Usage |
-|---|---:|---|
-| PostgreSQL | 5432 | Persistance |
-| Valkey | 6379 | Cache / jobs |
-| MailDev SMTP | 1025 | Tests d'envoi |
-| MailDev UI | 1080 | Visualisation des emails |
 
 Arrêt :
 
@@ -147,60 +163,49 @@ Arrêt :
 docker compose down
 ```
 
-## Configuration
-
-Le fichier `.env.example` contient actuellement :
-
-```env
-VITE_HIFADIH_API_URL=https://api.hifadih.ai
-VITE_HIFADIH_ENV=production
-```
-
-Ne jamais committer de secrets réels.
-
-## Structure
-
-```text
-BI-Plateforme/
-├── src/
-│   ├── components/       # UI et composants partagés
-│   ├── core/             # types et utilitaires
-│   ├── features/         # fonctionnalités métier
-│   ├── lib/              # services transverses
-│   └── pages/            # écrans
-├── plugins/              # plugins de visualisation
-├── docker-compose.yml
-├── package.json
-├── vite.config.ts
-├── tsconfig.json
-└── docs/
-    ├── ARCHITECTURE.md
-    ├── API.md
-    ├── PRESENTATION.md
-    └── ROADMAP.md
-```
+---
 
 ## Documentation
 
-- [Architecture](./docs/ARCHITECTURE.md)
-- [API et contrats](./docs/API.md)
-- [Présentation](./docs/PRESENTATION.md)
-- [Roadmap](./docs/ROADMAP.md)
-- [Contribution](./CONTRIBUTING.md)
-- [Instructions agents IA](./AGENTS.md)
+| Document | Contenu |
+|---|---|
+| [Architecture](./docs/ARCHITECTURE.md) | Architecture actuelle et cible |
+| [API](./docs/API.md) | Contrats et interfaces API |
+| [Présentation](./docs/PRESENTATION.md) | Vision et présentation du projet |
+| [Roadmap](./docs/ROADMAP.md) | Évolution prévue du projet |
+| [Contribution](./CONTRIBUTING.md) | Workflow de développement |
+| [AGENTS.md](./AGENTS.md) | Contexte et règles pour assistants IA |
 
-## Roadmap
+---
+
+## Direction technique
+
+La trajectoire du projet est volontairement structurée autour d'un **backend Rust unique**.
+
+Les prochaines étapes principales sont :
 
 1. stabiliser le modèle de domaine ;
 2. définir les contrats API ;
 3. créer le workspace backend Rust ;
-4. implémenter IAM et autorisation ;
+4. implémenter l'IAM et l'autorisation ;
 5. implémenter les métadonnées ;
-6. implémenter le query engine ;
+6. construire le query engine ;
 7. connecter le frontend à l'API Rust ;
-8. ajouter workers, cache et reporting ;
-9. renforcer tests, observabilité et sécurité.
+8. ajouter cache, workers et reporting ;
+9. renforcer les tests, l'observabilité et la sécurité.
+
+---
+
+## Contribution
+
+Les contributions suivent le workflow documenté dans **[CONTRIBUTING.md](./CONTRIBUTING.md)**.
+
+Pour comprendre rapidement le projet avant de modifier le code, commencer par :
+
+**README → Architecture → Roadmap → code concerné**
+
+---
 
 ## Licence
 
-Le code applicatif actuel contient des fichiers sous licence Apache-2.0 et des dépendances tierces soumises à leurs propres licences. Vérifier les notices du dépôt avant redistribution.
+Le code applicatif et les dépendances du projet peuvent être soumis à des licences différentes. Vérifier les notices correspondantes avant toute redistribution.
