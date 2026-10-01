@@ -23,6 +23,7 @@ import { Admin } from './pages/Admin/Admin';
 import { Documentation } from './pages/Documentation/Documentation';
 import { Login } from './pages/Login/Login';
 import { Toaster } from 'sonner';
+import { DatavizLab } from './pages/DatavizLab/DatavizLab';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="/dashboard-editor" element={<DashboardEditor />} />
           <Route path="/dashboard-editor/:id" element={<DashboardEditor />} />
           <Route path="/charts" element={<Charts />} />
+          <Route path="/dataviz" element={<DatavizLab />} />
           <Route path="/sql-lab" element={<SqlLab />} />
           <Route path="/datasets" element={<DatasetsExplorer />} />
           <Route path="/datasets/new" element={<DatasetWizard />} />
