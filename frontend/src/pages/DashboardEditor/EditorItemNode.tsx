@@ -1058,6 +1058,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
               <Type className="w-3.5 h-3.5" />
               <span>Texte / Markdown</span>
             </div>
+          </div>
 
           {/* Markdown editor + live preview */}
           <div className="p-4 flex-1 min-h-0 overflow-hidden">
