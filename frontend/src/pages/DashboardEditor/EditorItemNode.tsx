@@ -53,8 +53,6 @@ import {
   Shield,
   Tag,
   Pencil,
-  Eye,
-  Edit3,
   Check,
   X as CloseIcon,
   Table as TableIcon,
@@ -348,8 +346,6 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [tabTitleInput, setTabTitleInput] = useState<string>('');
 
-  // Markdown editor mode
-  const [markdownViewMode, setMarkdownViewMode] = useState<'preview' | 'edit'>('preview');
 
   // Drag and Drop Hook
   const {
@@ -1063,12 +1059,11 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
               <span>Texte / Markdown</span>
             </div>
 
-          {/* Markdown Body: Preview or Textarea */}
-          <div className="p-4 flex-1 flex flex-col overflow-y-auto">
-            {markdownViewMode === 'edit' ? (
-              <div className="flex-1 flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-                {/* Markdown Formatting Toolbar */}
-                <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200">
+          {/* Markdown editor + live preview */}
+          <div className="p-4 flex-1 min-h-0 overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-full min-h-[180px]">
+              <div className="flex min-h-0 flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg border border-slate-200 shrink-0">
                   <button
                     type="button"
                     onClick={() => {
@@ -1126,15 +1121,20 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
                   onChange={(e) => {
                     if (onUpdateContent) onUpdateContent(item.id, e.target.value);
                   }}
-                  className="flex-1 w-full min-h-[140px] p-3 font-mono text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:bg-white resize-none"
+                  className="flex-1 min-h-0 w-full p-3 font-mono text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:bg-white resize-none"
                   placeholder="Écrivez votre texte ou code Markdown ici..."
                 />
               </div>
-            ) : (
-              <div className="prose prose-slate dark:prose-invert prose-sm max-w-none">
-                <ReactMarkdown>{rawMarkdown}</ReactMarkdown>
+
+              <div className="min-h-0 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Rendu
+                </div>
+                <div className="prose prose-slate dark:prose-invert prose-sm max-w-none">
+                  <ReactMarkdown>{rawMarkdown}</ReactMarkdown>
+                </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Interactive Vertical & Horizontal Resize Handles */}
