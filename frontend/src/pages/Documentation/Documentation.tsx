@@ -139,7 +139,7 @@ export const Documentation = () => {
           <p>L'interface est construite avec React et Tailwind CSS, favorisant une UX fluide et réactive.</p>
           <ul>
             <li><strong>Dashboard Center</strong> : Visionneuse intelligente et personnalisable de données.</li>
-            <li><strong>Chart Factory</strong> : Moteur de génération de graphiques piloté par l'IA.</li>
+            <li><strong>Chart Factory</strong> : Moteur de génération et de configuration de graphiques.</li>
             <li><strong>SQL IDE</strong> : Environnement de développement SQL intégré pour l'extraction de données.</li>
           </ul>
 
@@ -148,7 +148,7 @@ export const Documentation = () => {
           <ol>
             <li>Collecte des métadonnées des sources connectées.</li>
             <li>Cache intelligent pour des performances optimales.</li>
-            <li>Moteur de recommandation IA pour les meilleures visualisations.</li>
+            <li>Aide à la sélection des visualisations selon le contexte analytique.</li>
             <li>Génération de rapports automatiques et alertes.</li>
           </ol>
         </DocumentCard>
