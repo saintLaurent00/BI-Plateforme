@@ -139,7 +139,6 @@ export const moveItem = (
   targetIndex: number,
   newItem?: LayoutItem
 ): Layout => {
-  console.log(`Moving item ${id} from ${sourceParentId} to ${targetParentId} at index ${targetIndex}`);
   
   const targetParent = layout[targetParentId];
   if (!targetParent) {
@@ -154,7 +153,6 @@ export const moveItem = (
   if (sourceParentId === 'NEW' && newItem) {
     itemId = newItem.id;
     nextLayout[itemId] = { ...newItem, parents: [targetParentId] };
-    console.log(`Created new item ${itemId} of type ${newItem.type}`);
     
     // Special case for Tabs: add a default tab
     if (newItem.type.toLowerCase() === 'tabs') {
@@ -199,8 +197,6 @@ export const moveItem = (
   
   nextLayout[targetParentId] = { ...finalTargetParent, children: newTargetChildren };
   nextLayout[itemId] = { ...nextLayout[itemId], parents: [targetParentId] };
-
-  console.log(`Move successful. New layout keys: ${Object.keys(nextLayout).length}`);
   return nextLayout;
 };
 
