@@ -930,11 +930,18 @@ export const DashboardEditor: React.FC = () => {
         console.warn('Erreur de synchronisation locale:', e);
       }
 
-      toast.success('Tableau de bord enregistré avec succès !');
-
-      if (!id || id === 'new') {
-        navigate(`/dashboard-editor/${dashboardId}`, { replace: true });
+      // A successful save always enters the dashboard preview.
+      // For a new dashboard, dashboardId is already generated before saving,
+      // so there is no intermediate redirect back to the editor/home.
+      try {
+        localStorage.removeItem(`hifadih_dashboard_editor_draft_${id || 'new'}`);
+        localStorage.removeItem(`hifadih_dashboard_editor_draft_${dashboardId}`);
+      } catch (e) {
+        console.warn('Erreur de nettoyage du brouillon:', e);
       }
+
+      toast.success('Tableau de bord enregistré avec succès !');
+      navigate(`/dashboard/${dashboardId}`);
     } catch (err) {
       console.error('Erreur lors de l\'enregistrement:', err);
       toast.error('Impossible d\'enregistrer le tableau de bord');
