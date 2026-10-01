@@ -15,8 +15,16 @@ function validateExpression(expression: string): void {
   }
 }
 
-function compileDimension(column: string, grain?: string): string {
-  const quoted = quoteIdentifier(column);
+function resolvePhysicalColumn(dataset: DatasetMetadata, semanticName: string): string {
+  const column = dataset.columns.find(item => item.name === semanticName);
+  if (column) return column.physicalName;
+  const calculated = dataset.calculatedColumns.find(item => item.name === semanticName);
+  if (calculated) return calculated.name;
+  return semanticName;
+}
+
+function compileDimension(dataset: DatasetMetadata, column: string, grain?: string): string {
+  const quoted = quoteIdentifier(resolvePhysicalColumn(dataset, column));
   if (!grain) return quoted;
 
   if (grain === 'quarter') {
@@ -36,8 +44,8 @@ function compileDimension(column: string, grain?: string): string {
   return format ? `strftime('${format}', ${quoted})` : quoted;
 }
 
-function compileFilter(filter: QueryFilter): string {
-  const column = quoteIdentifier(filter.column);
+function compileFilter(dataset: DatasetMetadata, filter: QueryFilter): string {
+  const column = quoteIdentifier(resolvePhysicalColumn(dataset, filter.column));
   const value = filter.value;
 
   switch (filter.operator) {
@@ -72,8 +80,8 @@ function compileFilter(filter: QueryFilter): string {
   }
 }
 
-function compileOrder(order: QueryOrder): string {
-  return `${quoteIdentifier(order.column)} ${order.direction.toUpperCase()}`;
+function compileOrder(dataset: DatasetMetadata, order: QueryOrder): string {
+  return `${quoteIdentifier(resolvePhysicalColumn(dataset, order.column))} ${order.direction.toUpperCase()}`;
 }
 
 export function compileChartQuery(dataset: DatasetMetadata, query: ChartQuery): string {
@@ -98,7 +106,7 @@ export function compileChartQuery(dataset: DatasetMetadata, query: ChartQuery): 
   const from = calculated.length ? 'calculated' : sourceSql;
   const dimensions = query.dimensions.map(
     dimension =>
-      `${compileDimension(dimension.column, dimension.temporalGrain)} AS ${quoteIdentifier(
+      `${compileDimension(dataset, dimension.column, dimension.temporalGrain)} AS ${quoteIdentifier(
         dimension.label ?? dimension.column,
       )}`,
   );
@@ -112,11 +120,11 @@ export function compileChartQuery(dataset: DatasetMetadata, query: ChartQuery): 
   }
 
   const whereParts = [
-    ...(query.filters ?? []).map(compileFilter),
+    ...(query.filters ?? []).map(filter => compileFilter(dataset, filter)),
     ...(query.timeRange
       ? [
           ...(query.timeRange.from
-            ? [`${quoteIdentifier(query.timeRange.column)} >= '${query.timeRange.from.replace(/'/g, "''")}'`]
+            ? [`${quoteIdentifier(resolvePhysicalColumn(dataset, query.timeRange.column))} >= '${query.timeRange.from.replace(/'/g, "''")}'`]
             : []),
           ...(query.timeRange.to
             ? [`${quoteIdentifier(query.timeRange.column)} < '${query.timeRange.to.replace(/'/g, "''")}'`]
@@ -135,7 +143,7 @@ export function compileChartQuery(dataset: DatasetMetadata, query: ChartQuery): 
     whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '',
     groupBy.length ? `GROUP BY ${groupBy.join(', ')}` : '',
     query.having ? `HAVING ${query.having}` : '',
-    query.orderBy?.length ? `ORDER BY ${query.orderBy.map(compileOrder).join(', ')}` : '',
+    query.orderBy?.length ? `ORDER BY ${query.orderBy.map(order => compileOrder(dataset, order)).join(', ')}` : '',
     query.limit !== undefined ? `LIMIT ${Math.max(1, Math.floor(query.limit))}` : '',
     query.offset !== undefined ? `OFFSET ${Math.max(0, Math.floor(query.offset))}` : '',
   ]
