@@ -248,6 +248,7 @@ export interface EditorItemNodeProps {
   onUpdateContent?: (itemId: string, content: any) => void;
   onUpdateStyle?: (itemId: string, styleUpdates: Partial<DashboardItemMeta>) => void;
   resizingItemId: string | null;
+  visualResizeWidth?: { id: string; width: number } | null;
   onStartVerticalResize: (e: React.MouseEvent, itemId: string, currentHeight: number) => void;
   onStartHorizontalResize: (e: React.MouseEvent, itemId: string, currentWidth: number) => void;
   onOpenMoveLayout?: (item: DashboardItemData) => void;
@@ -2855,13 +2856,21 @@ const EditorItemNode: React.FC<EditorItemNodeProps> = (props) => {
               mass: 0.55,
             },
       }}
+      data-editor-item={props.item.id}
       style={{
         minWidth: 0,
-        width: '100%',
+        width:
+          isResizing && visualResizeWidth?.id === props.item.id
+            ? visualResizeWidth.width + 'px'
+            : '100%',
         gridColumn: `span ${width} / span ${width}`,
         zIndex: isResizing ? 20 : undefined,
       }}
-      className={cn('min-w-0', isResizing && 'relative')}
+      className={cn(
+        'min-w-0',
+        isResizing && 'relative',
+        isResizing && 'will-change-[width]'
+      )}
     >
       <EditorItemNodeContent {...props} />
     </motion.div>
