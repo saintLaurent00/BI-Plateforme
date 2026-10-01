@@ -27,6 +27,8 @@ export interface Dataset<T extends object = Record<string, unknown>> {
   description: string;
   fields: DatasetField[];
   rows: readonly T[];
+  metrics?: import('./semantic').MetricDefinition[];
+  calculatedColumns?: import('./semantic').CalculatedColumnDefinition[];
 }
 
 export interface ChartDataPoint {
