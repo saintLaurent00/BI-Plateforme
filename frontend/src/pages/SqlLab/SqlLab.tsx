@@ -194,7 +194,7 @@ export const SqlLab = () => {
       // Initialize with existing values if any
       const initialParams: Record<string, string> = {};
       uniqueParams.forEach(key => {
-        initialParams[key] = queryParameters[key] || '';
+        initialParams[key] = (queryParameters as Record<string, string>)[key] || '';
       });
       setQueryParameters(initialParams);
       setParamsModalOpen(true);

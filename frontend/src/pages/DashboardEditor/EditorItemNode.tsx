@@ -297,7 +297,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
   index,
   totalSiblings,
   selectedItemId = null,
-  onSelectItem = () => {},
+  onSelectItem = (_itemId: string | null) => {},
   onUpdateWidth,
   onUpdateHeight,
   onRemoveItem,
