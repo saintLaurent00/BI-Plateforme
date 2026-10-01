@@ -21,7 +21,7 @@ import {
 import { getTables, getTableSchema } from '../../core/utils/db';
 import { Badge } from '../../components/ui/Badge';
 import { hifadihService } from '../../lib/hifadihService';
-import { Dataset } from '../../core/types';
+import type { Dataset } from '../datasets/types/DatasetRecord';
 
 import { Stepper } from '../../components/ui/Stepper';
 
