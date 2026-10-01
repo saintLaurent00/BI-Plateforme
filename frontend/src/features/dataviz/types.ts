@@ -21,7 +21,7 @@ export interface DatasetField {
   aggregatable?: boolean;
 }
 
-export interface Dataset<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface Dataset<T extends object = Record<string, unknown>> {
   id: string;
   name: string;
   description: string;
