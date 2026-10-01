@@ -16,8 +16,8 @@ export const SAMPLE_SALES_DATASET: DatasetMetadata = {
     { id:'sales.average_rating', name:'average_rating', label:'Average Rating', expression:'AVG(rating)', type:'sql', format:'decimal' },
   ] satisfies MetricMetadata[],
   calculatedColumns: [
-    { id:'sales.gross_value', name:'gross_value', label:'Gross Value', expression:'quantity * unitPrice', dataType:'number', groupable:false, filterable:true },
-    { id:'sales.net_value', name:'net_value', label:'Net Value', expression:'quantity * unitPrice * (1 - discount)', dataType:'number', groupable:false, filterable:true },
+    { id:'sales.gross_value', name:'gross_value', label:'Gross Value', expression:'quantity * unit_price', dataType:'number', groupable:false, filterable:true },
+    { id:'sales.net_value', name:'net_value', label:'Net Value', expression:'quantity * unit_price * (1 - discount)', dataType:'number', groupable:false, filterable:true },
     { id:'sales.profit_per_unit', name:'profit_per_unit', label:'Profit per Unit', expression:'profit / NULLIF(quantity, 0)', dataType:'number', groupable:false, filterable:true },
   ] satisfies CalculatedColumnMetadata[],
   time: { column:'date', supportedGrains:['year','quarter','month','week','day'], defaultGrain:'month' },
