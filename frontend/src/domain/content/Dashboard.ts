@@ -32,6 +32,7 @@ export interface CreateDashboardInput {
   name: string;
   description?: string;
   ownerIds?: string[];
+  access?: ResourceAccess;
   layout?: DashboardLayoutItem[];
   tags?: string[];
   category?: string;
