@@ -32,7 +32,7 @@ const SAMPLE_QUERY: ChartQuery = {
       id: 'sales.net_value',
       name: 'net_value',
       label: 'Net Value',
-      expression: 'quantity * unitPrice * (1 - discount)',
+      expression: 'quantity * unit_price * (1 - discount)',
       type: 'number',
     },
   ],
