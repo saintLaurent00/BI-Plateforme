@@ -24,8 +24,6 @@ Son architecture actuelle repose sur :
 - **SQL.js + IndexedDB** pour une base SQLite exécutée dans le navigateur ;
 - **Docker Compose** pour PostgreSQL, Valkey et MailDev en environnement local.
 
-Le dépôt contient également un ancien fichier Go nommé 'platform_config.go', mais **aucun serveur Go n'est actuellement présent ni lancé par les scripts du frontend**.
-
 ---
 
 # 2. Architecture runtime actuelle
@@ -1117,44 +1115,12 @@ BI-Plateforme/
 ├── index.html
 ├── metadata.json
 ├── .env.example
-└── platform_config.go
+└── metadata.json
 ~~~
 
 ---
 
-# 26. Fichier Go actuel
-
-Le dépôt contient :
-
-~~~text
-platform_config.go
-~~~
-
-Il définit une configuration Go avec :
-
-~~~text
-DATABASE_URL
-REDIS_URL
-JWT_SECRET
-MAIL_PROVIDER
-MAIL_FROM
-MAIL_PORT
-~~~
-
-Cependant :
-
-- aucun 'go.mod' n'est présent ;
-- aucun serveur HTTP Go n'est présent ;
-- aucun script npm ne lance Go ;
-- aucun module backend Go n'apparaît dans l'arborescence actuelle.
-
-Il doit donc être considéré comme **legacy / artefact de l'ancienne architecture**, et non comme un composant runtime actuel.
-
-À terme, cette configuration devra disparaître au profit du backend Rust.
-
----
-
-# 27. Dépendances et responsabilités
+# 26. Dépendances et responsabilités
 
 | Couche | Technologie | Responsabilité |
 |---|---|---|
@@ -1180,7 +1146,7 @@ Il doit donc être considéré comme **legacy / artefact de l'ancienne architect
 
 ---
 
-# 28. Ce qui est réellement connecté aujourd'hui
+# 27. Ce qui est réellement connecté aujourd'hui
 
 ## Connecté au frontend
 
@@ -1225,7 +1191,7 @@ Rust Reporting
 
 ---
 
-# 29. Limites actuelles
+# 28. Limites actuelles
 
 L'architecture actuelle est adaptée à un **prototype BI avancé / frontend fonctionnel**, mais pas encore à une plateforme multi-utilisateurs de production.
 
@@ -1255,7 +1221,7 @@ PostgreSQL/Valkey/MailDev existent mais ne constituent pas encore le backend app
 
 ---
 
-# 30. Architecture cible d'évolution
+# 29. Architecture cible d'évolution
 
 L'objectif n'est pas de réécrire le frontend.
 
@@ -1292,7 +1258,7 @@ Le frontend actuel doit devenir le client d'une plateforme Rust.
 
 ---
 
-# 31. Future workspace Rust
+# 30. Future workspace Rust
 
 Cible recommandée :
 
@@ -1325,7 +1291,7 @@ Responsabilités :
 
 ---
 
-# 32. Migration vers le backend Rust
+# 31. Migration vers le backend Rust
 
 ~~~text
 État actuel
@@ -1362,7 +1328,7 @@ Retrait progressif des mocks/local persistence
 
 ---
 
-# 33. Principe directeur
+# 32. Principe directeur
 
 Le projet doit converger vers :
 
@@ -1390,7 +1356,7 @@ Le frontend devient l'interface d'exploitation de la plateforme.
 
 ---
 
-# 34. Résumé architectural
+# 33. Résumé architectural
 
 ### Aujourd'hui
 
