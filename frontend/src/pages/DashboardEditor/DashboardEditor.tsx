@@ -1329,7 +1329,7 @@ export const DashboardEditor: React.FC = () => {
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-slate-900">Boîte d'Insight / Alerte</h4>
-                      <p className="text-[10px] text-slate-500">Synthèse IA, alertes & astuces</p>
+                      <p className="text-[10px] text-slate-500">Synthèse, alertes & astuces</p>
                     </div>
                   </div>
                   <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
