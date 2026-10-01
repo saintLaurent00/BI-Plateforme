@@ -1,5 +1,7 @@
 import type { ChartQuery } from '../query';
 
+export type ChartStatus = 'active' | 'archived';
+
 export interface VisualizationConfig {
   [key: string]: unknown;
 }
@@ -7,11 +9,27 @@ export interface VisualizationConfig {
 export interface Chart {
   id: string;
   name: string;
+  description?: string;
   datasetId: string;
   chartType: string;
   query: ChartQuery;
   visualization: VisualizationConfig;
-  description?: string;
+  ownerIds: string[];
+  tags: string[];
+  status: ChartStatus;
   createdAt?: string;
   updatedAt?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CreateChartInput {
+  name: string;
+  description?: string;
+  datasetId: string;
+  chartType: string;
+  query: ChartQuery;
+  visualization?: VisualizationConfig;
+  ownerIds?: string[];
+  tags?: string[];
+  metadata?: Record<string, unknown>;
 }
