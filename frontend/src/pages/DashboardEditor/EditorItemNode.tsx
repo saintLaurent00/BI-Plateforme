@@ -2825,8 +2825,8 @@ const EditorItemNode: React.FC<EditorItemNodeProps> = (props) => {
       style={{
         minWidth: 0,
         width:
-          isResizing && visualResizeWidth?.id === props.item.id
-            ? visualResizeWidth.width + 'px'
+          isResizing && props.visualResizeWidth?.id === props.item.id
+            ? props.visualResizeWidth.width + 'px'
             : '100%',
         gridColumn: `span ${width} / span ${width}`,
         zIndex: isResizing ? 20 : undefined,

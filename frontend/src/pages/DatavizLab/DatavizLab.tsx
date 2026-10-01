@@ -45,7 +45,7 @@ const SAMPLE_QUERY: ChartQuery = {
   limit: 100,
 };
 
-const executor = new SampleQueryExecutor({ dataset: SAMPLE_SALES_DATASET, rows: SAMPLE_SALES_DATA });
+const executor = new SampleQueryExecutor({ dataset: SAMPLE_SALES_DATASET, rows: SAMPLE_SALES_DATA as readonly Record<string, unknown>[] });
 
 export const DatavizLab: React.FC = () => {
   const [result, setResult] = React.useState<{

@@ -24,13 +24,14 @@ export const D3Chart: React.FC<D3ChartProps> = ({ data, type, xAxis, yAxis, conf
     // However, since we re-render everything, the old zoom behavior might still be attached to the svg element if we don't clear it.
     svg.on('.zoom', null); 
 
+    const chartConfig: Record<string, any> = config ?? {};
     const width = svgRef.current.clientWidth || 600;
     const height = svgRef.current.clientHeight || 400;
     const margin = { 
-      top: config.margin?.top || 40, 
-      right: config.margin?.right || (config.showLegend !== false ? 120 : 40), 
-      bottom: config.margin?.bottom || 60, 
-      left: config.margin?.left || 80 
+      top: chartConfig.margin?.top || 40, 
+      right: chartConfig.margin?.right || (chartConfig.showLegend !== false ? 120 : 40), 
+      bottom: chartConfig.margin?.bottom || 60, 
+      left: chartConfig.margin?.left || 80 
     };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
@@ -57,7 +58,7 @@ export const D3Chart: React.FC<D3ChartProps> = ({ data, type, xAxis, yAxis, conf
       ]
     };
     
-    const selectedScheme = config.colorScheme || 'default';
+    const selectedScheme = chartConfig.colorScheme || 'default';
     const colorScale = d3.scaleOrdinal(colorSchemes[selectedScheme] || colorSchemes.default);
 
     // Helper for tooltips
@@ -132,7 +133,7 @@ export const D3Chart: React.FC<D3ChartProps> = ({ data, type, xAxis, yAxis, conf
     const plugin = getChartPlugin(type);
     
     // Override type if configured in editor (e.g. pie_type -> Donut, line_type -> Area)
-    const effectiveType = config.pieType || config.lineType || config.barMode || type;
+    const effectiveType = chartConfig.pieType || chartConfig.lineType || chartConfig.barMode || type;
 
     if (plugin) {
       plugin.render(g, {
@@ -160,7 +161,7 @@ export const D3Chart: React.FC<D3ChartProps> = ({ data, type, xAxis, yAxis, conf
     }
 
     // Legend
-    const showLegend = config.showLegend !== false;
+    const showLegend = chartConfig.showLegend !== false;
     if (showLegend && Array.isArray(data) && data.length > 0) {
       // Very basic legend: try to use yAxis or xAxis categories depending on chart type
       // Line/Bar charts typically use yAxis metadata if multiple metrics, or group by series

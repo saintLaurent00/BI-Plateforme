@@ -12,6 +12,8 @@ interface EChartsChartProps {
   onItemClick?: (data: any) => void;
 }
 
+const EChartsReactComponent = ReactECharts as unknown as React.ComponentType<any>;
+
 export const EChartsChart: React.FC<EChartsChartProps> = ({ data, type, xAxis, yAxis, config = {}, onItemClick }) => {
   const options = useMemo(() => {
     if (!data || data.length === 0) return {};
@@ -98,7 +100,7 @@ export const EChartsChart: React.FC<EChartsChartProps> = ({ data, type, xAxis, y
   return (
     <div className="w-full h-full min-h-[300px] relative">
       {options && Object.keys(options).length > 0 ? (
-        <ReactECharts
+        <EChartsReactComponent
           option={options}
           style={{ height: '100%', width: '100%' }}
           onEvents={onEvents}

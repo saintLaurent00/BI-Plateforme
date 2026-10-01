@@ -8,8 +8,8 @@ interface PivotTableProps {
 }
 
 export const PivotTable: React.FC<PivotTableProps> = ({ data, rowDimension, colDimension, valueMetric }) => {
-  const rows = Array.from(new Set(data.map(d => String(d[rowDimension]))));
-  const cols = Array.from(new Set(data.map(d => String(d[colDimension]))));
+  const rows: string[] = Array.from(new Set(data.map(d => String(d[rowDimension]))));
+  const cols: string[] = Array.from(new Set(data.map(d => String(d[colDimension]))));
 
   const pivotData: Record<string, Record<string, number>> = {};
 

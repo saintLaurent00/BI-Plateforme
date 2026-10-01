@@ -1,4 +1,4 @@
-import type { UserDTO } from '../../../core/types/user.dto';
+import type { UserDTO } from '../../../../core/types/user.dto';
 export type RoleDTO={id:string|number;name:string;description?:string;permissions:string[];is_system_role?:boolean;users_count?:number;department?:string;section?:string;region?:string;zone?:string;scope_level?:string;category?:string;tags?:string[];metadata?:Record<string,any>;created_at?:string;updated_at?:string;[key:string]:any};
 export type CreateRoleDTO=Partial<Omit<RoleDTO,'id'>> & Pick<RoleDTO,'name'|'permissions'>;
 export type UpdateRoleDTO=Partial<RoleDTO>&{id:string|number};
