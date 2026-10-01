@@ -469,7 +469,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "min-w-0 flex flex-col transition-[width,height,min-height,transform] duration-100 ease-out will-change-[width,height,transform] relative group/tabs",
+          "min-w-0 flex flex-col will-change-[width,height] relative group/tabs",
           isInGrid ? cn(gridClass, "w-full") : "w-full",
           isDraggingThis && "opacity-30 scale-[0.99] pointer-events-none"
         )}
@@ -839,7 +839,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "min-w-0 flex flex-col transition-[width,height,min-height,transform] duration-100 ease-out will-change-[width,height,transform] relative group/header",
+          "min-w-0 flex flex-col will-change-[width,height] relative group/header",
           isInGrid ? cn(gridClass, "w-full") : "w-full",
           isDraggingThis && "opacity-30 scale-[0.99] pointer-events-none"
         )}
@@ -990,7 +990,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "min-w-0 flex flex-col transition-[width,height,min-height,transform] duration-100 ease-out will-change-[width,height,transform] relative group/markdown",
+          "min-w-0 flex flex-col will-change-[width,height] relative group/markdown",
           isInGrid ? cn(gridClass, "w-full") : "w-full",
           isDraggingThis && "opacity-30 scale-[0.99] pointer-events-none"
         )}
@@ -1203,7 +1203,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "min-w-0 flex flex-col transition-[width,height,min-height,transform] duration-100 ease-out will-change-[width,height,transform] relative group/divider py-2",
+          "min-w-0 flex flex-col will-change-[width,height] relative group/divider py-2",
           isInGrid ? cn(gridClass, "w-full") : "w-full",
           isDraggingThis && "opacity-30 scale-[0.99] pointer-events-none"
         )}
@@ -1337,7 +1337,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "min-w-0 flex flex-col transition-[width,height,min-height,transform] duration-100 ease-out will-change-[width,height,transform] relative group/kpi",
+          "min-w-0 flex flex-col will-change-[width,height] relative group/kpi",
           isInGrid ? cn(gridClass, "w-full") : "w-full",
           isDraggingThis && "opacity-30 scale-[0.99] pointer-events-none"
         )}
@@ -1485,7 +1485,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "min-w-0 flex flex-col transition-[width,height,min-height,transform] duration-100 ease-out will-change-[width,height,transform] relative group/callout",
+          "min-w-0 flex flex-col will-change-[width,height] relative group/callout",
           isInGrid ? cn(gridClass, "w-full") : "w-full",
           isDraggingThis && "opacity-30 scale-[0.99] pointer-events-none"
         )}
@@ -1592,7 +1592,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "min-w-0 flex flex-col transition-[width,height,min-height,transform] duration-100 ease-out will-change-[width,height,transform] relative group/accordion",
+          "min-w-0 flex flex-col will-change-[width,height] relative group/accordion",
           isInGrid ? cn(gridClass, "w-full") : "w-full",
           isDraggingThis && "opacity-30 scale-[0.99] pointer-events-none"
         )}
@@ -1911,7 +1911,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "min-w-0 flex flex-col transition-[width,height,min-height,transform] duration-100 ease-out will-change-[width,height,transform] relative group/media",
+          "min-w-0 flex flex-col will-change-[width,height] relative group/media",
           isInGrid ? cn(gridClass, "w-full") : "w-full",
           isDraggingThis && "opacity-30 scale-[0.99] pointer-events-none"
         )}
@@ -2096,7 +2096,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "min-w-0 flex flex-col transition-[width,height,min-height,transform] duration-100 ease-out will-change-[width,height,transform] relative group/row",
+          "min-w-0 flex flex-col will-change-[width,height] relative group/row",
           isInGrid ? cn(gridClass, "w-full") : "w-full",
           isDraggingThis && "opacity-30 scale-[0.99] pointer-events-none"
         )}
@@ -2400,7 +2400,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "min-w-0 flex flex-col transition-[width,height,min-height,transform] duration-100 ease-out will-change-[width,height,transform] relative group/col",
+          "min-w-0 flex flex-col will-change-[width,height] relative group/col",
           isInGrid ? cn(gridClass, "w-full") : "w-full",
           isDraggingThis && "opacity-30 scale-[0.99] pointer-events-none"
         )}
@@ -2678,7 +2678,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={cn(
-        "min-w-0 flex flex-col transition-[width,height,min-height,transform] duration-100 ease-out will-change-[width,height,transform] relative group/chart",
+        "min-w-0 flex flex-col will-change-[width,height] relative group/chart",
         isInGrid ? cn(gridClass, "w-full") : "w-full",
         isDraggingThis && "opacity-30 scale-[0.99] pointer-events-none"
       )}
@@ -2833,17 +2833,27 @@ const EditorItemNode: React.FC<EditorItemNodeProps> = (props) => {
   const width = Math.min(12, Math.max(1, props.item.meta.width || (props.item.type === 'column' ? 6 : 12)));
   const isResizing = props.resizingItemId === props.item.id;
 
+  // Resize : the active item follows the pointer with a short size tween.
+  // Neighbours only animate their position, avoiding a "rubber-band" effect
+  // on the element currently controlled by the mouse.
+  const layoutMode = isResizing ? 'size' : 'position';
+
   return (
     <motion.div
-      layout="position"
-      layoutId={`dashboard-editor-item-${props.item.id}`}
+      layout={layoutMode}
       transition={{
-        layout: {
-          type: 'spring',
-          stiffness: 520,
-          damping: 38,
-          mass: 0.65,
-        },
+        layout: isResizing
+          ? {
+              type: 'tween',
+              duration: 0.08,
+              ease: [0.22, 1, 0.36, 1],
+            }
+          : {
+              type: 'spring',
+              stiffness: 700,
+              damping: 42,
+              mass: 0.55,
+            },
       }}
       style={{
         minWidth: 0,
