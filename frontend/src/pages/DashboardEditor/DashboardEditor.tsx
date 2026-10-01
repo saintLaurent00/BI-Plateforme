@@ -628,13 +628,17 @@ export const DashboardEditor: React.FC = () => {
   // ----------------------------------------------------
 
   // Update item width (1 to 12 columns) with collision detection & automatic pushing of adjacent siblings
-  const handleUpdateWidth = (itemId: string, newWidth: number) => {
+  const handleUpdateWidth = (itemId: string, newWidth: number, persist = true) => {
     setItems(prev => {
       const { updatedNodes } = updateItemWidthWithCollision(prev, itemId, newWidth);
-      try {
-        const draftKey = `hifadih_dashboard_editor_draft_${id || 'new'}`;
-        localStorage.setItem(draftKey, JSON.stringify(updatedNodes));
-      } catch (e) {}
+
+      if (persist) {
+        try {
+          const draftKey = `hifadih_dashboard_editor_draft_${id || 'new'}`;
+          localStorage.setItem(draftKey, JSON.stringify(updatedNodes));
+        } catch (e) {}
+      }
+
       return updatedNodes;
     });
   };
@@ -765,10 +769,12 @@ export const DashboardEditor: React.FC = () => {
   // Interactive Drag Resizing Handlers
   // ----------------------------------------------------
 
-  // Continuous vertical drag resize
+  // Smooth interactive resizing.
+  // Pointer events are coalesced to animation frames so the editor never
+  // performs a full tree update for every raw mousemove event.
   const handleStartVerticalResize = (
-    e: React.MouseEvent, 
-    itemId: string, 
+    e: React.MouseEvent,
+    itemId: string,
     currentHeight: number = 400
   ) => {
     e.preventDefault();
@@ -777,14 +783,26 @@ export const DashboardEditor: React.FC = () => {
 
     const startY = e.clientY;
     const startH = currentHeight;
+    let frame = 0;
+    let latestHeight = startH;
+
+    const applyResize = (clientY: number) => {
+      const deltaY = clientY - startY;
+      latestHeight = Math.max(180, Math.min(1400, Math.round((startH + deltaY) / 10) * 10));
+      handleUpdateHeight(itemId, latestHeight);
+      frame = 0;
+    };
 
     const onMouseMove = (moveEvent: MouseEvent) => {
-      const deltaY = moveEvent.clientY - startY;
-      const newH = Math.max(180, Math.min(1400, Math.round((startH + deltaY) / 10) * 10));
-      handleUpdateHeight(itemId, newH);
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => applyResize(moveEvent.clientY));
     };
 
     const onMouseUp = () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+        frame = 0;
+      }
       setResizingItemId(null);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
@@ -794,7 +812,9 @@ export const DashboardEditor: React.FC = () => {
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  // Continuous horizontal drag resize (changes width 1..12 cols)
+  // Smooth horizontal resize (changes width 1..12 columns).
+  // Draft persistence is deferred until pointer release to avoid blocking
+  // the animation with localStorage writes.
   const handleStartHorizontalResize = (
     e: React.MouseEvent,
     itemId: string,
@@ -806,33 +826,38 @@ export const DashboardEditor: React.FC = () => {
 
     const startX = e.clientX;
     const startW = currentWidth;
-    
-    // Dynamically calculate column width from the parent grid/container
+
     const targetEl = (e.currentTarget as HTMLElement).closest('.grid') || (e.currentTarget as HTMLElement).parentElement;
     const parentWidth = targetEl ? targetEl.getBoundingClientRect().width : 1000;
     const colWidth = Math.max(25, parentWidth / 12);
 
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      const deltaX = moveEvent.clientX - startX;
+    let frame = 0;
+    let latestWidth = startW;
+
+    const applyResize = (clientX: number) => {
+      const deltaX = clientX - startX;
       const colDelta = Math.round(deltaX / colWidth);
-      const newW = Math.max(1, Math.min(12, startW + colDelta));
-      handleUpdateWidth(itemId, newW);
+      latestWidth = Math.max(1, Math.min(12, startW + colDelta));
+      handleUpdateWidth(itemId, latestWidth, false);
+      frame = 0;
+    };
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => applyResize(moveEvent.clientX));
     };
 
     const onMouseUp = () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+        frame = 0;
+      }
+
       setResizingItemId(null);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
 
-      try {
-        setItems(latest => {
-          const draftKey = `hifadih_dashboard_editor_draft_${id || 'new'}`;
-          localStorage.setItem(draftKey, JSON.stringify(latest));
-          return latest;
-        });
-      } catch (err) {
-        console.error('Failed to store resized columns in localStorage:', err);
-      }
+      handleUpdateWidth(itemId, latestWidth, true);
     };
 
     window.addEventListener('mousemove', onMouseMove);
