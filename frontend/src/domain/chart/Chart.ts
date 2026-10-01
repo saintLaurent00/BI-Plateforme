@@ -32,6 +32,7 @@ export interface CreateChartInput {
   query: ChartQuery;
   visualization?: VisualizationConfig;
   ownerIds?: string[];
+  access?: ResourceAccess;
   tags?: string[];
   metadata?: Record<string, unknown>;
 }
