@@ -1063,43 +1063,6 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
               <span>Texte / Markdown</span>
             </div>
 
-            {/* View Mode Toggle: Aperçu vs Édition */}
-            <div className="flex items-center gap-1 bg-white border border-slate-200 p-0.5 rounded-lg shadow-2xs">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMarkdownViewMode('preview');
-                }}
-                className={cn(
-                  "flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded transition-colors",
-                  markdownViewMode === 'preview' 
-                    ? "bg-blue-600 text-white shadow-2xs" 
-                    : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                <Eye className="w-3 h-3" />
-                <span>Aperçu</span>
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMarkdownViewMode('edit');
-                }}
-                className={cn(
-                  "flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded transition-colors",
-                  markdownViewMode === 'edit' 
-                    ? "bg-blue-600 text-white shadow-2xs" 
-                    : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                <Edit3 className="w-3 h-3" />
-                <span>Édition</span>
-              </button>
-            </div>
-          </div>
-
           {/* Markdown Body: Preview or Textarea */}
           <div className="p-4 flex-1 flex flex-col overflow-y-auto">
             {markdownViewMode === 'edit' ? (
