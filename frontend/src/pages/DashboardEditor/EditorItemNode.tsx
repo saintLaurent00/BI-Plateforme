@@ -2835,7 +2835,7 @@ const EditorItemNode: React.FC<EditorItemNodeProps> = (props) => {
 
   return (
     <motion.div
-      layout
+      layout="position"
       layoutId={`dashboard-editor-item-${props.item.id}`}
       transition={{
         layout: {
