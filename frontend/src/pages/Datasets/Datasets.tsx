@@ -30,7 +30,7 @@ import { Modal } from '../../components/ui/Modal';
 import { FormSection, FormInput, FormTextarea, FormActions, FormButton } from '../../components/ui/FormElements';
 import { toast } from 'sonner';
 import { cn } from '../../core/utils/utils';
-import { Dataset, DatasetColumn, DatasetMetric } from '../../core/types';
+import type { Dataset, DatasetColumn, DatasetMetric } from '../../features/datasets/types/DatasetRecord';
 
 const HealthMetric = ({ label, value, score, icon: Icon }: any) => (
   <div className="hifadih-glass p-5 flex items-center gap-4">
