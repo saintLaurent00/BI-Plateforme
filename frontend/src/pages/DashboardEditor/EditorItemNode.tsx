@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { 
   Rows, 
   Columns, 
@@ -289,7 +290,7 @@ export const getBorderRadiusClass = (borderRadius?: string | number) => {
   }
 };
 
-export const EditorItemNode: React.FC<EditorItemNodeProps> = ({
+const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
   item,
   parentType,
   parentId,
@@ -2826,3 +2827,35 @@ export const EditorItemNode: React.FC<EditorItemNodeProps> = ({
     </div>
   );
 };
+
+
+const EditorItemNode: React.FC<EditorItemNodeProps> = (props) => {
+  const width = Math.min(12, Math.max(1, props.item.meta.width || (props.item.type === 'column' ? 6 : 12)));
+  const isResizing = props.resizingItemId === props.item.id;
+
+  return (
+    <motion.div
+      layout
+      layoutId={`dashboard-editor-item-${props.item.id}`}
+      transition={{
+        layout: {
+          type: 'spring',
+          stiffness: 520,
+          damping: 38,
+          mass: 0.65,
+        },
+      }}
+      style={{
+        minWidth: 0,
+        width: '100%',
+        gridColumn: `span ${width} / span ${width}`,
+        zIndex: isResizing ? 20 : undefined,
+      }}
+      className={cn('min-w-0', isResizing && 'relative')}
+    >
+      <EditorItemNodeContent {...props} />
+    </motion.div>
+  );
+};
+
+export { EditorItemNode };
