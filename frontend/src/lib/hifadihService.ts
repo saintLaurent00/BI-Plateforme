@@ -236,7 +236,6 @@ export const hifadihService = {
 
   // Authentification SSO
   async authenticateSSO(provider: string) {
-    console.log(`Authentification via SSO ${provider}`);
     return { success: true, user: { name: 'Hifadih User', role: 'Admin' } };
   },
 
@@ -254,7 +253,6 @@ export const hifadihService = {
 
   // Exécution de requêtes SQL
   async executeSql(sql: string, connectionId?: string | number) {
-    console.log('Exécution SQL via Hifadih Engine:', sql, 'Connexion:', connectionId);
     return {
       data: [
         { id: 1, label: 'Exemple A', value: 120 },
