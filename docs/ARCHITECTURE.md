@@ -727,7 +727,7 @@ L'application actuelle ne possède toutefois pas encore de moteur backend qui im
 
 ---
 
-# 17. Export PDF
+# 16. Export PDF
 
 ~~~text
 src/lib/pdfExport.ts
@@ -758,7 +758,7 @@ L'export est actuellement principalement côté navigateur.
 
 ---
 
-# 18. Design System / UI
+# 17. Design System / UI
 
 Composants réutilisables :
 
@@ -794,7 +794,7 @@ Cette duplication devra être rationalisée progressivement afin d'avoir une sou
 
 ---
 
-# 19. Core utilities
+# 18. Core utilities
 
 ~~~text
 src/core/utils/
@@ -827,7 +827,7 @@ Utilitaires transverses, notamment classes CSS et helpers.
 
 ---
 
-# 20. Flux de données principaux
+# 19. Flux de données principaux
 
 ## Dashboard
 
@@ -909,7 +909,7 @@ ECharts / D3 / custom renderer
 
 ---
 
-# 21. Modèle de données conceptuel
+# 20. Modèle de données conceptuel
 
 ~~~text
                      ┌─────────────┐
@@ -948,7 +948,7 @@ ECharts / D3 / custom renderer
 
 ---
 
-# 22. Infrastructure Docker actuelle
+# 21. Infrastructure Docker actuelle
 
 Le fichier 'infrastructure/docker/docker-compose.yml' définit trois services.
 
@@ -1002,7 +1002,7 @@ bi-network
 
 ---
 
-# 23. Configuration frontend
+# 22. Configuration frontend
 
 '.env.example' contient notamment :
 
@@ -1022,7 +1022,7 @@ VITE_HIFADIH_ENV=production
 
 ---
 
-# 24. Monorepo frontend + plugins
+# 23. Monorepo frontend + plugins
 
 Le projet utilise les workspaces npm :
 
@@ -1049,7 +1049,7 @@ BI-Plateforme
 
 ---
 
-# 25. Arborescence logique complète
+# 24. Arborescence logique complète
 
 ~~~text
 BI-Plateforme/
@@ -1120,7 +1120,7 @@ BI-Plateforme/
 
 ---
 
-# 26. Dépendances et responsabilités
+# 25. Dépendances et responsabilités
 
 | Couche | Technologie | Responsabilité |
 |---|---|---|
@@ -1146,7 +1146,7 @@ BI-Plateforme/
 
 ---
 
-# 27. Ce qui est réellement connecté aujourd'hui
+# 26. Ce qui est réellement connecté aujourd'hui
 
 ## Connecté au frontend
 
@@ -1186,7 +1186,7 @@ Rust Reporting
 
 ---
 
-# 28. Limites actuelles
+# 27. Limites actuelles
 
 L'architecture actuelle est adaptée à un **prototype BI avancé / frontend fonctionnel**, mais pas encore à une plateforme multi-utilisateurs de production.
 
@@ -1216,7 +1216,7 @@ PostgreSQL/Valkey/MailDev existent mais ne constituent pas encore le backend app
 
 ---
 
-# 29. Architecture cible d'évolution
+# 28. Architecture cible d'évolution
 
 L'objectif n'est pas de réécrire le frontend.
 
@@ -1253,7 +1253,7 @@ Le frontend actuel doit devenir le client d'une plateforme Rust.
 
 ---
 
-# 30. Future workspace Rust
+# 29. Future workspace Rust
 
 Cible recommandée :
 
@@ -1286,7 +1286,7 @@ Responsabilités :
 
 ---
 
-# 31. Migration vers le backend Rust
+# 30. Migration vers le backend Rust
 
 ~~~text
 État actuel
@@ -1323,7 +1323,7 @@ Retrait progressif des mocks/local persistence
 
 ---
 
-# 32. Principe directeur
+# 31. Principe directeur
 
 Le projet doit converger vers :
 
@@ -1351,7 +1351,7 @@ Le frontend devient l'interface d'exploitation de la plateforme.
 
 ---
 
-# 33. Résumé architectural
+# 32. Résumé architectural
 
 ### Aujourd'hui
 
