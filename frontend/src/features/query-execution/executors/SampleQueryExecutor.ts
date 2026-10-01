@@ -42,7 +42,7 @@ export class SampleQueryExecutor implements QueryExecutor {
       );
 
       for (const row of this.sample.rows) {
-        statement.run(columns.map(column => row[column.name] ?? null));
+        statement.run(columns.map(column => row[column.name] ?? null) as any);
       }
       statement.free();
 

@@ -134,7 +134,7 @@ export function compileChartQuery(dataset: DatasetMetadata, query: ChartQuery): 
   ];
 
   const groupBy = query.dimensions.map(dimension =>
-    compileDimension(dimension.column, dimension.temporalGrain),
+    compileDimension(dataset, dimension.column, dimension.temporalGrain),
   );
 
   return [

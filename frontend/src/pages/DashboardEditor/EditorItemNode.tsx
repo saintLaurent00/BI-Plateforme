@@ -318,6 +318,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
   onUpdateContent,
   onUpdateStyle,
   resizingItemId,
+  visualResizeWidth,
   onStartVerticalResize,
   onStartHorizontalResize,
   onOpenMoveLayout,

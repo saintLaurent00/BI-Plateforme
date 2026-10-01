@@ -1,7 +1,0 @@
-{
-  "name": "@prism/plugin-chart-heatmap",
-  "version": "1.0.0",
-  "description": "Heatmap plugin for Prism BI",
-  "main": "src/index.ts",
-  "license": "MIT"
-}

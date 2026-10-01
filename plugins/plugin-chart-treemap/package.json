@@ -1,7 +1,0 @@
-{
-  "name": "@prism/plugin-chart-treemap",
-  "version": "1.0.0",
-  "description": "Treemap plugin for Prism BI",
-  "main": "src/index.ts",
-  "license": "MIT"
-}

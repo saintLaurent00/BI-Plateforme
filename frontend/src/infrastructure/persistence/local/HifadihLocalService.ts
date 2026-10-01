@@ -10,7 +10,7 @@ import {
   deleteDashboard,
   saveDashboard,
   saveChart,
-} from '../../core/utils/db';
+} from '../../../core/utils/db';
 
 type DatasetRecord = {
   id: string;
@@ -168,6 +168,22 @@ export const hifadihService = {
   },
 
   async getUsers() {
+    return { result: [] };
+  },
+
+  async createUser(user: Record<string, unknown>) {
+    return { result: { ...user, id: user.id ?? crypto.randomUUID() } };
+  },
+
+  async updateUser(id: string | number, user: Record<string, unknown>) {
+    return { result: { ...user, id } };
+  },
+
+  async deleteUser(id: string | number) {
+    return { success: true, id };
+  },
+
+  async getLogs() {
     return { result: [] };
   },
 

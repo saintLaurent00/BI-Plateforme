@@ -1,7 +1,0 @@
-{
-  "name": "@prism/plugin-chart-sankey",
-  "version": "1.0.0",
-  "description": "Sankey diagram plugin for Prism BI",
-  "main": "src/index.ts",
-  "license": "MIT"
-}

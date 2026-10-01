@@ -153,7 +153,7 @@ export const DatavizLab: React.FC = () => {
                 Rows
               </dt>
               <dd className="mt-1 text-sm font-semibold text-foreground">
-                {SAMPLE_SALES_DATASET.rows.length}
+                {SAMPLE_SALES_DATA.length}
               </dd>
             </div>
 

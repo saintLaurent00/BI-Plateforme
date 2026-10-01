@@ -1,7 +1,0 @@
-{
-  "name": "@prism/plugin-chart-radar",
-  "version": "1.0.0",
-  "description": "Radar chart plugin for Prism BI",
-  "main": "src/index.ts",
-  "license": "MIT"
-}
