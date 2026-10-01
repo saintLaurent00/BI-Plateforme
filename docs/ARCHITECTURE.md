@@ -1172,11 +1172,6 @@ Valkey
 MailDev
 ~~~
 
-## Legacy / à supprimer ou migrer
-
-~~~text
-platform_config.go
-~~~
 
 ## Architecture non encore implémentée
 
