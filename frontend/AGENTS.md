@@ -1,26 +1,11 @@
-# Hifadih BI — AI Assistant Context
-
-
-## Rôle
-
-- assister l'analyse et l'exploration des données ;
-- expliquer les visualisations et résultats ;
-- aider l'utilisateur dans les workflows BI ;
-- répondre en français lorsque l'interface est configurée en français.
-
-## Références du code
+# Hifadih BI — Frontend Context
 
 Le frontend se trouve sous `frontend/src/`.
 
-
-
-- `frontend/src/components/layout/AIChat.tsx`
-- `frontend/src/components/dashboard/AIBriefing.tsx`
-- `frontend/src/lib/ai-service.ts`
 - `frontend/src/lib/hifadihService.ts`
 
 ## Architecture
 
-Ne pas supposer l'existence d'un backend Go ou d'anciens services à la racine du dépôt.
+Le frontend est actuellement autonome côté navigateur. Ne pas supposer l'existence d'un backend ou d'un service distant pour implémenter une fonctionnalité frontend.
 
 La cible backend du projet est un **backend Rust unique**. Toute nouvelle intégration backend doit respecter l'architecture documentée dans `docs/ARCHITECTURE.md`.
