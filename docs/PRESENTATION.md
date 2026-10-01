@@ -26,8 +26,7 @@ Hifadih BI vise à réunir ces usages dans une expérience cohérente.
 - construire des visualisations ;
 - composer des dashboards ;
 - exécuter des requêtes ;
-- automatiser des rapports ;
-- assister l'analyse avec l'IA.
+- automatiser des rapports.
 
 ---
 
@@ -44,7 +43,7 @@ Le dépôt fournit principalement le frontend :
 - SQL Lab ;
 - administration ;
 - documentation ;
-- plugins de visualisation ;
+- plugins de visualisation.
 
 ---
 
@@ -143,12 +142,7 @@ Centralise :
 
 ---
 
-## Slide 10 — IA
-
-
----
-
-## Slide 11 — Sécurité
+## Slide 10 — Sécurité
 
 - authentication ;
 - authorization ;
@@ -162,7 +156,7 @@ Centralise :
 
 ---
 
-## Slide 12 — Infrastructure
+## Slide 11 — Infrastructure
 
 | Composant | Rôle |
 |---|---|
@@ -173,7 +167,7 @@ Centralise :
 
 ---
 
-## Slide 13 — Roadmap
+## Slide 12 — Roadmap
 
 ```text
 Frontend actuel
@@ -195,15 +189,15 @@ Production
 
 ---
 
-## Slide 14 — Positionnement
+## Slide 13 — Positionnement
 
-**BI + Data Exploration + Visualization + Query Engine + AI**
+**BI + Data Exploration + Visualization + Query Engine**
 
 React gère l'expérience. Rust gère le backend. PostgreSQL gère la persistance. Valkey gère cache et coordination.
 
 ---
 
-## Slide 15 — État du projet
+## Slide 14 — État du projet
 
 **Aujourd'hui :** frontend BI riche et infrastructure locale.
 
@@ -211,7 +205,7 @@ React gère l'expérience. Rust gère le backend. PostgreSQL gère la persistanc
 
 ---
 
-## Slide 16 — Conclusion
+## Slide 15 — Conclusion
 
 Hifadih BI évolue d'une interface BI avancée vers une plateforme analytique complète.
 
