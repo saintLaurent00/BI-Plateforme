@@ -1,189 +1,372 @@
-# Hifadih BI — Metadata Architecture
+# Hifadih BI Metadata Model
 
 ## 1. Purpose
 
-Metadata describes **what a dataset means** and **how the platform may use it**.
+Hifadih BI uses a metadata layer similar in principle to Apache Superset, but the model is explicitly separated into:
 
-It is not the query result and it is not the database itself.
+- **Identity metadata** — users, groups, roles, permissions.
+- **Source metadata** — data sources/connections.
+- **Dataset metadata** — physical/virtual datasets, columns, metrics, calculated columns.
+- **Analytics metadata** — charts, dashboards, saved SQL queries.
+- **Security metadata** — row-level security policies and resource access.
+- **Operational metadata** — audit logs and scheduled reports.
 
-The metadata contract is the stable boundary between:
+The metadata layer describes **what Hifadih BI knows about the platform**. It is not the analytical data itself.
 
-```
-Data source
-    ↓
-Dataset metadata
-    ↓
-Semantic layer
-    ↓
-Chart query
-    ↓
-Query executor
-    ↓
-Chart result
-```
+Superset similarly maintains metadata for chart and dashboard definitions, users and other application information, while the analytical data remains in external data sources. citeturn0search9turn0search10
 
-The frontend uses this contract today with local/sample data. The future Rust query engine will consume the same semantic concepts against PostgreSQL and other supported engines.
+## 2. Core model
 
-## 2. Four levels of metadata
-
-### 2.1 Data source metadata
-
-Describes the connection context:
-
-- engine
-- environment
-- database/schema
-- ownership and tags
-
-It must never contain credentials in the frontend metadata model.
-
-### 2.2 Dataset metadata
-
-Describes the analytical object:
-
-- physical or virtual dataset
-- source reference
-- schema/table or virtual SQL
-- description
-- columns
-- metrics
-- calculated columns
-- temporal configuration
-- statistics
-- capabilities
-- governance
-
-A dataset is the principal semantic scope for chart construction.
-
-### 2.3 Column metadata
-
-A column has both a **semantic identity** and a **physical identity**.
-
-Example:
-
-```ts
-{
-  name: 'unitPrice',
-  physicalName: 'unit_price',
-  label: 'Unit Price',
-  dataType: 'number',
-  role: 'measure'
-}
+```text
+MetadataCatalog
+├── Identity
+│   ├── User
+│   ├── Group
+│   ├── Role
+│   └── Permission
+│
+├── Sources
+│   └── DataSource
+│
+├── Semantic / Dataset
+│   └── DatasetMetadata
+│       ├── ColumnMetadata[]
+│       ├── MetricMetadata[]
+│       ├── CalculatedColumnMetadata[]
+│       ├── TimeMetadata
+│       ├── Statistics
+│       ├── Capabilities
+│       └── Governance
+│
+├── Analytics
+│   ├── Chart
+│   ├── Dashboard
+│   └── SavedQuery
+│
+├── Security
+│   └── RowLevelSecurityPolicy
+│
+└── Operations
+    ├── Report
+    └── AuditLog
 ```
 
-This distinction is intentional. The UI/query model should not be forced to expose database naming conventions.
+The canonical TypeScript contracts live under `frontend/src/domain/`.
 
-Column metadata controls:
+## 3. Identity
 
-- data type
-- dimension/measure/identifier/temporal role
-- groupability
-- filterability
-- nullability
-- temporal behavior
-- formatting
-- optional expression
+### User
 
-### 2.4 Semantic computed objects
+A user is an identity in Hifadih BI.
 
-#### Metrics
+Important relations:
 
-A metric is evaluated in an aggregate context.
+```text
+User
+ ├── roleIds[]
+ └── groupIds[]
+```
+
+A user does not directly own permission definitions. Permissions are granted through roles.
+
+### Group
+
+A group represents organizational membership.
+
+```text
+Group
+ ├── memberIds[]
+ └── roleIds[]
+```
+
+Groups are useful for resource membership and sharing. This follows the same conceptual separation used by current Superset security: groups represent organizational membership while roles primarily represent capability grants. citeturn0search2
+
+### Role
+
+A role is a capability bundle.
+
+```text
+Role
+ └── permissionIds[]
+```
+
+Roles are intentionally separated from groups:
+
+- **Group** = who belongs together.
+- **Role** = what a user/group can do.
+- **Permission** = action allowed on a resource.
+
+### Permission
+
+A permission is modeled as:
+
+```text
+(resource, action, optional scope)
+```
 
 Examples:
 
-```sql
+- `datasets:read`
+- `datasets:update`
+- `charts:create`
+- `dashboards:delete`
+- `sql_lab:execute`
+- `users:manage`
+
+This keeps authorization extensible without hard-coding every possible permission into users.
+
+## 4. Data sources
+
+`DataSource` represents a configured connection.
+
+It intentionally does **not** contain a raw database password.
+
+Secrets are represented by a `connectionSecretRef` so authentication material can later live in a backend secret manager.
+
+```text
+DataSource
+├── identity
+├── engine
+├── connection metadata
+├── environment
+├── governance
+└── connectionSecretRef
+```
+
+This becomes the future Rust API boundary for connection management.
+
+## 5. Dataset semantic metadata
+
+`DatasetMetadata` is the semantic contract consumed by the Chart Builder and Query Engine.
+
+```text
+DatasetMetadata
+├── identity
+├── source
+├── columns[]
+├── metrics[]
+├── calculatedColumns[]
+├── time
+├── statistics
+├── capabilities
+└── governance
+```
+
+### Columns
+
+A column separates semantic naming from physical SQL naming:
+
+```text
+name         = unitPrice
+physicalName = unit_price
+label        = Unit Price
+```
+
+The UI and query model use `name`.
+
+The SQL compiler resolves `name` to `physicalName`.
+
+### Metrics
+
+Metrics are aggregate/analytic definitions:
+
+```text
 SUM(revenue)
 SUM(profit)
-SUM(profit) / NULLIF(SUM(revenue), 0) * 100
+SUM(profit) / NULLIF(SUM(revenue), 0)
 COUNT(DISTINCT customer_id)
 ```
 
-Metrics can be saved at dataset level or defined ad hoc by a chart.
+This follows the same semantic-layer distinction used by Superset, where virtual metrics are aggregate expressions. citeturn0search0
 
-#### Calculated columns
+### Calculated columns
 
-A calculated column is evaluated at row level.
+Calculated columns are row-level expressions:
 
-Examples:
+```text
+quantity * unit_price
+quantity * unit_price * (1 - discount)
+profit / NULLIF(quantity, 0)
+```
+
+Aggregate functions are deliberately excluded from calculated-column semantics. Superset uses the same distinction between metrics and calculated columns. citeturn0search0
+
+## 6. Chart
+
+A chart is a persisted analytical definition.
+
+```text
+Chart
+├── datasetId
+├── chartType
+├── query
+├── visualization
+├── ownerIds[]
+└── metadata
+```
+
+The important rule is:
+
+```text
+Chart
+ ├── Query definition
+ └── Visualization definition
+```
+
+A chart does not own SQL execution logic.
+
+The query is compiled and executed through the Query Engine.
+
+The visualization configuration is consumed by a chart plugin.
+
+Superset similarly persists the information needed to recreate a saved visualization, including its query, chart type and options. citeturn0search0
+
+## 7. Dashboard
+
+A dashboard is a composition of charts.
+
+```text
+Dashboard
+├── chart references
+├── layout
+├── owners
+├── publication status
+├── tags
+└── metadata
+```
+
+A dashboard does not duplicate chart definitions.
+
+```text
+Dashboard
+   │
+   ├── Chart A
+   ├── Chart B
+   └── Chart C
+```
+
+Each chart remains independently persisted and reusable.
+
+Superset exposes the same broad model through dashboard resources and their chart definitions. citeturn0search11
+
+## 8. Saved queries
+
+`SavedQuery` stores reusable SQL for SQL Lab and future workflows.
+
+```text
+SavedQuery
+├── SQL
+├── dataSourceId
+├── owners
+├── tags
+└── execution metadata
+```
+
+A saved query is **not automatically a chart** and **not automatically a dataset**.
+
+A future workflow may create a virtual dataset from a saved query, but those remain separate domain objects.
+
+## 9. Security
+
+### Resource access
+
+Resource ownership and access should be modeled separately from capability roles.
+
+```text
+User / Group
+       │
+       ├── ownership / membership
+       │
+Role ──┴── permissions
+```
+
+This avoids coupling "who can access this resource" with "what operations this identity can perform."
+
+Current Superset documentation explicitly distinguishes users, groups and roles as subjects and recommends groups for new resource-level membership while roles remain focused on permissions. citeturn0search2
+
+### Row-level security
+
+`RowLevelSecurityPolicy` constrains rows returned from a dataset:
+
+```text
+Dataset
+  │
+  └── Policy
+       ├── clause
+       ├── groups
+       └── roles
+```
+
+Example:
 
 ```sql
-quantity * unit_price
-profit / NULLIF(quantity, 0)
-CASE WHEN revenue > 10000 THEN 'High Value' ELSE 'Standard' END
+region = 'West Africa'
 ```
 
-Aggregate functions are deliberately forbidden in calculated columns.
+The policy is applied by the query execution layer, never by a visualization plugin.
 
-This follows the same core distinction used by Superset's semantic layer: virtual metrics are aggregate expressions, while calculated columns are row-level expressions. citeturn0search0turn1search8
+## 10. Audit
 
-## 3. Metadata invariants
+Every important mutation should eventually generate an `AuditLog`.
 
-1. Every dataset has a stable ID.
-2. Every column has a stable semantic name and an explicit physical name.
-3. Metrics and calculated columns belong to a dataset semantic scope.
-4. SQL expressions are metadata, not executable browser code.
-5. Credentials never belong in dataset metadata.
-6. UI labels are not used as query identifiers.
-7. Metadata is independent from React, ECharts, SQLite, HTTP, and Rust.
-8. Query definitions reference semantic names, not database-specific UI labels.
-9. Visualization configuration is separate from metadata.
-10. Query execution is separate from metadata.
-
-## 4. Superset-inspired, Hifadih-specific model
-
-Superset exposes dataset columns, metrics, temporal configuration and datasource capabilities as metadata, and its query schema separates dimensions, metrics, filters, ordering, limits and time configuration. citeturn1search2turn1search3turn1search6
-
-Hifadih keeps that proven separation but adds an explicit physical/semantic mapping:
-
-```
-physicalName  →  name  →  label
-unit_price        unitPrice   Unit Price
+```text
+AuditLog
+├── actorUserId
+├── action
+├── resourceType
+├── resourceId
+├── details
+└── createdAt
 ```
 
-This is important for a future Rust/PostgreSQL query engine because the semantic query remains stable even when the physical database schema differs.
+Audit metadata is operational metadata. It is not mixed into chart or dataset query definitions.
 
-## 5. What metadata is NOT
+## 11. Reports
 
-Metadata is not:
+Reports represent scheduled or exported analytical artifacts.
 
-- a chart query
-- a chart result
-- a chart visualization configuration
-- a SQL execution engine
-- a database connection pool
-- a React component
-- a plugin renderer
+They reference dashboards/charts indirectly through future scheduling configuration rather than embedding analytical definitions.
 
-The resulting dependency direction is:
+## 12. Architectural rules
 
+1. Domain entities use semantic/camelCase names.
+2. DTO/API/storage naming is handled at infrastructure boundaries.
+3. Domain models never contain raw credentials.
+4. Users do not directly own permissions.
+5. Groups represent membership; roles represent capabilities.
+6. Dataset metadata is separate from query definitions.
+7. Query definitions are separate from visualization configuration.
+8. Dashboards reference charts instead of duplicating them.
+9. Saved SQL queries remain distinct from datasets and charts.
+10. Security policies are enforced before visualization.
+11. Plugins never access users, roles, databases, or SQL execution.
+12. Audit logs are append-oriented operational metadata.
+13. Rust will implement infrastructure ports later without changing the domain contracts.
+
+## 13. Relation to the execution pipeline
+
+```text
+User
+  ↓
+Chart Builder
+  ↓
+DatasetMetadata
+  ↓
+ChartQuery
+  ↓
+QueryValidator
+  ↓
+QueryCompiler
+  ↓
+QueryExecutor
+  ↓
+ChartResult
+  ↓
+Visualization Adapter
+  ↓
+Chart Plugin
 ```
-metadata/domain
-      ↓
-query
-      ↓
-execution
-      ↓
-visualization
-```
 
-Never reverse these dependencies.
+The metadata layer therefore remains upstream of query compilation and visualization.
 
-## 6. Future extensions
-
-The metadata model is intentionally ready for:
-
-- richer time grains
-- dataset certification
-- metric certification
-- semantic types
-- row-level security metadata
-- column-level permissions
-- data quality/profile information
-- lineage
-- freshness
-- caching policy
-- compatible-dimension/metric discovery
-- external semantic-layer providers
-
-These should be added without making the chart plugins responsible for them.
+This is the foundation for a Superset-inspired BI platform without coupling Hifadih BI to Superset's internal implementation.
