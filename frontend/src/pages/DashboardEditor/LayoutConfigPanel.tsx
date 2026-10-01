@@ -881,7 +881,7 @@ export const LayoutConfigPanel: React.FC<LayoutConfigPanelProps> = ({
                 <label className="text-[11px] font-bold text-slate-700">Type de message</label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {[
-                    { id: 'insight', label: 'Insight IA', icon: Lightbulb, color: 'text-indigo-600' },
+                    { id: 'insight', label: 'Insight', icon: Lightbulb, color: 'text-indigo-600' },
                     { id: 'info', label: 'Information', icon: Info, color: 'text-blue-600' },
                     { id: 'success', label: 'Succès', icon: CheckCircle2, color: 'text-emerald-600' },
                     { id: 'warning', label: 'Attention', icon: AlertTriangle, color: 'text-amber-600' },
