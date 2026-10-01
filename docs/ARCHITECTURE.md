@@ -108,23 +108,15 @@ Il contient les concepts stables :
 
 ```text
 domain/
-├── dataset/
-│   ├── DataType.ts
-│   ├── DataSourceMetadata.ts
-│   ├── ColumnMetadata.ts
-│   ├── MetricMetadata.ts
-│   ├── CalculatedColumnMetadata.ts
-│   ├── DatasetMetadata.ts
-│   ├── MetadataCatalog.ts
-│   └── index.ts
-├── query/
-│   ├── ChartQuery.ts
-│   └── index.ts
-├── chart/
-│   ├── Chart.ts
-│   └── index.ts
-└── dashboard/
-    └── ...
+├── identity/       # User, Group, Role, Permission
+├── catalog/        # DataSource
+├── dataset/        # DatasetMetadata and semantic metadata
+├── query/          # ChartQuery and query contracts
+├── chart/          # Chart and visualization definition
+├── content/        # Dashboard and SavedQuery
+├── security/       # ResourceAccess and RowLevelSecurityPolicy
+├── reporting/      # Report
+└── audit/          # AuditLog
 ```
 
 Le domaine est le vocabulaire commun du produit.
