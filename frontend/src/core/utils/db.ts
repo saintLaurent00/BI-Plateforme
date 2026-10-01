@@ -1,5 +1,12 @@
 import initSqlJs, { Database } from 'sql.js';
 import sqlWasm from 'sql.js/dist/sql-wasm.wasm?url';
+import {
+  SAMPLE_FINANCIAL_DATA,
+  SAMPLE_FLOW_DATA,
+  SAMPLE_FUNNEL_DATA,
+  SAMPLE_HIERARCHY_DATA,
+  SAMPLE_SALES_DATA,
+} from '../../lib/sample-data';
 
 const dbInstances: Record<string, Database> = {};
 let SQL: any = null;
@@ -170,6 +177,111 @@ export const initDatabase = async (dbId?: string) => {
     }
     if (!checkSeeded('finance')) {
       targetDb.run(`INSERT INTO finance VALUES ('Software', 5000), ('Hardware', 3000), ('Services', 2000)`);
+    }
+
+    // Shared deterministic datasets used by the Dataviz editor and chart plugins.
+    // They live in the local SQL.js database so every chart exercises the same query path.
+    targetDb.run(`
+      CREATE TABLE IF NOT EXISTS sample_sales (
+        id TEXT PRIMARY KEY,
+        date TEXT,
+        year INTEGER,
+        quarter TEXT,
+        month TEXT,
+        month_index INTEGER,
+        region TEXT,
+        country TEXT,
+        city TEXT,
+        category TEXT,
+        subcategory TEXT,
+        product TEXT,
+        customer_segment TEXT,
+        sales_channel TEXT,
+        campaign TEXT,
+        quantity INTEGER,
+        unit_price REAL,
+        discount REAL,
+        revenue REAL,
+        cost REAL,
+        profit REAL,
+        margin REAL,
+        orders INTEGER,
+        rating REAL,
+        latitude REAL,
+        longitude REAL
+      );
+      CREATE TABLE IF NOT EXISTS sample_funnel (
+        stage TEXT PRIMARY KEY,
+        stage_order INTEGER,
+        visitors INTEGER,
+        conversion_rate REAL
+      );
+      CREATE TABLE IF NOT EXISTS sample_flow (
+        source TEXT,
+        target TEXT,
+        value REAL
+      );
+      CREATE TABLE IF NOT EXISTS sample_hierarchy (
+        category TEXT,
+        subcategory TEXT,
+        product TEXT,
+        revenue REAL
+      );
+      CREATE TABLE IF NOT EXISTS sample_financial (
+        label TEXT PRIMARY KEY,
+        type TEXT,
+        amount REAL,
+        sort_order INTEGER
+      );
+    `);
+
+    if (!checkSeeded('sample_sales')) {
+      const stmt = targetDb.prepare(
+        `INSERT INTO sample_sales (
+          id, date, year, quarter, month, month_index, region, country, city,
+          category, subcategory, product, customer_segment, sales_channel, campaign,
+          quantity, unit_price, discount, revenue, cost, profit, margin, orders,
+          rating, latitude, longitude
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      );
+      SAMPLE_SALES_DATA.forEach(row => stmt.run([
+        row.id, row.date, row.year, row.quarter, row.month, row.monthIndex,
+        row.region, row.country, row.city, row.category, row.subcategory, row.product,
+        row.customerSegment, row.salesChannel, row.campaign, row.quantity, row.unitPrice,
+        row.discount, row.revenue, row.cost, row.profit, row.margin, row.orders,
+        row.rating, row.latitude, row.longitude,
+      ]));
+      stmt.free();
+    }
+
+    if (!checkSeeded('sample_funnel')) {
+      const stmt = targetDb.prepare(
+        `INSERT INTO sample_funnel (stage, stage_order, visitors, conversion_rate) VALUES (?, ?, ?, ?)`
+      );
+      SAMPLE_FUNNEL_DATA.forEach(row => stmt.run([row.stage, row.stageOrder, row.visitors, row.conversionRate]));
+      stmt.free();
+    }
+
+    if (!checkSeeded('sample_flow')) {
+      const stmt = targetDb.prepare(`INSERT INTO sample_flow (source, target, value) VALUES (?, ?, ?)`);
+      SAMPLE_FLOW_DATA.forEach(row => stmt.run([row.source, row.target, row.value]));
+      stmt.free();
+    }
+
+    if (!checkSeeded('sample_hierarchy')) {
+      const stmt = targetDb.prepare(
+        `INSERT INTO sample_hierarchy (category, subcategory, product, revenue) VALUES (?, ?, ?, ?)`
+      );
+      SAMPLE_HIERARCHY_DATA.forEach(row => stmt.run([row.category, row.subcategory, row.product, row.revenue]));
+      stmt.free();
+    }
+
+    if (!checkSeeded('sample_financial')) {
+      const stmt = targetDb.prepare(
+        `INSERT INTO sample_financial (label, type, amount, sort_order) VALUES (?, ?, ?, ?)`
+      );
+      SAMPLE_FINANCIAL_DATA.forEach(row => stmt.run([row.label, row.type, row.amount, row.order]));
+      stmt.free();
     }
   } else {
     // Determine the category profile of this datasource based on its saved name or database config 

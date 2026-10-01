@@ -551,7 +551,10 @@ return {
                 </button>
               </div>
               <div className="space-y-1">
-                {schema.filter(s => s.type === 'number' || s.type === 'calculated').map((col, i) => (
+                {schema.filter(s => {
+                  const type = String(s.type || '').toUpperCase();
+                  return s.type === 'calculated' || /INT|REAL|FLOAT|DOUBLE|DECIMAL|NUMERIC|NUMBER/.test(type);
+                }).map((col, i) => (
                   <motion.div 
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
