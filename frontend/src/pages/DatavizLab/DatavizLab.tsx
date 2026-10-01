@@ -1,8 +1,8 @@
 import React from 'react';
 import { EChartsChart } from '../../components/charts/EChartsChart';
-import { SAMPLE_SALES_DATASET } from '../../features/dataviz/data/sampleDatasets';
-import { SampleQueryExecutor } from '../../features/dataviz/sampleExecutor';
-import type { ChartQuery } from '../../features/dataviz/query';
+import { SAMPLE_SALES_DATASET, SAMPLE_SALES_DATA } from '../../features/datasets/sample';
+import { SampleQueryExecutor } from '../../features/query-execution';
+import type { ChartQuery } from '../../domain/query';
 
 const SAMPLE_QUERY: ChartQuery = {
   datasetId: SAMPLE_SALES_DATASET.id,
@@ -45,7 +45,7 @@ const SAMPLE_QUERY: ChartQuery = {
   limit: 100,
 };
 
-const executor = new SampleQueryExecutor(SAMPLE_SALES_DATASET);
+const executor = new SampleQueryExecutor({ dataset: SAMPLE_SALES_DATASET, rows: SAMPLE_SALES_DATA });
 
 export const DatavizLab: React.FC = () => {
   const [result, setResult] = React.useState<{
@@ -57,7 +57,7 @@ export const DatavizLab: React.FC = () => {
   React.useEffect(() => {
     let active = true;
 
-    executor.execute(SAMPLE_QUERY)
+    executor.execute(SAMPLE_SALES_DATASET, SAMPLE_QUERY)
       .then(response => {
         if (active) {
           setResult({
