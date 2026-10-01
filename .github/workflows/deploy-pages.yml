@@ -33,7 +33,7 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      # npm install is temporary until package-lock.json is regenerated.
+      # npm install is temporary until package-lock.json is regenerated; CI tracks typecheck fixes.
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
