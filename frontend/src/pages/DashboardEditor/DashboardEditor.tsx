@@ -169,8 +169,11 @@ export const DashboardEditor: React.FC = () => {
   const selectedItem = selectedItemId ? findNode(items, selectedItemId) : null;
   const selectedItemParentInfo = selectedItemId ? findParentInfo(items, selectedItemId) : null;
 
-  // Active resizing item tracker
+  // Active resizing item tracker.
+  // The committed width remains snapped to the 12-column grid while the
+  // visual width follows the pointer continuously during the interaction.
   const [resizingItemId, setResizingItemId] = useState<string | null>(null);
+  const [visualResizeWidth, setVisualResizeWidth] = useState<{ id: string; width: number } | null>(null);
 
   // Modal for picking a chart to add to a specific container (row, column, or root)
   const [targetForChartPicker, setTargetForChartPicker] = useState<{
@@ -813,9 +816,9 @@ export const DashboardEditor: React.FC = () => {
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  // Smooth horizontal resize (changes width 1..12 columns).
-  // Draft persistence is deferred until pointer release to avoid blocking
-  // the animation with localStorage writes.
+  // Horizontal resize uses two layers:
+  // 1. visualResizeWidth follows the pointer in pixels, continuously;
+  // 2. the dashboard model snaps to 1..12 columns and only persists on release.
   const handleStartHorizontalResize = (
     e: React.MouseEvent,
     itemId: string,
@@ -825,27 +828,41 @@ export const DashboardEditor: React.FC = () => {
     e.stopPropagation();
     setResizingItemId(itemId);
 
-    const startX = e.clientX;
-    const startW = currentWidth;
+    const itemEl = (e.currentTarget as HTMLElement).closest('[data-editor-item]') as HTMLElement | null;
+    const gridEl = itemEl?.parentElement as HTMLElement | null;
 
-    const targetEl = (e.currentTarget as HTMLElement).closest('.grid') || (e.currentTarget as HTMLElement).parentElement;
-    const parentWidth = targetEl ? targetEl.getBoundingClientRect().width : 1000;
+    const startX = e.clientX;
+    const startVisualWidth = itemEl?.getBoundingClientRect().width ?? 0;
+    const parentWidth = gridEl?.getBoundingClientRect().width ?? 1000;
     const colWidth = Math.max(25, parentWidth / 12);
 
     let frame = 0;
-    let latestWidth = startW;
+    let latestWidth = currentWidth;
+    let latestVisualWidth = startVisualWidth;
+
+    setVisualResizeWidth({ id: itemId, width: startVisualWidth });
 
     const applyResize = (clientX: number) => {
       const deltaX = clientX - startX;
+
+      // Continuous visual feedback: the active card follows the pointer
+      // instead of waiting for the next snapped grid column.
+      latestVisualWidth = Math.max(colWidth, startVisualWidth + deltaX);
+      setVisualResizeWidth({ id: itemId, width: latestVisualWidth });
+
+      // Keep the data model grid-native. Neighbours reflow only when
+      // the pointer crosses a real grid-column threshold.
       const colDelta = Math.round(deltaX / colWidth);
-      latestWidth = Math.max(1, Math.min(12, startW + colDelta));
+      latestWidth = Math.max(1, Math.min(12, currentWidth + colDelta));
       handleUpdateWidth(itemId, latestWidth, false);
+
       frame = 0;
     };
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       if (frame) return;
-      frame = window.requestAnimationFrame(() => applyResize(moveEvent.clientX));
+      const clientX = moveEvent.clientX;
+      frame = window.requestAnimationFrame(() => applyResize(clientX));
     };
 
     const onMouseUp = (upEvent: MouseEvent) => {
@@ -853,13 +870,16 @@ export const DashboardEditor: React.FC = () => {
         window.cancelAnimationFrame(frame);
         frame = 0;
       }
+
       applyResize(upEvent.clientX);
 
+      // Commit the snapped grid width only after the pointer is released.
+      handleUpdateWidth(itemId, latestWidth, true);
+
+      setVisualResizeWidth(null);
       setResizingItemId(null);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
-
-      handleUpdateWidth(itemId, latestWidth, true);
     };
 
     window.addEventListener('mousemove', onMouseMove);
