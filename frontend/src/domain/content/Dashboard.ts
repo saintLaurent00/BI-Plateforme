@@ -1,4 +1,4 @@
-import type { User } from '../identity';
+import type { ResourceAccess } from '../security';
 
 export type DashboardStatus = 'draft' | 'published' | 'archived';
 
@@ -17,6 +17,7 @@ export interface Dashboard {
   slug?: string;
   status: DashboardStatus;
   ownerIds: string[];
+  access?: ResourceAccess;
   layout: DashboardLayoutItem[];
   tags: string[];
   category?: string;
