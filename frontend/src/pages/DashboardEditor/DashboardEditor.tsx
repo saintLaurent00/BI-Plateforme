@@ -798,11 +798,12 @@ export const DashboardEditor: React.FC = () => {
       frame = window.requestAnimationFrame(() => applyResize(moveEvent.clientY));
     };
 
-    const onMouseUp = () => {
+    const onMouseUp = (upEvent: MouseEvent) => {
       if (frame) {
         window.cancelAnimationFrame(frame);
         frame = 0;
       }
+      applyResize(upEvent.clientY);
       setResizingItemId(null);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
@@ -847,11 +848,12 @@ export const DashboardEditor: React.FC = () => {
       frame = window.requestAnimationFrame(() => applyResize(moveEvent.clientX));
     };
 
-    const onMouseUp = () => {
+    const onMouseUp = (upEvent: MouseEvent) => {
       if (frame) {
         window.cancelAnimationFrame(frame);
         frame = 0;
       }
+      applyResize(upEvent.clientX);
 
       setResizingItemId(null);
       window.removeEventListener('mousemove', onMouseMove);
