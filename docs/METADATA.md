@@ -13,7 +13,7 @@ Hifadih BI uses a metadata layer similar in principle to Apache Superset, but th
 
 The metadata layer describes **what Hifadih BI knows about the platform**. It is not the analytical data itself.
 
-Superset similarly maintains metadata for chart and dashboard definitions, users and other application information, while the analytical data remains in external data sources. citeturn0search9turn0search10
+Superset similarly maintains metadata for chart and dashboard definitions, users and other application information, while the analytical data remains in external data sources.
 
 ## 2. Core model
 
@@ -79,7 +79,7 @@ Group
  └── roleIds[]
 ```
 
-Groups are useful for resource membership and sharing. This follows the same conceptual separation used by current Superset security: groups represent organizational membership while roles primarily represent capability grants. citeturn0search2
+Groups are useful for resource membership and sharing. This follows the same conceptual separation used by current Superset security: groups represent organizational membership while roles primarily represent capability grants.
 
 ### Role
 
@@ -177,7 +177,7 @@ SUM(profit) / NULLIF(SUM(revenue), 0)
 COUNT(DISTINCT customer_id)
 ```
 
-This follows the same semantic-layer distinction used by Superset, where virtual metrics are aggregate expressions. citeturn0search0
+This follows the same semantic-layer distinction used by Superset, where virtual metrics are aggregate expressions.
 
 ### Calculated columns
 
@@ -189,7 +189,7 @@ quantity * unit_price * (1 - discount)
 profit / NULLIF(quantity, 0)
 ```
 
-Aggregate functions are deliberately excluded from calculated-column semantics. Superset uses the same distinction between metrics and calculated columns. citeturn0search0
+Aggregate functions are deliberately excluded from calculated-column semantics. Superset uses the same distinction between metrics and calculated columns.
 
 ## 6. Chart
 
@@ -219,7 +219,7 @@ The query is compiled and executed through the Query Engine.
 
 The visualization configuration is consumed by a chart plugin.
 
-Superset similarly persists the information needed to recreate a saved visualization, including its query, chart type and options. citeturn0search0
+Superset similarly persists the information needed to recreate a saved visualization, including its query, chart type and options.
 
 ## 7. Dashboard
 
@@ -247,7 +247,7 @@ Dashboard
 
 Each chart remains independently persisted and reusable.
 
-Superset exposes the same broad model through dashboard resources and their chart definitions. citeturn0search11
+Superset exposes the same broad model through dashboard resources and their chart definitions.
 
 ## 8. Saved queries
 
@@ -282,7 +282,7 @@ Role ──┴── permissions
 
 This avoids coupling "who can access this resource" with "what operations this identity can perform."
 
-Current Superset documentation explicitly distinguishes users, groups and roles as subjects and recommends groups for new resource-level membership while roles remain focused on permissions. citeturn0search2
+Current Superset documentation explicitly distinguishes users, groups and roles as subjects and recommends groups for new resource-level membership while roles remain focused on permissions.
 
 ### Row-level security
 
