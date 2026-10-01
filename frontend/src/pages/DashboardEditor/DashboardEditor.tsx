@@ -838,6 +838,7 @@ export const DashboardEditor: React.FC = () => {
 
     let frame = 0;
     let latestWidth = currentWidth;
+    let lastCommittedWidth = currentWidth;
     let latestVisualWidth = startVisualWidth;
 
     setVisualResizeWidth({ id: itemId, width: startVisualWidth });
@@ -854,7 +855,10 @@ export const DashboardEditor: React.FC = () => {
       // the pointer crosses a real grid-column threshold.
       const colDelta = Math.round(deltaX / colWidth);
       latestWidth = Math.max(1, Math.min(12, currentWidth + colDelta));
-      handleUpdateWidth(itemId, latestWidth, false);
+      if (latestWidth !== lastCommittedWidth) {
+        lastCommittedWidth = latestWidth;
+        handleUpdateWidth(itemId, latestWidth, false);
+      }
 
       frame = 0;
     };
