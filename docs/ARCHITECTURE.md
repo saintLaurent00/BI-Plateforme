@@ -1,1386 +1,434 @@
+# Hifadih BI — Architecture frontend
 
-# Architecture complète — Hifadih BI
-
-> **Document de référence de l'architecture actuelle du dépôt.**
+> Architecture de référence du frontend après la refonte de septembre/octobre 2026.
 >
-> Ce document décrit ce qui existe réellement dans BI-Plateforme au **30 septembre 2026**, puis sépare clairement la trajectoire backend Rust de l'implémentation actuelle.
+> Le frontend est traité comme un produit autonome. Le backend Rust sera branché plus tard derrière les ports d'infrastructure déjà prévus.
 
----
+## 1. Principe directeur
 
-# 1. Vue d'ensemble
+Hifadih BI sépare désormais clairement :
 
-Hifadih BI est actuellement une **application web BI principalement exécutée côté navigateur**.
-
-Son architecture actuelle repose sur :
-
-- **React 19** pour l'interface ;
-- **TypeScript** pour le code applicatif ;
-- **Vite** pour le build et le serveur de développement ;
-- **React Router** pour le routing ;
-- **Tailwind CSS** pour le système de styles ;
-- **ECharts / Recharts / D3** pour les visualisations ;
-- un système de **plugins de graphiques** ;
-- **localStorage** pour une partie de la persistance applicative ;
-- **SQL.js + IndexedDB** pour une base SQLite exécutée dans le navigateur ;
-- **Docker Compose** pour PostgreSQL, Valkey et MailDev en environnement local.
-
----
-
-# 2. Architecture runtime actuelle
-
-~~~text
-┌───────────────────────────────────────────────────────────────────────┐
-│                           NAVIGATEUR                                  │
-│                                                                       │
-│  ┌─────────────────────────────────────────────────────────────────┐  │
-│  │                    React Application                            │  │
-│  │                                                                 │  │
-│  │  App / Router                                                   │  │
-│  │      │                                                          │  │
-│  │      ├── Layout                                                 │  │
-│  │      │    ├── Sidebar                                           │  │
-│  │      │    ├── Topbar                                            │  │
-│  │      │    ├── Theme                                             │  │
-│  │      │                                                          │  │
-│  │      ├── Pages                                                  │  │
-│  │      ├── Features                                               │  │
-│  │      ├── Components                                             │  │
-│  │      └── Core                                                   │  │
-│  │                                                                 │  │
-│  └───────────────────────────┬─────────────────────────────────────┘  │
-│                              │                                        │
-│             ┌────────────────┼─────────────────┐                      │
-│             │                │                 │                      │
-│             ▼                ▼                                      │
-│       localStorage      SQL.js / SQLite                             │
-│             │                │                 │                      │
-│             │                ▼                 │                      │
-│             │            IndexedDB            │                      │
-│             │                                  │                      │
-│             └──────────────────────────────────┘                      │
-└───────────────────────────────────────────────────────────────────────┘
-
-                 Infrastructure Docker locale
-┌────────────────────┐  ┌────────────────────┐  ┌────────────────────┐
-│    PostgreSQL 15   │  │       Valkey       │  │      MailDev       │
-│      :5432         │  │       :6379        │  │ :1025 / :1080      │
-└────────────────────┘  └────────────────────┘  └────────────────────┘
-
-NOTE:
-Les conteneurs existent dans infrastructure/docker/docker-compose.yml, mais le frontend actuel
-n'utilise pas encore PostgreSQL/Valkey/MailDev comme backend applicatif.
-~~~
-
----
-
-# 3. Architecture en couches
-
-~~~text
-┌──────────────────────────────────────┐
-│  1. Presentation                     │
-│  pages + components + UI             │
-├──────────────────────────────────────┤
-│  2. Features                         │
-│  data-sources + visualization-editor │
-├──────────────────────────────────────┤
-│  3. Application Services             │
-│  hifadihService + PDF                 │
-├──────────────────────────────────────┤
-│  4. Domain / Contracts               │
-│  DTOs + types                        │
-├──────────────────────────────────────┤
-│  5. Browser Persistence              │
-│  localStorage + SQL.js + IndexedDB  │
-├──────────────────────────────────────┤
-│  6. External Infrastructure          │
-│  Docker services                      │
-└──────────────────────────────────────┘
-~~~
-
-## 3.1 Presentation
-
-Responsable de l'expérience utilisateur :
-
-- pages ;
-- navigation ;
-- formulaires ;
-- tableaux ;
-- cartes ;
-- modales ;
-- graphiques ;
-- éditeurs ;
-- dashboard UI.
-
-Répertoires :
-
-~~~text
-src/pages/
-src/components/
-~~~
-
-## 3.2 Features
-
-Responsable des fonctionnalités métier complexes :
-
-~~~text
-src/features/
-├── data-sources/
-└── visualization-editor/
-~~~
-
-## 3.3 Services applicatifs
-
-~~~text
-src/lib/
-├── hifadihService.ts
-└── pdfExport.ts
-~~~
-
-### hifadihService
-
-C'est actuellement la principale façade de données.
-
-Il gère notamment :
-
-- dashboards ;
-- charts ;
-- datasets ;
-- datasources ;
-- users ;
-- roles ;
-- groups ;
-- reports ;
-- audit logs ;
-- SSO de démonstration ;
-- exécution SQL de démonstration.
-
-La persistance de nombreuses opérations passe actuellement par 'localStorage'.
-
-**Important :** malgré son nom, 'hifadihService' n'est pas encore un véritable client API HTTP vers un backend Rust.
-
-## 3.4 Domain / Contracts
-
-~~~text
-src/core/types/
-├── user.dto.ts
-├── role.dto.ts
-├── group.dto.ts
-├── datasource.dto.ts
-├── dataset.dto.ts
-├── dashboard.dto.ts
-└── audit.dto.ts
-~~~
-
-Les DTOs constituent le contrat de données utilisé par le frontend.
-
-Les principaux agrégats sont :
-
-~~~text
-User
-Role
-Group
-DataSource
-Dataset
-Chart
-Dashboard
-AuditLog
-RLS Policy
-Report
-QueryResult
-~~~
-
-## 3.5 Persistence navigateur
-
-Deux mécanismes distincts sont présents.
-
-### localStorage
-
-Utilisé notamment par 'hifadihService' :
-
-~~~text
-hifadih_dashboards
-hifadih_charts
-hifadih_datasets
-hifadih_databases
-hifadih_users
-hifadih_roles
-hifadih_groups
-hifadih_reports
-hifadih_logs
-theme
-~~~
-
-### SQL.js + IndexedDB
-
-'src/core/utils/db.ts' instancie SQLite dans le navigateur avec SQL.js et sauvegarde les bytes SQLite dans IndexedDB.
-
-Le stockage local comprend notamment :
-
-~~~text
-charts
-dashboards
-saved_queries
-roles
-permissions
-data_sources
-~~~
-
-ainsi que plusieurs tables de démonstration métier.
-
----
-
-# 4. Point d'entrée et bootstrap
-
-~~~text
-index.html
+```
+Presentation
     ↓
-src/main.tsx
+Features / Use cases
     ↓
-src/index.css
+Domain
     ↓
-src/App.tsx
-    ↓
-React Router
-~~~
+Infrastructure
+```
 
-'App.tsx' est le routeur applicatif principal.
+Les dépendances ne doivent jamais remonter dans l'autre sens.
 
-Avant authentification, l'utilisateur est redirigé vers :
+- **Presentation** affiche et orchestre l'interface.
+- **Features** implémentent les parcours utilisateurs.
+- **Domain** définit les concepts BI stables.
+- **Infrastructure** implémente le stockage, HTTP et l'exécution.
+- **Plugins** rendent les visualisations et ne construisent pas les requêtes.
 
-~~~text
-/login
-~~~
+## 2. Arborescence cible
 
-Après authentification de démonstration, 'Layout' enveloppe les routes principales.
-
----
-
-# 5. Routing actuel
-
-| Route | Fonction |
-|---|---|
-| / | Home |
-| /login | Login |
-| /dashboards | Liste des dashboards |
-| /dashboards/:id | Détail d'un dashboard |
-| /dashboard-editor | Création/édition dashboard |
-| /dashboard-editor/:id | Édition dashboard |
-| /charts | Catalogue des charts |
-| /chart/add | Sélection d'un type de chart |
-| /chart-editor | Création chart |
-| /chart-editor/:id | Édition chart |
-| /sql-lab | SQL Lab |
-| /datasets | Exploration datasets |
-| /datasets/new | Création dataset |
-| /datasets/new/physical | Création physical dataset |
-| /datasets/:id | Détail dataset |
-| /datasets/edit/:id | Édition dataset |
-| /admin | Administration |
-| /documentation | Documentation |
-
----
-
-# 6. Shell applicatif
-
-Le composant :
-
-~~~text
-src/components/layout/Layout.tsx
-~~~
-
-constitue le shell global.
-
-~~~text
-Layout
-├── Sidebar
-│   ├── Home
-│   ├── Dashboards
-│   ├── Charts
-│   ├── SQL Lab
-│   ├── Datasets
-│   └── Documentation
-│
-├── Administration
-│   ├── Users
-│   ├── Groups
-│   ├── Roles
-│   ├── RLS Policies
-│   ├── Sessions
-│   ├── Governance & Screening
-│   ├── Authentication
-│   ├── Screening Dashboard
-│   ├── Data Sources
-│   ├── Security
-│   ├── Alerts & Reports
-│   └── Settings
-│
-├── Topbar
-│   ├── Search
-│   ├── Theme
-│   ├── Notifications
-│   └── User / Logout
-│
-~~~
-
-Le thème est stocké dans 'localStorage'.
-
----
-
-# 7. Module Dashboards
-
-~~~text
-src/pages/DashboardList/
-├── Dashboards.tsx
-└── DashboardDetail.tsx
-
-src/pages/DashboardEditor/
-├── DashboardEditor.tsx
-├── EditorDragContext.tsx
-├── EditorItemNode.tsx
-├── GridOverlay.tsx
-├── LayoutConfigPanel.tsx
-├── MoveLayoutModal.tsx
-├── collisionUtils.ts
-├── treeUtils.ts
-└── types.ts
-~~~
-
-## Responsabilités
-
-- listing ;
-- consultation ;
-- création ;
-- édition ;
-- layout ;
-- drag & drop ;
-- déplacement ;
-- collision ;
-- configuration ;
-- affichage de charts ;
-
-## Modèle
-
-Un dashboard possède notamment :
-
-~~~text
-id
-title/name
-owners
-published/status
-tags
-description
-department
-section
-region
-zone
-category
-refresh_interval
-layout
-metadata
-backgroundColor
-created_at
-updated_at
-~~~
-
----
-
-# 8. Module Visualisation
-
-## 8.1 Chart Editor
-
-~~~text
-src/features/visualization-editor/
-├── ChartEditor.tsx
-└── ChartSelector.tsx
-~~~
-
-Le selector choisit le type de visualisation.
-
-L'editor configure notamment :
-
-- datasource ;
-- dataset ;
-- dimensions ;
-- mesures ;
-- axes ;
-- paramètres ;
-- configuration graphique.
-
-## 8.2 Composants graphiques
-
-~~~text
-src/components/charts/
-├── D3Chart.tsx
-├── EChartsChart.tsx
-└── PivotTable.tsx
-~~~
-
----
-
-# 9. Architecture des plugins de graphiques
-
-Les plugins sont isolés sous :
-
-~~~text
-plugins/
-~~~
-
-Plugins présents :
-
-~~~text
-plugin-chart-bar
-plugin-chart-boxplot
-plugin-chart-funnel
-plugin-chart-heatmap
-plugin-chart-line
-plugin-chart-pie
-plugin-chart-radar
-plugin-chart-sankey
-plugin-chart-scatter
-plugin-chart-sunburst
-plugin-chart-treemap
-plugin-chart-waterfall
-~~~
-
-Les plugins les plus complets suivent une structure proche de :
-
-~~~text
-plugin-chart-X/
-├── src/
-│   ├── XChart.tsx
-│   ├── buildQuery.ts
-│   ├── controlPanel.tsx
-│   ├── transformProps.ts
-│   ├── types.ts
-│   └── index.ts
-├── test/
-├── types/
-└── tsconfig.json
-~~~
-
-## Pipeline plugin
-
-~~~text
-Dataset / Query configuration
-            ↓
-       buildQuery
-            ↓
-       Query model
-            ↓
-      Result dataset
-            ↓
-     transformProps
-            ↓
-       XChart.tsx
-            ↓
-      Browser rendering
-~~~
-
-Certains plugins possèdent également :
-
-- 'controlPanel.tsx' ;
-- 'Styles.tsx' ;
-- 'consts.ts' ;
-- tests ;
-- stories.
-
-'plugins/index.ts' constitue le point d'entrée du système de plugins.
-
----
-
-# 10. Module Datasets
-
-~~~text
-src/pages/Datasets/
-├── DatasetsExplorer.tsx
-└── Datasets.tsx
-
-src/features/data-sources/
-├── DatasetWizard.tsx
-├── PhysicalDatasetWizard.tsx
-└── PhysicalDatasetEdit.tsx
-~~~
-
-## Dataset
-
-Le modèle distingue notamment :
-
-~~~text
-physical
-virtual
-~~~
-
-Un dataset peut contenir :
-
-~~~text
-id
-table_name
-name
-schema
-sql
-database
-columns
-metrics
-description
-owner
-tags
-data_category
-sensitivity_level
-row_count
-size_mb
-cache_timeout
-metadata
-~~~
-
-## DatasetColumn
-
-~~~text
-name
-type
-displayName
-description
-isCalculated
-expression
-isFiltered
-isGroupable
-isTemporal
-isPrimaryKey
-metadata
-~~~
-
-## DatasetMetric
-
-~~~text
-name
-expression
-displayName
-description
-metric_type
-format
-metadata
-~~~
-
----
-
-# 11. Import CSV
-
-Le frontend possède un parcours d'import CSV.
-
-~~~text
-CSV file
-   ↓
-File input
-   ↓
-PapaParse
-   ↓
-Parsing
-   ↓
-Validation / transformation
-   ↓
-Dataset local
-   ↓
-SQL.js / application state
-   ↓
-Visualization
-~~~
-
-Le traitement est actuellement effectué côté navigateur.
-
----
-
-# 12. SQL Lab
-
-~~~text
-src/pages/SqlLab/SqlLab.tsx
-~~~
-
-SQL Lab permet l'exploration SQL dans l'application.
-
-Dans l'architecture actuelle, l'exécution est encore liée aux mécanismes locaux/de démonstration.
-
-La façade :
-
-~~~text
-hifadihService.executeSql()
-~~~
-
-retourne actuellement un résultat de démonstration plutôt qu'une exécution distante complète.
-
----
-
-# 13. Administration
-
-~~~text
-src/pages/Admin/Admin.tsx
-~~~
-
-Le module couvre conceptuellement :
-
-~~~text
-Identity
-├── Users
-├── Groups
-├── Roles
-├── Sessions
-└── Authentication
-
-Governance
-├── RLS Policies
-├── Audit
-├── Screening
-└── Security
-
-Data
-├── Data Sources
-└── Reports
-
-System
-└── Settings
-~~~
-
-Les DTOs correspondants existent déjà côté frontend.
-
----
-
-# 14. IAM et autorisation — état actuel
-
-Les types du projet modélisent :
-
-~~~text
-User
-Role
-Group
-Permission
-Session
-RLS Policy
-Audit Log
-~~~
-
-Permissions prévues :
-
-~~~text
-ALL
-READ
-WRITE
-DELETE
-EXECUTE_SQL
-MANAGE_USERS
-MANAGE_ROLES
-MANAGE_DATASOURCES
-EXPORT_DATA
-MANAGE_DASHBOARDS
-~~~
-
-Scopes de rôles :
-
-~~~text
-Global
-Regional
-Sectional
-Departmental
-~~~
-
-**Mais l'autorité de sécurité n'est pas encore backend.**
-
-Le login actuel dans 'App.tsx' utilise un simple état React :
-
-~~~text
-isAuthenticated = true / false
-~~~
-
-Le SSO dans 'hifadihService' est également une implémentation de démonstration.
-
----
-
-# 15. Row-Level Security
-
-Le modèle frontend prévoit :
-
-~~~text
-RowLevelSecurityDTO
-├── table_name
-├── policy_name
-├── clause
-├── status
-├── group_ids
-├── role_ids
-├── department
-├── section
-└── region
-~~~
-
-Intention fonctionnelle :
-
-~~~text
-User
- ↓
-Group / Role
- ↓
-RLS Policy
- ↓
-Allowed rows
- ↓
-Dataset / Query
-~~~
-
-L'application actuelle ne possède toutefois pas encore de moteur backend qui impose réellement ces politiques sur une base distante.
-
----
-
-# 16. Export PDF
-
-~~~text
-src/lib/pdfExport.ts
-~~~
-
-Technologies :
-
-~~~text
-html2canvas
-jsPDF
-~~~
-
-Pipeline :
-
-~~~text
-Dashboard DOM
-     ↓
-html2canvas
-     ↓
-Canvas
-     ↓
-jsPDF
-     ↓
-PDF
-~~~
-
-L'export est actuellement principalement côté navigateur.
-
----
-
-# 17. Design System / UI
-
-Composants réutilisables :
-
-~~~text
-src/components/ui/
-├── Badge.tsx
-├── DataTable.tsx
-├── FormElements.tsx
-├── Modal.tsx
-├── Skeleton.tsx
-└── Stepper.tsx
-~~~
-
-Cartes :
-
-~~~text
-src/components/ui/cards/
-├── ChartCard.tsx
-├── DashboardCard.tsx
-├── MiniChart.tsx
-└── MiniDashboard.tsx
-~~~
-
-Il existe également :
-
-~~~text
-src/components/cards/
-~~~
-
-avec des composants de cartes similaires.
-
-Cette duplication devra être rationalisée progressivement afin d'avoir une source unique pour les composants partagés.
-
----
-
-# 18. Core utilities
-
-~~~text
-src/core/utils/
-├── dashboardLayout.ts
-├── db.ts
-└── utils.ts
-~~~
-
-### dashboardLayout.ts
-
-Gestion des opérations liées au layout des dashboards.
-
-### db.ts
-
-Couche SQLite navigateur :
-
-~~~text
-SQL.js
-   ↓
-SQLite in-memory
-   ↓
-Uint8Array
-   ↓
-IndexedDB
-~~~
-
-### utils.ts
-
-Utilitaires transverses, notamment classes CSS et helpers.
-
----
-
-# 19. Flux de données principaux
-
-## Dashboard
-
-~~~text
-User
- ↓
-Dashboards page
- ↓
-hifadihService.getDashboards()
- ↓
-localStorage
- ↓
-DashboardDTO[]
- ↓
-DashboardCard / DataTable
- ↓
-DashboardDetail
-~~~
-
-## Création dashboard
-
-~~~text
-DashboardEditor
- ↓
-CreateDashboardDTO
- ↓
-hifadihService.createDashboard()
- ↓
-localStorage
- ↓
-DashboardDTO
- ↓
-UI refresh
-~~~
-
-## Dataset
-
-~~~text
-Dataset Explorer
- ↓
-hifadihService
- ↓
-localStorage / SQL.js
- ↓
-DatasetDTO
- ↓
-Dataset UI
-~~~
-
-## CSV
-
-~~~text
-CSV
- ↓
-PapaParse
- ↓
-records
- ↓
-SQL.js / Dataset
- ↓
-Chart
-~~~
-
-## Chart
-
-~~~text
-Dataset
- ↓
-Chart configuration
- ↓
-Plugin
- ↓
-buildQuery / transformProps
- ↓
-Chart component
- ↓
-ECharts / D3 / custom renderer
-~~~
-
----
-
-# 20. Modèle de données conceptuel
-
-~~~text
-                     ┌─────────────┐
-                     │    User     │
-                     └──────┬──────┘
-                            │
-                 ┌──────────┴──────────┐
-                 ▼                     ▼
-             ┌────────┐           ┌────────┐
-             │  Role  │           │ Group  │
-             └────┬───┘           └───┬────┘
-                  │                   │
-                  └─────────┬─────────┘
-                            ▼
-                       Permissions
-                            │
-                            ▼
-                     RLS Policies
-                            │
-                            ▼
-┌──────────────┐      ┌──────────────┐
-│  DataSource  │─────▶│    Dataset   │
-└──────────────┘      └──────┬───────┘
-                             │
-                  ┌──────────┴──────────┐
-                  ▼                     ▼
-              Dimensions            Metrics
-                  │                     │
-                  └──────────┬──────────┘
-                             ▼
-                           Chart
-                             │
-                             ▼
-                         Dashboard
-~~~
-
----
-
-# 21. Infrastructure Docker actuelle
-
-Le fichier 'infrastructure/docker/docker-compose.yml' définit trois services.
-
-## PostgreSQL
-
-~~~text
-postgres:15-alpine
-port: 5432
-volume: pg_data
-~~~
-
-Rôle prévu :
-
-- persistance ;
-- IAM ;
-- métadonnées ;
-- configuration BI.
-
-## Valkey
-
-~~~text
-valkey/valkey:latest
-port: 6379
-volume: valkey_data
-~~~
-
-Rôle prévu :
-
-- cache ;
-- queue ;
-- coordination.
-
-## MailDev
-
-~~~text
-maildev/maildev
-SMTP: 1025
-UI: 1080
-~~~
-
-Rôle :
-
-- développement ;
-- tests d'envoi d'emails.
-
-Réseau :
-
-~~~text
-bi-network
-~~~
-
----
-
-# 22. Configuration frontend
-
-'.env.example' contient notamment :
-
-~~~env
-VITE_HIFADIH_API_URL=https://api.hifadih.ai
-VITE_HIFADIH_ENV=production
-~~~
-
-'vite.config.ts' gère :
-
-- React plugin ;
-- Tailwind plugin ;
-- alias '@' ;
-- variables d'environnement ;
-- HMR ;
-- serveur Vite.
-
----
-
-# 23. Monorepo frontend + plugins
-
-Le projet utilise les workspaces npm :
-
-~~~text
-plugins/plugin-chart-*
-~~~
-
-Architecture :
-
-~~~text
-BI-Plateforme
-│
-├── Application
-│   └── src/
-│
-└── Plugin ecosystem
-    └── plugins/
-        ├── plugin-chart-bar
-        ├── plugin-chart-line
-        ├── plugin-chart-pie
-        ├── ...
-        └── plugin-chart-waterfall
-~~~
-
----
-
-# 24. Arborescence logique complète
-
-~~~text
+```text
 BI-Plateforme/
-│
-├── src/
-│   ├── main.tsx
-│   ├── App.tsx
-│   ├── index.css
-│   │
-│   ├── components/
-│   │   ├── cards/
-│   │   ├── charts/
-│   │   ├── dashboard/
-│   │   ├── layout/
-│   │   └── ui/
-│   │
-│   ├── constants/
-│   │   └── templates.ts
-│   │
-│   ├── core/
-│   │   ├── types/
-│   │   │   ├── user.dto.ts
-│   │   │   ├── role.dto.ts
-│   │   │   ├── group.dto.ts
-│   │   │   ├── datasource.dto.ts
-│   │   │   ├── dataset.dto.ts
-│   │   │   ├── dashboard.dto.ts
-│   │   │   └── audit.dto.ts
-│   │   └── utils/
-│   │       ├── db.ts
-│   │       ├── dashboardLayout.ts
-│   │       └── utils.ts
-│   │
-│   ├── features/
-│   │   ├── data-sources/
-│   │   └── visualization-editor/
-│   │
-│   ├── lib/
-│   │   ├── hifadihService.ts
-│   │   │   └── pdfExport.ts
-│   │
-│   └── pages/
-│       ├── Admin/
-│       ├── Charts/
-│       ├── DashboardEditor/
-│       ├── DashboardList/
-│       ├── Datasets/
-│       ├── Documentation/
-│       ├── Home/
-│       ├── Login/
-│       └── SqlLab/
-│
-├── plugins/
-│   ├── index.ts
-│   ├── types.ts
-│   └── plugin-chart-*/
-│
+├── .github/
+│   └── workflows/
 ├── docs/
-├── infrastructure/docker/docker-compose.yml
-├── package.json
-├── vite.config.ts
-├── tsconfig.json
-├── index.html
-├── metadata.json
-├── .env.example
-└── metadata.json
-~~~
+│   ├── ARCHITECTURE.md
+│   ├── METADATA.md
+│   ├── DATAVIZ.md
+│   ├── QUERY_ENGINE.md
+│   ├── PLUGIN_SYSTEM.md
+│   ├── DATA_MODEL.md
+│   ├── API.md
+│   ├── DESIGN_SYSTEM.md
+│   ├── CONTRIBUTING.md
+│   └── ROADMAP.md
+├── infrastructure/
+│   └── docker/
+├── plugins/
+│   ├── plugin-chart-bar/
+│   ├── plugin-chart-line/
+│   ├── plugin-chart-pie/
+│   ├── plugin-chart-boxplot/
+│   ├── plugin-chart-funnel/
+│   ├── plugin-chart-heatmap/
+│   ├── plugin-chart-radar/
+│   ├── plugin-chart-sankey/
+│   ├── plugin-chart-scatter/
+│   ├── plugin-chart-sunburst/
+│   ├── plugin-chart-treemap/
+│   └── plugin-chart-waterfall/
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── app/
+│   │   ├── pages/
+│   │   ├── features/
+│   │   │   ├── datasets/
+│   │   │   ├── semantic-model/
+│   │   │   ├── query-builder/
+│   │   │   ├── query-execution/
+│   │   │   ├── charts/
+│   │   │   ├── dashboards/
+│   │   │   ├── sql-lab/
+│   │   │   └── administration/
+│   │   ├── domain/
+│   │   │   ├── dataset/
+│   │   │   ├── query/
+│   │   │   ├── chart/
+│   │   │   └── dashboard/
+│   │   ├── infrastructure/
+│   │   │   ├── database/
+│   │   │   ├── query-execution/
+│   │   │   ├── persistence/
+│   │   │   └── http/
+│   │   ├── shared/
+│   │   │   ├── components/
+│   │   │   ├── hooks/
+│   │   │   ├── formatting/
+│   │   │   ├── constants/
+│   │   │   └── utils/
+│   │   ├── styles/
+│   │   └── main.tsx
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── tsconfig.json
+│   ├── vite.config.ts
+│   └── index.html
+├── .gitignore
+├── DESIGN_SYSTEM.md
+└── README.md
+```
 
----
+## 3. Domain : le cœur conceptuel
 
-# 25. Dépendances et responsabilités
+Le domain ne connaît ni React, ni ECharts, ni Axios, ni SQL.js.
 
-| Couche | Technologie | Responsabilité |
-|---|---|---|
-| UI | React | interface |
-| Language | TypeScript | logique applicative |
-| Build | Vite | build/dev server |
-| Routing | React Router | navigation |
-| Styling | Tailwind CSS | styles |
-| Charts | ECharts | visualisation |
-| Charts | Recharts | visualisation |
-| Charts | D3 | visualisation avancée |
-| Motion | Motion / Anime.js | animations |
-| DnD | React DnD / hello-pangea | interaction dashboard |
-| Local SQL | SQL.js | SQLite navigateur |
-| Local persistence | IndexedDB | persistance SQLite |
-| Browser storage | localStorage | état persistant simple |
-| CSV | PapaParse | import |
-| PDF | jsPDF / html2canvas | export |
-| Infrastructure | Docker Compose | services locaux |
-| DB locale infra | PostgreSQL | future persistance serveur |
-| Cache infra | Valkey | futur cache/queue |
-| Mail infra | MailDev | emails de développement |
+Il contient les concepts stables :
 
----
+```text
+domain/
+├── dataset/
+│   ├── DataType.ts
+│   ├── DataSourceMetadata.ts
+│   ├── ColumnMetadata.ts
+│   ├── MetricMetadata.ts
+│   ├── CalculatedColumnMetadata.ts
+│   ├── DatasetMetadata.ts
+│   ├── MetadataCatalog.ts
+│   └── index.ts
+├── query/
+│   ├── ChartQuery.ts
+│   └── index.ts
+├── chart/
+│   ├── Chart.ts
+│   └── index.ts
+└── dashboard/
+    └── ...
+```
 
-# 26. Ce qui est réellement connecté aujourd'hui
+Le domaine est le vocabulaire commun du produit.
 
-## Connecté au frontend
+## 4. Métadonnées
 
-~~~text
-React
-React Router
-localStorage
-IndexedDB
-SQL.js
-PapaParse
-ECharts
-Recharts
-D3
-jsPDF
-html2canvas
-~~~
+La métadonnée canonique d'un dataset se compose de :
 
-## Présent mais pas encore intégré comme backend applicatif
+```text
+DatasetMetadata
+├── identity
+├── source
+├── physical definition
+├── columns
+├── metrics
+├── calculated columns
+├── time metadata
+├── statistics
+├── capabilities
+├── governance
+└── audit metadata
+```
 
-~~~text
-PostgreSQL
-Valkey
-MailDev
-~~~
+Une colonne possède explicitement :
 
+```text
+semantic name
+physical name
+label
+data type
+semantic role
+groupable
+filterable
+temporal
+nullable
+format
+expression
+```
 
-## Architecture non encore implémentée
+La séparation `name` / `physicalName` permet au query builder de rester stable même si PostgreSQL ou une autre source utilise une convention de nommage différente.
 
-~~~text
-Rust API
-Rust IAM
-Rust Metadata
-Rust Query Engine
-Rust Workers
-Rust Reporting
-~~~
+Voir `docs/METADATA.md`.
 
----
+## 5. Query model
 
-# 27. Limites actuelles
+Un chart ne stocke plus une paire `x_axis/y_axis` comme contrat principal.
 
-L'architecture actuelle est adaptée à un **prototype BI avancé / frontend fonctionnel**, mais pas encore à une plateforme multi-utilisateurs de production.
+Le contrat devient :
 
-### Authentication
+```text
+ChartQuery
+├── datasetId
+├── dimensions
+├── metrics
+├── calculatedColumns
+├── filters
+├── timeRange
+├── orderBy
+├── having
+├── limit
+└── offset
+```
 
-Principalement simulée côté React.
+La query est indépendante du renderer.
 
-### Authorization
+## 6. Exécution
 
-Les rôles et permissions sont modélisés mais ne sont pas encore imposés par une autorité backend.
+Le flux canonique est :
 
-### Persistence
+```text
+DatasetMetadata
+       ↓
+ChartQuery
+       ↓
+QueryValidator
+       ↓
+QueryCompiler
+       ↓
+QueryExecutor
+       ├── SampleQueryExecutor      ← maintenant
+       └── RustApiQueryExecutor     ← futur
+       ↓
+ChartResult
+```
 
-Une grande partie des données est stockée dans le navigateur.
+Le chart plugin ne reçoit jamais un dataset brut et ne connaît pas SQL.
 
-### SQL
+## 7. Sample data
 
-Le moteur SQL actuel n'est pas encore un véritable query engine distant.
+Les données de développement sont désormais rattachées au domaine dataset :
 
-### Secrets
+```text
+features/datasets/
+└── sample/
+    ├── SampleSalesData.ts
+    ├── SampleSalesDataset.ts
+    └── index.ts
+```
 
-Les opérations sensibles doivent être déplacées côté backend.
+La donnée de test et sa métadonnée sont séparées :
 
-### Infrastructure
+```text
+SampleSalesData
+        +
+SampleSalesDataset
+        ↓
+SampleQueryExecutor
+```
 
-PostgreSQL/Valkey/MailDev existent mais ne constituent pas encore le backend applicatif connecté.
+Cela permet de remplacer plus tard les lignes locales par une API Rust sans changer le contrat de chart.
 
----
+## 8. Query execution feature
 
-# 28. Architecture cible d'évolution
+```text
+features/query-execution/
+├── types/
+│   └── QueryExecutor.ts
+├── compiler/
+│   └── QueryCompiler.ts
+├── validators/
+│   └── QueryValidator.ts
+├── executors/
+│   └── SampleQueryExecutor.ts
+└── index.ts
+```
 
-L'objectif n'est pas de réécrire le frontend.
+Le compilateur transforme le modèle sémantique en SQL.
 
-Le frontend actuel doit devenir le client d'une plateforme Rust.
+Le validateur vérifie les références, les expressions et les contraintes du modèle.
 
-~~~text
-                         HIFADIH BI
-                              │
-                 ┌────────────┴────────────┐
-                 │                         │
-                 ▼                         ▼
-          React Frontend              Rust Backend
-                                      Axum + Tokio
-                                           │
-             ┌─────────────────────────────┼─────────────────────┐
-             │                             │                     │
-             ▼                             ▼                     ▼
-           IAM                         Metadata             Query Engine
-             │                             │                     │
-             └─────────────────────────────┼─────────────────────┘
-                                           │
-                         ┌─────────────────┴─────────────────┐
-                         ▼                                   ▼
-                    PostgreSQL                            Valkey
-                         │                                   │
-                         └─────────────────┬─────────────────┘
-                                           ▼
-                                        Workers
-                                           │
-                                  ┌────────┴────────┐
-                                  ▼                 ▼
-                               Reports            Emails
-~~~
+L'exécuteur décide **où** la query est exécutée.
 
----
+## 9. Chart feature et plugins
 
-# 29. Future workspace Rust
+```text
+features/charts/
+├── adapters/
+├── registry/
+├── components/
+├── hooks/
+├── types/
+└── index.ts
 
-Cible recommandée :
-
-~~~text
-backend/
-├── Cargo.toml
-├── crates/
-│   ├── api/
-│   ├── domain/
-│   ├── auth/
-│   ├── metadata/
-│   ├── query-engine/
-│   ├── storage/
-│   ├── reporting/
-│   └── workers/
-│
-└── migrations/
-~~~
+plugins/
+└── plugin-chart-*/
+```
 
 Responsabilités :
 
-- **api** : HTTP, routes, handlers, validation ;
-- **domain** : entités et règles métier ;
-- **auth** : users, sessions, JWT, rôles, permissions ;
-- **metadata** : datasources, datasets, dimensions, metrics, semantic layer ;
-- **query-engine** : parsing, validation, planning, RLS, pushdown, exécution ;
-- **storage** : PostgreSQL, Valkey et persistence ;
-- **reporting** : PDF, CSV, snapshots et rapports ;
-- **workers** : jobs, scheduling et retries.
+### Query layer
 
----
+- construit ChartQuery
+- valide
+- compile
+- exécute
 
-# 30. Migration vers le backend Rust
+### Chart feature
 
-~~~text
-État actuel
-    │
-    ├── React
-    ├── localStorage
-    ├── SQL.js
-    └── services mockés
-    │
-    ▼
-Rust API skeleton
-    │
-    ▼
-PostgreSQL + SQLx
-    │
-    ▼
-IAM
-    │
-    ▼
-Metadata / Datasources / Datasets
-    │
-    ▼
-Query Engine
-    │
-    ▼
-Dashboards / Charts persistants
-    │
-    ▼
-Workers / Reporting
-    │
-    ▼
-Retrait progressif des mocks/local persistence
-~~~
+- sélectionne un plugin
+- prépare ChartResult
+- applique la configuration de visualisation
 
----
+### Plugin
 
-# 31. Principe directeur
+- transforme ChartResult en propriétés de rendu
+- rend le graphique
+- expose ses contrôles visuels
 
-Le projet doit converger vers :
+Un plugin ne doit pas :
 
-~~~text
-                         React
-                           │
-                     API Contract
-                           │
-                          Rust
-                           │
-          ┌────────────────┼────────────────┐
-          │                │                │
-         IAM           Semantic Layer    Query Engine
-          │                │                │
-          └────────────────┼────────────────┘
-                           │
-                    PostgreSQL / Valkey
-                           │
-                        Workers
-~~~
+- construire du SQL ;
+- charger une base ;
+- connaître SQL.js ;
+- charger un dataset ;
+- agréger des lignes sources.
 
-Le **frontend ne doit plus être responsable de la sécurité, de la persistance métier critique ou de l'exécution SQL de production**.
+## 10. Pages
 
-Le frontend devient l'interface d'exploitation de la plateforme.
+Les pages sont les points d'entrée des parcours :
 
----
+```text
+pages/
+├── home/
+├── login/
+├── dashboards/
+├── dashboard-editor/
+├── charts/
+├── chart-builder/
+├── datasets/
+├── sql-lab/
+├── documentation/
+└── administration/
+```
 
-# 32. Résumé architectural
+Une page compose des features ; elle ne doit pas devenir un service métier géant.
 
-### Aujourd'hui
+## 11. Infrastructure
 
-~~~text
-React + TypeScript
-        │
-        ├── UI
-        ├── BI Features
-        ├── localStorage
-        ├── SQL.js / IndexedDB
-        └── Plugins
-~~~
+L'infrastructure contient les implémentations techniques :
 
-### Demain
+```text
+infrastructure/
+├── database/
+│   └── sqlite/
+├── query-execution/
+│   ├── SampleQueryExecutor.ts
+│   └── RustApiQueryExecutor.ts
+├── persistence/
+│   ├── DatasetRepository.ts
+│   ├── ChartRepository.ts
+│   └── DashboardRepository.ts
+└── http/
+    ├── httpClient.ts
+    └── apiClient.ts
+```
 
-~~~text
-React + TypeScript
-        │
-        ▼
-Rust API
-        │
- ┌──────┼────────┬───────────┐
- ▼      ▼        ▼           ▼
-IAM  Metadata  Query      Workers
-                Engine
-        │
- ┌──────┴───────┐
- ▼              ▼
-PostgreSQL     Valkey
-~~~
+Le principe est important :
 
-**La bonne lecture du projet est donc : Hifadih BI possède déjà un frontend BI riche et une modélisation de domaine avancée ; la prochaine transformation majeure consiste à déplacer l'autorité métier et les données critiques vers un backend Rust.**
+```text
+domain = ce que le système est
+infrastructure = comment cela fonctionne techniquement
+```
+
+## 12. Shared
+
+`shared/` contient uniquement ce qui est réellement transversal :
+
+- primitives UI ;
+- feedback ;
+- navigation ;
+- hooks génériques ;
+- formatage ;
+- utilitaires génériques.
+
+On n'y place pas de logique Dataset, Query, Chart ou Dashboard.
+
+## 13. Migration de l'ancienne architecture
+
+L'ancien code contient encore des zones historiques :
+
+```text
+core/types/
+core/utils/
+lib/
+components/
+features/visualization-editor/
+features/data-sources/
+pages/DashboardList/
+pages/DashboardEditor/
+```
+
+La migration est volontairement progressive.
+
+Le premier slice migré est **Dataviz + métadonnées + query execution**.
+
+Les anciens modules ne doivent plus devenir la nouvelle architecture de référence. Ils seront déplacés par domaines, avec mise à jour des imports et suppression des doubles contrats.
+
+## 14. Architecture runtime finale
+
+```text
+                         ┌───────────────────┐
+                         │       Pages       │
+                         └─────────┬─────────┘
+                                   ↓
+                         ┌───────────────────┐
+                         │     Features      │
+                         └─────────┬─────────┘
+                                   ↓
+                         ┌───────────────────┐
+                         │      Domain       │
+                         │ metadata / query  │
+                         │ chart / dashboard │
+                         └─────────┬─────────┘
+                                   ↓
+                         ┌───────────────────┐
+                         │  Infrastructure   │
+                         │ SQL / HTTP / DB   │
+                         └─────────┬─────────┘
+                                   ↓
+                         ┌───────────────────┐
+                         │ Rust Query Engine │
+                         │      FUTURE       │
+                         └───────────────────┘
+
+Chart rendering is a parallel presentation concern:
+
+ChartResult
+    ↓
+Chart Adapter
+    ↓
+Chart Plugin
+    ↓
+ECharts / D3
+```
+
+## 15. Règles d'architecture
+
+1. Un seul modèle canonique de métadonnées.
+2. Un seul modèle canonique de ChartQuery.
+3. Aucun SQL construit dans un plugin.
+4. Aucun dataset chargé directement par un plugin.
+5. Aucun renderer ne décide comment les données sont interrogées.
+6. Les labels UI ne sont jamais des identifiants SQL.
+7. Les noms sémantiques sont séparés des noms physiques.
+8. Les expressions SQL restent des données déclaratives.
+9. Le frontend peut utiliser un executor local sans modifier le domain.
+10. Le futur backend Rust implémente un port existant ; il ne redéfinit pas le contrat frontend.
