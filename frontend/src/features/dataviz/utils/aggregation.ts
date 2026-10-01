@@ -1,6 +1,6 @@
 import type { Aggregation, ChartDataPoint } from '../types';
 
-function numericValues<T extends Record<string, unknown>>(
+function numericValues<T extends object>(
   rows: readonly T[],
   field: keyof T,
 ): number[] {
@@ -9,7 +9,7 @@ function numericValues<T extends Record<string, unknown>>(
     .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
 }
 
-export function aggregate<T extends Record<string, unknown>>(
+export function aggregate<T extends object>(
   rows: readonly T[],
   field: keyof T,
   operation: Aggregation,
@@ -33,7 +33,7 @@ export function aggregate<T extends Record<string, unknown>>(
   }
 }
 
-export function groupBy<T extends Record<string, unknown>>(
+export function groupBy<T extends object>(
   rows: readonly T[],
   dimension: keyof T,
 ): Map<string, T[]> {
@@ -53,7 +53,7 @@ export function groupBy<T extends Record<string, unknown>>(
   return groups;
 }
 
-export function aggregateByDimension<T extends Record<string, unknown>>(
+export function aggregateByDimension<T extends object>(
   rows: readonly T[],
   dimension: keyof T,
   measure: keyof T,
