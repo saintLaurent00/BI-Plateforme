@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Save, 
-  Eye, 
   Plus, 
   Search, 
   BarChart, 
@@ -12,7 +11,6 @@ import {
   AreaChart, 
   FileText, 
   Layers,
-  ExternalLink,
   Rows,
   Columns,
   LayoutGrid,
@@ -997,7 +995,7 @@ export const DashboardEditor: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Actions (Aimantation, Fond de Page, Aperçu & Enregistrer) */}
+        {/* Right: Actions (Aimantation, Fond de Page & Enregistrer) */}
         <div className="flex items-center gap-2.5 shrink-0">
           <SnapToGridToggle />
 
