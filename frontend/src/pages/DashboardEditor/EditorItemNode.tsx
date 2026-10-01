@@ -504,7 +504,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
           }}
           className={cn(
             getBorderRadiusClass(item.meta?.borderRadius),
-            "shadow-xs overflow-hidden flex flex-col transition-all relative border-2 w-full h-full cursor-pointer",
+            "shadow-xs overflow-hidden flex flex-col transition-[border-color,background-color,box-shadow] duration-150 relative border-2 w-full h-full cursor-pointer",
             !item.meta?.backgroundColor && "bg-white",
             !item.meta?.borderColor && "border-amber-300 hover:border-amber-400",
             isSelected && "ring-2 ring-amber-500 ring-offset-2 border-amber-600 shadow-md",
@@ -874,7 +874,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
           }}
           className={cn(
             getBorderRadiusClass(item.meta?.borderRadius),
-            "shadow-xs overflow-hidden flex flex-col justify-between transition-all relative border-2 w-full h-full cursor-pointer p-5",
+            "shadow-xs overflow-hidden flex flex-col justify-between transition-[border-color,background-color,box-shadow] duration-150 relative border-2 w-full h-full cursor-pointer p-5",
             !item.meta?.backgroundColor && "bg-white",
             !item.meta?.borderColor && "border-indigo-200 hover:border-indigo-400",
             isSelected && "ring-2 ring-indigo-500 ring-offset-2 border-indigo-600 shadow-md"
@@ -1025,7 +1025,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
           }}
           className={cn(
             getBorderRadiusClass(item.meta?.borderRadius),
-            "shadow-xs overflow-hidden flex flex-col transition-all relative border-2 w-full h-full cursor-pointer",
+            "shadow-xs overflow-hidden flex flex-col transition-[border-color,background-color,box-shadow] duration-150 relative border-2 w-full h-full cursor-pointer",
             !item.meta?.backgroundColor && "bg-white",
             !item.meta?.borderColor && "border-blue-200 hover:border-blue-400",
             isSelected && "ring-2 ring-blue-500 ring-offset-2 border-blue-600 shadow-md"
@@ -1372,7 +1372,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
           }}
           className={cn(
             getBorderRadiusClass(item.meta?.borderRadius),
-            "shadow-xs overflow-hidden flex flex-col justify-between transition-all relative border-2 w-full h-full cursor-pointer p-5",
+            "shadow-xs overflow-hidden flex flex-col justify-between transition-[border-color,background-color,box-shadow] duration-150 relative border-2 w-full h-full cursor-pointer p-5",
             !item.meta?.backgroundColor && colorStyles.bg,
             !item.meta?.borderColor && colorStyles.border,
             isSelected && "ring-2 ring-indigo-500 ring-offset-2 border-indigo-600 shadow-md"
@@ -1520,7 +1520,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
           }}
           className={cn(
             getBorderRadiusClass(item.meta?.borderRadius),
-            "shadow-xs overflow-hidden flex items-start gap-4 transition-all relative border-2 w-full h-full cursor-pointer p-4.5",
+            "shadow-xs overflow-hidden flex items-start gap-4 transition-[border-color,background-color,box-shadow] duration-150 relative border-2 w-full h-full cursor-pointer p-4.5",
             !item.meta?.backgroundColor && styles.bg,
             !item.meta?.borderColor && styles.border,
             isSelected && "ring-2 ring-indigo-500 ring-offset-2 border-indigo-600 shadow-md"
@@ -1627,7 +1627,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
           }}
           className={cn(
             getBorderRadiusClass(item.meta?.borderRadius),
-            "shadow-xs overflow-hidden flex flex-col transition-all relative border-2 w-full h-full cursor-pointer",
+            "shadow-xs overflow-hidden flex flex-col transition-[border-color,background-color,box-shadow] duration-150 relative border-2 w-full h-full cursor-pointer",
             !item.meta?.backgroundColor && "bg-white",
             !item.meta?.borderColor && (depth === 0 ? "border-purple-300 hover:border-purple-500" : "border-purple-200 bg-purple-50/10 hover:border-purple-400"),
             isSelected && "ring-2 ring-purple-500 ring-offset-2 border-purple-600 shadow-md",
@@ -1946,7 +1946,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
           }}
           className={cn(
             getBorderRadiusClass(item.meta?.borderRadius),
-            "shadow-xs overflow-hidden flex flex-col transition-all relative border-2 w-full h-full cursor-pointer bg-white",
+            "shadow-xs overflow-hidden flex flex-col transition-[border-color,background-color,box-shadow] duration-150 relative border-2 w-full h-full cursor-pointer bg-white",
             !item.meta?.borderColor && (depth === 0 ? "border-cyan-200 hover:border-cyan-400" : "border-slate-200 hover:border-cyan-300"),
             isSelected && "ring-2 ring-cyan-500 ring-offset-2 border-cyan-500 shadow-md"
           )}
@@ -2132,7 +2132,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
           }}
           className={cn(
             getBorderRadiusClass(item.meta?.borderRadius),
-            "shadow-xs overflow-hidden flex flex-col transition-all relative border-2 w-full h-full cursor-pointer",
+            "shadow-xs overflow-hidden flex flex-col transition-[border-color,background-color,box-shadow] duration-150 relative border-2 w-full h-full cursor-pointer",
             !item.meta?.backgroundColor && "bg-white",
             !item.meta?.borderColor && (depth === 0 ? "border-indigo-300 hover:border-indigo-500" : "border-indigo-200 bg-indigo-50/10 hover:border-indigo-400"),
             isSelected && "ring-2 ring-indigo-500 ring-offset-2 border-indigo-600 shadow-md",
@@ -2435,7 +2435,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
           }}
           className={cn(
             getBorderRadiusClass(item.meta?.borderRadius),
-            "shadow-xs overflow-hidden flex flex-col transition-all relative border-2 w-full h-full cursor-pointer",
+            "shadow-xs overflow-hidden flex flex-col transition-[border-color,background-color,box-shadow] duration-150 relative border-2 w-full h-full cursor-pointer",
             !item.meta?.backgroundColor && "bg-white",
             !item.meta?.borderColor && (depth === 0 ? "border-emerald-300 hover:border-emerald-500" : "border-emerald-200 bg-emerald-50/10 hover:border-emerald-400"),
             isSelected && "ring-2 ring-emerald-500 ring-offset-2 border-emerald-600 shadow-md",
@@ -2715,7 +2715,7 @@ const EditorItemNodeContent: React.FC<EditorItemNodeProps> = ({
           onSelectItem(item.id);
         }}
         className={cn(
-          "border", getBorderRadiusClass(item.meta?.borderRadius), "shadow-xs overflow-hidden flex flex-col flex-1 relative w-full h-full cursor-pointer transition-all",
+          "border", getBorderRadiusClass(item.meta?.borderRadius), "shadow-xs overflow-hidden flex flex-col flex-1 relative w-full h-full cursor-pointer transition-[border-color,background-color,box-shadow] duration-150",
           !item.meta?.backgroundColor && "bg-white",
           !item.meta?.borderColor && (isSelected ? "border-slate-800" : "border-slate-200 hover:border-slate-300"),
           isSelected && "ring-2 ring-slate-800 ring-offset-2 shadow-md"
