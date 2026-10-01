@@ -186,7 +186,7 @@ export const SqlLab = () => {
   const handleRun = async (params: Record<string, string> = {}) => {
     // Detect parameters if they exist: {{param_name}}
     const matches = sql.match(/\{\{([^}]+)\}\}/g);
-    const uniqueParams = matches ? Array.from(new Set(matches.map(m => m.slice(2, -2).trim()))) : [];
+    const uniqueParams: string[] = matches ? Array.from(new Set(matches.map(m => String(m).slice(2, -2).trim()))) : [];
 
     // If there are parameters and we haven't provided them yet, open the modal
     if (uniqueParams.length > 0 && Object.keys(params).length === 0) {
