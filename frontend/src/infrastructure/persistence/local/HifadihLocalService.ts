@@ -22,7 +22,7 @@ import {
   CreateChartDTO,
   AuditLogDTO,
   ReportDTO
-} from '../core/types';
+} from '../../../core/types';
 
 /**
  * Hifadih BI Service
