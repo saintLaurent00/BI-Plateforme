@@ -71,7 +71,6 @@ L'objectif est de garder la racine du dépôt orientée **navigation et document
 | Data local | SQL.js, IndexedDB |
 | Import | PapaParse |
 | Export | jsPDF, html2canvas |
-| IA | Google GenAI SDK |
 
 ### Infrastructure locale
 
