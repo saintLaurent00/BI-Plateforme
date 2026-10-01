@@ -941,7 +941,7 @@ export const DashboardEditor: React.FC = () => {
       }
 
       toast.success('Tableau de bord enregistré avec succès !');
-      navigate(`/dashboard/${dashboardId}`);
+      navigate(`/dashboards/${dashboardId}`);
     } catch (err) {
       console.error('Erreur lors de l\'enregistrement:', err);
       toast.error('Impossible d\'enregistrer le tableau de bord');
@@ -1026,7 +1026,7 @@ export const DashboardEditor: React.FC = () => {
           </button>
 
           <Link
-            to={`/dashboard/${dashboardId}`}
+            to={`/dashboards/${dashboardId}`}
             className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-border hover:bg-slate-50 rounded-xl transition-colors shadow-2xs"
           >
             <Eye className="w-3.5 h-3.5 text-muted-foreground" />
