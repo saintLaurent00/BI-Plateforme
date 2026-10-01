@@ -1,4 +1,5 @@
 import type { ChartQuery } from '../query';
+import type { ResourceAccess } from '../security';
 
 export type ChartStatus = 'active' | 'archived';
 
@@ -15,6 +16,7 @@ export interface Chart {
   query: ChartQuery;
   visualization: VisualizationConfig;
   ownerIds: string[];
+  access?: ResourceAccess;
   tags: string[];
   status: ChartStatus;
   createdAt?: string;
