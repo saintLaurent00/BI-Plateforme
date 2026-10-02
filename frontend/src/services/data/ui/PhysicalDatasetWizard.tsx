@@ -24,7 +24,7 @@ import { Stepper } from '@/ui/components/Stepper';
 import { FormSection, FormInput, FormSelect, FormActions, FormButton } from '@/ui/components/FormElements';
 import { cn } from '@/platform/runtime/utils';
 import { toast } from 'sonner';
-import { hifadihService } from '@/platform/runtime/hifadihService';
+import { dataCatalogService } from '@/services/data';
 
 export const PhysicalDatasetWizard = () => {
   const navigate = useNavigate();
@@ -71,7 +71,7 @@ export const PhysicalDatasetWizard = () => {
 
   const loadDatabases = async () => {
     try {
-        const dbsRes = await hifadihService.getDatabases();
+        const dbsRes = await dataCatalogService.listDatabases();
         const dbs = dbsRes.result || [];
         
         let sqliteDbs: any[] = [];
@@ -406,7 +406,7 @@ export const PhysicalDatasetWizard = () => {
       };
 
       try {
-        await hifadihService.createDataset(newDataset);
+        await dataCatalogService.createDataset(newDataset);
         toast.success("Dataset physique créé avec succès !");
       } catch (err) {
         console.error("Failed to save dataset:", err);
