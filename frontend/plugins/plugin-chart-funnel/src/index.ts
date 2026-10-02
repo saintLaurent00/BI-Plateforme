@@ -1,4 +1,4 @@
-import { ChartPlugin } from '../../types';
+import { ChartPlugin } from '@/services/visualization/plugins/types';
 import FunnelChart from './FunnelChart';
 
 export const FunnelPlugin: ChartPlugin = {
