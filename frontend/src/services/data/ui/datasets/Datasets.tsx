@@ -23,14 +23,14 @@ import {
   Braces,
   Settings2
 } from 'lucide-react';
-import { Badge } from '../../components/ui/Badge';
+import { Badge } from '@/ui/components/Badge';
 import { useParams, useNavigate } from 'react-router-dom';
-import { hifadihService } from '../../lib/hifadihService';
-import { Modal } from '../../components/ui/Modal';
-import { FormSection, FormInput, FormTextarea, FormActions, FormButton } from '../../components/ui/FormElements';
+import { hifadihService } from '@/platform/runtime/hifadihService';
+import { Modal } from '@/ui/components/Modal';
+import { FormSection, FormInput, FormTextarea, FormActions, FormButton } from '@/ui/components/FormElements';
 import { toast } from 'sonner';
-import { cn } from '../../core/utils/utils';
-import type { Dataset, DatasetColumn, DatasetMetric } from '../../features/datasets/types/DatasetRecord';
+import { cn } from '@/platform/runtime/utils';
+import type { Dataset, DatasetColumn, DatasetMetric } from '@/services/data/models/DatasetRecord';
 
 const HealthMetric = ({ label, value, score, icon: Icon }: any) => (
   <div className="hifadih-glass p-5 flex items-center gap-4">
@@ -53,7 +53,7 @@ const HealthMetric = ({ label, value, score, icon: Icon }: any) => (
   </div>
 );
 
-import { DataTable } from '../../components/ui/DataTable';
+import { DataTable } from '@/ui/components/DataTable';
 
 export const Datasets = () => {
   const { id } = useParams();
