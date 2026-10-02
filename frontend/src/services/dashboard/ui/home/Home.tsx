@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { DashboardCard } from '@/ui/components/cards/base/DashboardCard';
 import { Badge } from '@/ui/components/Badge';
-import { hifadihService } from '@/platform/runtime/hifadihService';
+import { dashboardService } from '@/services/dashboard';
 import { getDashboards as getLocalDashboards } from '@/platform/persistence/local/db';
 import { useNavigate } from 'react-router-dom';
 
@@ -63,7 +63,7 @@ export const Home = () => {
     const loadDashboards = async () => {
       try {
         setIsLoading(true);
-        const { result } = await hifadihService.getDashboards();
+        const { result } = await dashboardService.list();
         
         // Prioritize results from service, with fallback to local
         if (result && result.length > 0) {
