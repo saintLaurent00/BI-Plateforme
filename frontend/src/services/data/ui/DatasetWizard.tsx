@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Database, ArrowUpRight, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { cn } from '../../core/utils/utils';
+import { cn } from '@/platform/runtime/utils';
 
 export const DatasetWizard = () => {
   const navigate = useNavigate();
