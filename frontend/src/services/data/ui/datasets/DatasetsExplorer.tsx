@@ -16,8 +16,8 @@ import {
   Edit3,
   Trash2,
 } from 'lucide-react';
-import { Badge } from '../../components/ui/Badge';
-import { Modal } from '../../components/ui/Modal';
+import { Badge } from '@/ui/components/Badge';
+import { Modal } from '@/ui/components/Modal';
 import { 
   FormSection, 
   FormInput, 
@@ -26,12 +26,12 @@ import {
   FormActions, 
   FormButton,
   FormLabel
-} from '../../components/ui/FormElements';
+} from '@/ui/components/FormElements';
 import { Link, useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
-import { importCSV, getTables } from '../../core/utils/db';
-import { hifadihService } from '../../lib/hifadihService';
-import { cn } from '../../core/utils/utils';
+import { importCSV, getTables } from '@/platform/persistence/local/db';
+import { hifadihService } from '@/platform/runtime/hifadihService';
+import { cn } from '@/platform/runtime/utils';
 
 const DatasetListItem = ({ id, name, type, owner, lastModified, health, onDelete }: any) => (
   <motion.div 
@@ -104,7 +104,7 @@ const DatasetListItem = ({ id, name, type, owner, lastModified, health, onDelete
   </motion.div>
 );
 
-import { DataTable } from '../../components/ui/DataTable';
+import { DataTable } from '@/ui/components/DataTable';
 
 export const DatasetsExplorer = () => {
   const navigate = useNavigate();
