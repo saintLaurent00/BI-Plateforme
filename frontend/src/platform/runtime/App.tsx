@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { Layout } from '../components/layout/Layout';
+import { Layout } from '@/ui/layout/Layout';
 import { Toaster } from 'sonner';
-import { AuthenticatedRoutes, PublicRoutes } from './routes';
+import { AuthenticatedRoutes, PublicRoutes } from '@/platform/routing/routes';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
