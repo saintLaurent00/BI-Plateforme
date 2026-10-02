@@ -29,7 +29,7 @@ import {
   Palette,
   Search
 } from 'lucide-react';
-import { Badge } from '../../components/ui/Badge';
+import { Badge } from '@/ui/components/Badge';
 import { 
   FormSection, 
   FormInput, 
@@ -38,15 +38,15 @@ import {
   FormActions, 
   FormButton,
   FormLabel
-} from '../../components/ui/FormElements';
-import { executeQuery, getTables, getTableSchema, saveChart } from '../../core/utils/db';
+} from '@/ui/components/FormElements';
+import { executeQuery, getTables, getTableSchema, saveChart } from '@/platform/persistence/local/db';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
-import { Modal } from '../../components/ui/Modal';
-import { EChartsChart } from '../../components/charts/EChartsChart';
+import { Modal } from '@/ui/components/Modal';
+import { EChartsChart } from '@/services/visualization/ui/charts/EChartsChart';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
-import { getChartPlugin, chartPlugins } from '../../../plugins';
-import { ChartSkeleton } from '../../components/ui/Skeleton';
+import { getChartPlugin, chartPlugins } from '@/plugins';
+import { ChartSkeleton } from '@/ui/components/Skeleton';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -336,7 +336,7 @@ return {
 
   const loadChartData = async (chartId: string) => {
     try {
-      const { getChart } = await import('../../core/utils/db');
+      const { getChart } = await import('@/platform/persistence/local/db');
       const chart = await getChart(chartId);
       if (chart) {
         setChartName(chart.name || '');
