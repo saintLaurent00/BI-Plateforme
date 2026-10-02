@@ -1,1 +1,1 @@
-export type { ChartQuery, QueryDimension, QueryMetric, QueryCalculatedColumn, QueryFilter, QueryOrder } from '../../domain/query';
+export type { ChartQuery, QueryDimension, QueryMetric, QueryCalculatedColumn, QueryFilter, QueryOrder } from '@/services/query/models';
