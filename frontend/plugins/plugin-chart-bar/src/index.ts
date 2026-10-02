@@ -1,4 +1,4 @@
-import { ChartPlugin } from '../../types';
+import { ChartPlugin } from '@/services/visualization/plugins/types';
 import BarChart from './BarChart';
 import transformProps from './transformProps';
 import buildQuery from './buildQuery';
