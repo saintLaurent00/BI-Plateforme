@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/ui/components/Badge';
 import { MiniChart } from './MiniChart';
-import { cn } from '../@/platform/runtime/utils';
+import { cn } from '@/platform/runtime/utils';
 
 interface ChartCardProps {
   chart: any;
