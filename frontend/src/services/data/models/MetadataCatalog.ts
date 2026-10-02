@@ -2,7 +2,7 @@ import type { Chart } from '@/services/visualization/models/chart-index';
 import type { Dashboard } from '@/services/dashboard/models/content-index';
 import type { AuditLog } from '@/services/governance/models/audit-index';
 import type { DataSource } from '@/services/data/models/catalog-index';
-import type { Group, Permission, Role, User } from '@/services/identity/models/identity-index';
+import type { Group, Permission, Role, User } from '@/services/identity/identity-index';
 import type { Report } from '@/services/reporting/models/reporting-index';
 import type { RowLevelSecurityPolicy } from '@/services/governance/models/security-index';
 import type { SavedQuery } from '@/services/dashboard/models/content-index';
