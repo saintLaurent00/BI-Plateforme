@@ -1,2 +1,2 @@
 export * from './ChartQuery';
-export * from './SavedQueryDefinition';
+export * from '@/services/exploration/models/SavedQueryDefinition';
