@@ -1,1 +1,1 @@
-export type { DatasetDTO as Dataset, DatasetColumn, DatasetMetric } from '../../../infrastructure/persistence/local/contracts/DatasetContracts';
+export type { DatasetDTO as Dataset, DatasetColumn, DatasetMetric } from '@/platform/persistence/contracts/DatasetContracts';
