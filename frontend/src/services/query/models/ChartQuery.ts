@@ -1,4 +1,4 @@
-import type { DataType } from '../dataset';
+import type { DataType } from '@/services/data/models';
 
 export type TimeGrain =
   | 'year'
