@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { executeQuery } from '@/platform/persistence/local/db';
 import { hifadihService } from '@/platform/runtime/hifadihService';
 import { EChartsChart } from '@/services/visualization/ui/charts/EChartsChart';
-import { DataTable } from '../ui/DataTable';
+import { DataTable } from '@/ui/components/DataTable';
 import { PivotTable } from '@/services/visualization/ui/charts/PivotTable';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { ChartSkeleton } from '../ui/Skeleton';
+import { ChartSkeleton } from '@/ui/components/Skeleton';
 
 interface DashboardChartProps {
   chart: any;
