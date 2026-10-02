@@ -45,7 +45,7 @@ import { Modal } from '@/ui/components/Modal';
 import { EChartsChart } from '@/services/visualization/ui/charts/EChartsChart';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
-import { getChartPlugin, chartPlugins } from '../../../../plugins';
+import { getChartPlugin, chartPlugins } from '../../../../../plugins';
 import { ChartSkeleton } from '@/ui/components/Skeleton';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
