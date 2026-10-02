@@ -1,4 +1,4 @@
-import { UserDTO } from './user.dto';
+import { UserDTO } from '@/services/identity/models/user.dto';
 
 export interface DatasetColumn {
   name: string;
