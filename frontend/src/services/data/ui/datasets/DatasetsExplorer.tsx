@@ -30,7 +30,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import { importCSV, getTables } from '@/platform/persistence/local/db';
-import { hifadihService } from '@/platform/runtime/hifadihService';
+import { dataCatalogService } from '@/services/data';
 import { cn } from '@/platform/runtime/utils';
 
 const DatasetListItem = ({ id, name, type, owner, lastModified, health, onDelete }: any) => (
@@ -133,8 +133,8 @@ export const DatasetsExplorer = () => {
     try {
       const [tables, dsResponse, dbResponse] = await Promise.all([
         getTables(),
-        hifadihService.getDatasets().catch(() => ({ result: [] })),
-        hifadihService.getDatabases().catch(() => ({ result: [] }))
+        dataCatalogService.listDatasets().catch(() => ({ result: [] })),
+        dataCatalogService.listDatabases().catch(() => ({ result: [] }))
       ]);
       setLocalTables(tables);
       setHifadihDatasets(dsResponse.result);
@@ -213,7 +213,7 @@ export const DatasetsExplorer = () => {
     if (datasetToDelete.id) {
       const loadingToast = toast.loading("Suppression du dataset...");
       try {
-        await hifadihService.deleteDataset(datasetToDelete.id);
+        await dataCatalogService.deleteDataset(datasetToDelete.id);
         toast.success("Dataset supprimé avec succès.", { id: loadingToast });
         loadData();
       } catch (err) {
