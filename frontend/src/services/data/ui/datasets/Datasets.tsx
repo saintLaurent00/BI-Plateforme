@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/ui/components/Badge';
 import { useParams, useNavigate } from 'react-router-dom';
-import { hifadihService } from '@/platform/runtime/hifadihService';
+import { dataCatalogService } from '@/services/data';
 import { Modal } from '@/ui/components/Modal';
 import { FormSection, FormInput, FormTextarea, FormActions, FormButton } from '@/ui/components/FormElements';
 import { toast } from 'sonner';
@@ -76,7 +76,7 @@ export const Datasets = () => {
   const loadDataset = async () => {
     setIsLoading(true);
     try {
-      const ds = await hifadihService.getDataset(id!);
+      const ds = await dataCatalogService.getDataset(id!);
       setDataset(ds);
     } catch (err) {
       toast.error("Impossible de charger le dataset.");
@@ -89,7 +89,7 @@ export const Datasets = () => {
     if (!id) return;
     const loadingToast = toast.loading("Suppression du dataset...");
     try {
-      await hifadihService.deleteDataset(id);
+      await dataCatalogService.deleteDataset(id);
       toast.success("Dataset supprimé avec succès.", { id: loadingToast });
       navigate('/datasets');
     } catch (err) {
