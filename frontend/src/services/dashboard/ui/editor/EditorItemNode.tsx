@@ -63,8 +63,8 @@ import {
   Film
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { DashboardChart } from '../../components/dashboard/DashboardChart';
-import { cn } from '../../core/utils/utils';
+import { DashboardChart } from '@/services/dashboard/ui/DashboardChart';
+import { cn } from '@/platform/runtime/utils';
 import { 
   DashboardItemData, 
   DashboardItemMeta,
