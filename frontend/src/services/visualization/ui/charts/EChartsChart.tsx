@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { ChartType } from '@/plugins/types';
-import { getChartPlugin } from '@/plugins';
+import { ChartType } from '../../../../plugins/types';
+import { getChartPlugin } from '../../../../plugins';
 
 interface EChartsChartProps {
   data: any[];
