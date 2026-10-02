@@ -1,4 +1,4 @@
-import { ChartPlugin } from '../../types';
+import { ChartPlugin } from '@/services/visualization/plugins/types';
 import HeatmapChart from './HeatmapChart';
 import transformProps from './transformProps';
 import buildQuery from './buildQuery';
