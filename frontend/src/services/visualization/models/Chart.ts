@@ -1,5 +1,5 @@
-import type { ChartQuery } from '../query';
-import type { ResourceAccess } from '../security';
+import type { ChartQuery } from '@/services/query/models';
+import type { ResourceAccess } from '@/services/governance/models/security-index';
 
 export type ChartStatus = 'active' | 'archived';
 
