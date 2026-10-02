@@ -35,7 +35,7 @@ import {
   Globe,
   ExternalLink
 } from 'lucide-react';
-import { Badge } from '../../components/ui/Badge';
+import { Badge } from '@/ui/components/Badge';
 
 interface ThemeConfig {
   primaryColor: string;
@@ -55,16 +55,16 @@ const BACKGROUNDS = [
   { name: 'Muted', value: 'bg-muted' },
 ];
 
-import { getDashboard as getLocalDashboard, executeQuery } from '../../core/utils/db';
-import { hifadihService } from '../../lib/hifadihService';
-import { DashboardChart } from '../../components/dashboard/DashboardChart';
+import { getDashboard as getLocalDashboard, executeQuery } from '@/platform/persistence/local/db';
+import { hifadihService } from '@/platform/runtime/hifadihService';
+import { DashboardChart } from '@/services/dashboard/ui/DashboardChart';
 import ReactMarkdown from 'react-markdown';
-import { mapLegacyToHifadihLayout, denormalizeLayout } from '../../core/utils/dashboardLayout';
-import { cn } from '../../core/utils/utils';
+import { mapLegacyToHifadihLayout, denormalizeLayout } from '@/services/dashboard/layout/dashboardLayout';
+import { cn } from '@/platform/runtime/utils';
 import { toast } from 'sonner';
-import { exportToPDF } from '../../lib/pdfExport';
+import { exportToPDF } from '@/platform/runtime/pdfExport';
 import { FileText } from 'lucide-react';
-import { DashboardDetailSkeleton } from '../../components/ui/Skeleton';
+import { DashboardDetailSkeleton } from '@/ui/components/Skeleton';
 
 // ... (rest of imports)
 
