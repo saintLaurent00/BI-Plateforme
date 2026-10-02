@@ -1,1 +1,1 @@
-export * from '../../domain/dataset';
+export * from '@/services/data/models';
