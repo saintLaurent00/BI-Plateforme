@@ -35,8 +35,8 @@ import {
   Github,
   Loader2
 } from 'lucide-react';
-import { Badge } from '../../components/ui/Badge';
-import { Modal } from '../../components/ui/Modal';
+import { Badge } from '@/ui/components/Badge';
+import { Modal } from '@/ui/components/Modal';
 import { 
   FormSection, 
   FormInput, 
@@ -48,8 +48,8 @@ import {
   FormButtonGroup,
   FormCheckbox,
   FormSwitch
-} from '../../components/ui/FormElements';
-import { hifadihService } from '../../lib/hifadihService';
+} from '@/ui/components/FormElements';
+import { hifadihService } from '@/platform/runtime/hifadihService';
 import { 
   getRoles as getLocalRoles, 
   saveRole as saveLocalRole, 
@@ -57,7 +57,7 @@ import {
   getDataSources as getLocalDataSources,
   saveDataSource as saveLocalDataSource,
   deleteDataSource as deleteLocalDataSource
-} from '../../core/utils/db';
+} from '@/platform/persistence/local/db';
 
 const AdminSidebarItem = ({ label, icon: Icon, active, onClick }: any) => (
   <button 
@@ -119,8 +119,8 @@ const UserRow = ({ name, email, role, status, lastActive, onEdit, onDelete }: an
   </tr>
 );
 
-import { cn } from '../../core/utils/utils';
-import { DataTable } from '../../components/ui/DataTable';
+import { cn } from '@/platform/runtime/utils';
+import { DataTable } from '@/ui/components/DataTable';
 
 export const Admin = () => {
   const [searchParams, setSearchParams] = useSearchParams();
