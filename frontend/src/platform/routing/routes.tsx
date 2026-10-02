@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Documentation } from '@/ui/documentation/Documentation';
 import { Admin, Login } from '@/services/identity';
-import { Charts, ChartEditor, ChartSelector, DatavizLab, EChartsChart } from '@/services/visualization';
+import { Charts, ChartEditor, ChartSelector, DatavizLab } from '@/services/visualization';
 import { DashboardEditor, DashboardDetail, Dashboards, Home } from '@/services/dashboard';
 import { Datasets as DatasetDetail, DatasetsExplorer, DatasetWizard, PhysicalDatasetEdit, PhysicalDatasetWizard } from '@/services/data';
 import { SqlLab } from '@/services/exploration';
