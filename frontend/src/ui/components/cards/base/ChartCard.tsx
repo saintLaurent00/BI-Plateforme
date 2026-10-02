@@ -11,7 +11,7 @@ import {
   Table as TableIcon,
   Activity
 } from 'lucide-react';
-import { Badge } from '../Badge';
+import { Badge } from '@/ui/components/Badge';
 import { MiniChart } from './MiniChart';
 import { cn } from '../@/platform/runtime/utils';
 
