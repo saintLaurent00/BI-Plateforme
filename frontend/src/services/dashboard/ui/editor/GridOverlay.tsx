@@ -1,6 +1,6 @@
 import React from 'react';
 import { useEditorDrag } from './EditorDragContext';
-import { cn } from '../../core/utils/utils';
+import { cn } from '@/platform/runtime/utils';
 import { Magnet } from 'lucide-react';
 
 interface GridOverlayProps {
