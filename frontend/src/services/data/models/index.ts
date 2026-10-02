@@ -6,6 +6,3 @@ export * from './DatasetMetadata';
 export * from './MetricMetadata';
 export * from './MetadataCatalog';
 export * from './DataSource';
-export * from './DatasetRecord';
-export * from './dataset.dto';
-export * from './datasource.dto';
