@@ -1,3 +1,4 @@
+export * from './models';
 export * from './execution/QueryExecutor';
 export * from './compiler/QueryCompiler';
 export * from './validation/QueryValidator';
