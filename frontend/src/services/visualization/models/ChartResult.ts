@@ -1,4 +1,4 @@
-import type { ChartResult } from '../../../domain/query';
+import type { ChartResult } from '../@/services/query/models';
 
 export type { ChartResult };
 
