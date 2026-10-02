@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { cn } from '../../core/utils/utils';
+import { cn } from '@/platform/runtime/utils';
 
 interface Step {
   id: number;
