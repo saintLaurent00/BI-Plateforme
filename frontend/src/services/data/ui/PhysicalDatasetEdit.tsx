@@ -19,8 +19,8 @@ import {
   Filter
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Badge } from '../../components/ui/Badge';
-import { cn } from '../../core/utils/utils';
+import { Badge } from '@/ui/components/Badge';
+import { cn } from '@/platform/runtime/utils';
 import { toast } from 'sonner';
 
 interface Column {
