@@ -29,7 +29,8 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { getCharts as getLocalCharts, saveDashboard as saveLocalDashboard, getDashboard as getLocalDashboard } from '@/platform/persistence/local/db';
-import { hifadihService } from '@/platform/runtime/hifadihService';
+import { dashboardService } from '@/services/dashboard';
+import { visualizationService } from '@/services/visualization';
 import { toast } from 'sonner';
 import { cn } from '@/platform/runtime/utils';
 import { Skeleton, DashboardEditorCanvasSkeleton } from '@/ui/components/Skeleton';
@@ -195,7 +196,7 @@ export const DashboardEditor: React.FC = () => {
       // 1. Fetch available charts from local DB and remote hifadihService
       const [localCharts, remoteRes] = await Promise.all([
         getLocalCharts().catch(() => []),
-        hifadihService.getCharts().catch(() => ({ result: [] }))
+        visualizationService.listCharts().catch(() => ({ result: [] }))
       ]);
 
       const combinedCharts: any[] = [...localCharts];
@@ -218,7 +219,7 @@ export const DashboardEditor: React.FC = () => {
       if (id && id !== 'new') {
         let loadedDashboard: any = null;
         try {
-          loadedDashboard = await hifadihService.getDashboard(id);
+          loadedDashboard = await dashboardService.get(id);
         } catch (e) {
           // ignore
         }
