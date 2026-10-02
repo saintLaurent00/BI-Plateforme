@@ -80,7 +80,9 @@ Metadata, query construction, execution, visualization and persistence remain se
 
 Visualization plugins live in frontend/plugins/.
 
-The visualization service owns the registry and adapters; plugins implement chart-specific rendering and query behavior.
+The visualization service owns the registry and adapters; plugin packages implement chart-specific rendering and query behavior.
+
+The registry contract lives at `services/visualization/plugins/`; plugin packages consume that contract rather than defining a global plugin API.
 
 ## Backend evolution
 
