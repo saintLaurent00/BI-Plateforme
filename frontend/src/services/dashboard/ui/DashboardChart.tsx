@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { executeQuery } from '@/platform/persistence/local/db';
-import { hifadihService } from '@/platform/runtime/hifadihService';
 import { EChartsChart } from '@/services/visualization/ui/charts/EChartsChart';
 import { DataTable } from '@/ui/components/DataTable';
 import { PivotTable } from '@/services/visualization/ui/charts/PivotTable';
@@ -24,7 +23,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ chart }) => {
     setIsLoading(true);
     setError(null);
     try {
-      // Logic for local chart or Hifadih-hosted charts
+      // Charts are executed through the local query runtime.
       const x = Array.isArray(chart.x_axis) ? chart.x_axis[0] : (chart.x_axis || 'id');
       let metrics = [];
       if (Array.isArray(chart.y_axis)) {
@@ -33,8 +32,6 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ chart }) => {
         metrics = [chart.y_axis];
       }
 
-      // If we have a connected data source that isn't local SQL, we could use hifadihService.execute(...)
-      // For now, we still support local execution via executeQuery for existing charts
       
       if (metrics.length === 0) {
         const sql = `SELECT "${x}" FROM "${chart.table_name || 'charts'}" LIMIT 100;`;
