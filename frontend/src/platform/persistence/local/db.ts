@@ -1,1 +1,1 @@
-export * from '../../infrastructure/database/sqlite/LocalDatabase';
+export * from '../sqlite/LocalDatabase';
