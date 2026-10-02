@@ -63,7 +63,7 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { DashboardItemData, DashboardItemMeta, WIDTH_PRESETS, HEIGHT_PRESETS } from './types';
-import { cn } from '../../core/utils/utils';
+import { cn } from '@/platform/runtime/utils';
 
 export interface CanvasConfig {
   backgroundColor: string;
