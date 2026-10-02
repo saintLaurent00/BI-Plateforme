@@ -6,7 +6,7 @@ import {
   SAMPLE_FUNNEL_DATA,
   SAMPLE_HIERARCHY_DATA,
   SAMPLE_SALES_DATA,
-} from '../../../lib/sample-data';
+} from '@/services/data/sample/sample-data';
 
 const dbInstances: Record<string, Database> = {};
 let SQL: any = null;
