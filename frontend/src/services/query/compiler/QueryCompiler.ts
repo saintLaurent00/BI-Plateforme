@@ -1,5 +1,5 @@
 import type { ChartQuery, QueryFilter, QueryOrder } from '@/services/query/models';
-import type { DatasetMetadata } from '@/services/data/models';
+import type { DatasetMetadata } from '@/services/data';
 
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
