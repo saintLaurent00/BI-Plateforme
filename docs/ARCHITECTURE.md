@@ -1,426 +1,156 @@
-# Hifadih BI — Architecture frontend
+# Hifadih BI — Architecture
 
-> Architecture de référence du frontend après la refonte de septembre/octobre 2026.
->
-> Le frontend est traité comme un produit autonome. Le backend Rust sera branché plus tard derrière les ports d'infrastructure déjà prévus.
+## 1. Architecture decision
 
-## 1. Principe directeur
+Hifadih BI uses a Business Services / Modular Monolith architecture.
 
-Hifadih BI sépare désormais clairement :
+The frontend is organized around business capabilities rather than technical layers such as domain/, features/, infrastructure/ or pages/.
 
-```
-Presentation
-    ↓
-Features / Use cases
-    ↓
-Domain
-    ↓
-Infrastructure
-```
+This keeps the current application modular without prematurely turning it into microservices.
 
-Les dépendances ne doivent jamais remonter dans l'autre sens.
-
-- **Presentation** affiche et orchestre l'interface.
-- **Features** implémentent les parcours utilisateurs.
-- **Domain** définit les concepts BI stables.
-- **Infrastructure** implémente le stockage, HTTP et l'exécution.
-- **Plugins** rendent les visualisations et ne construisent pas les requêtes.
-
-## 2. Arborescence cible
+## 2. Repository shape
 
 ```text
 BI-Plateforme/
-├── .github/
-│   └── workflows/
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── METADATA.md
-│   ├── DATAVIZ.md
-│   ├── QUERY_ENGINE.md
-│   ├── PLUGIN_SYSTEM.md
-│   ├── DATA_MODEL.md
-│   ├── API.md
-│   ├── DESIGN_SYSTEM.md
-│   ├── CONTRIBUTING.md
-│   └── ROADMAP.md
-├── infrastructure/
-│   └── docker/
-├── plugins/
-│   ├── plugin-chart-bar/
-│   ├── plugin-chart-line/
-│   ├── plugin-chart-pie/
-│   ├── plugin-chart-boxplot/
-│   ├── plugin-chart-funnel/
-│   ├── plugin-chart-heatmap/
-│   ├── plugin-chart-radar/
-│   ├── plugin-chart-sankey/
-│   ├── plugin-chart-scatter/
-│   ├── plugin-chart-sunburst/
-│   ├── plugin-chart-treemap/
-│   └── plugin-chart-waterfall/
+├── backend/                 # Rust backend foundation
 ├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── app/
-│   │   ├── pages/
-│   │   ├── features/
-│   │   │   ├── datasets/
-│   │   │   ├── semantic-model/
-│   │   │   ├── query-builder/
-│   │   │   ├── query-execution/
-│   │   │   ├── charts/
-│   │   │   ├── dashboards/
-│   │   │   ├── sql-lab/
-│   │   │   └── administration/
-│   │   ├── domain/
-│   │   │   ├── dataset/
-│   │   │   ├── query/
-│   │   │   ├── chart/
-│   │   │   └── dashboard/
-│   │   ├── infrastructure/
-│   │   │   ├── database/
-│   │   │   ├── query-execution/
-│   │   │   ├── persistence/
-│   │   │   └── http/
-│   │   ├── shared/
-│   │   │   ├── components/
-│   │   │   ├── hooks/
-│   │   │   ├── formatting/
-│   │   │   ├── constants/
-│   │   │   └── utils/
-│   │   ├── styles/
-│   │   └── main.tsx
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── tsconfig.json
-│   ├── vite.config.ts
-│   └── index.html
-├── .gitignore
-├── DESIGN_SYSTEM.md
-└── README.md
+│   ├── plugins/             # Visualization plugin packages
+│   └── src/
+│       ├── services/        # Business capabilities
+│       ├── platform/        # Runtime mechanisms
+│       ├── ui/              # Generic presentation
+│       ├── App.tsx
+│       └── main.tsx
+├── docs/
+└── .github/
 ```
 
-## 3. Domain : le cœur conceptuel
-
-Le domain ne connaît ni React, ni ECharts, ni Axios, ni SQL.js.
-
-Il contient les concepts stables :
+## 3. Frontend business services
 
 ```text
-domain/
-├── identity/       # User, Group, Role, Permission
-├── catalog/        # DataSource
-├── dataset/        # DatasetMetadata and semantic metadata
-├── query/          # ChartQuery and query contracts
-├── chart/          # Chart and visualization definition
-├── content/        # Dashboard and SavedQuery
-├── security/       # ResourceAccess and RowLevelSecurityPolicy
-├── reporting/      # Report
-└── audit/          # AuditLog
+services/
+├── identity/
+├── data/
+├── query/
+├── visualization/
+├── dashboard/
+├── exploration/
+├── governance/
+└── reporting/
 ```
 
-Le domaine est le vocabulaire commun du produit.
+### identity
+Owns authentication and identity concepts: User, Group, Role, Permission, administration and login.
 
-## 4. Métadonnées
+### data
+Owns the data catalog and semantic metadata: DataSource, DatasetMetadata, ColumnMetadata, MetricMetadata, CalculatedColumnMetadata, MetadataCatalog and sample data.
 
-La métadonnée canonique d'un dataset se compose de :
+### query
+Owns the analytical query lifecycle: ChartQuery, dimensions, metrics, filters, validation, SQL compilation, execution and query results.
 
-```text
-DatasetMetadata
-├── identity
-├── source
-├── physical definition
-├── columns
-├── metrics
-├── calculated columns
-├── time metadata
-├── statistics
-├── capabilities
-├── governance
-└── audit metadata
-```
+### visualization
+Owns chart models, ChartResult adapters, chart editor, chart selector, chart rendering and the plugin registry.
 
-Une colonne possède explicitement :
+### dashboard
+Owns dashboard models, layout, dashboard list/detail and the dashboard editor.
 
-```text
-semantic name
-physical name
-label
-data type
-semantic role
-groupable
-filterable
-temporal
-nullable
-format
-expression
-```
+### exploration
+Owns SQL Lab and saved queries.
 
-La séparation `name` / `physicalName` permet au query builder de rester stable même si PostgreSQL ou une autre source utilise une convention de nommage différente.
+### governance
+Owns audit logs, resource access and row-level security.
 
-Voir `docs/METADATA.md`.
+### reporting
+Owns reporting definitions and workflows.
 
-## 5. Query model
-
-Un chart ne stocke plus une paire `x_axis/y_axis` comme contrat principal.
-
-Le contrat devient :
+## 4. Platform
 
 ```text
-ChartQuery
-├── datasetId
-├── dimensions
-├── metrics
-├── calculatedColumns
-├── filters
-├── timeRange
-├── orderBy
-├── having
-├── limit
-└── offset
-```
-
-La query est indépendante du renderer.
-
-## 6. Exécution
-
-Le flux canonique est :
-
-```text
-DatasetMetadata
-       ↓
-ChartQuery
-       ↓
-QueryValidator
-       ↓
-QueryCompiler
-       ↓
-QueryExecutor
-       ├── SampleQueryExecutor      ← maintenant
-       └── RustApiQueryExecutor     ← futur
-       ↓
-ChartResult
-```
-
-Le chart plugin ne reçoit jamais un dataset brut et ne connaît pas SQL.
-
-## 7. Sample data
-
-Les données de développement sont désormais rattachées au domaine dataset :
-
-```text
-features/datasets/
-└── sample/
-    ├── SampleSalesData.ts
-    ├── SampleSalesDataset.ts
-    └── index.ts
-```
-
-La donnée de test et sa métadonnée sont séparées :
-
-```text
-SampleSalesData
-        +
-SampleSalesDataset
-        ↓
-SampleQueryExecutor
-```
-
-Cela permet de remplacer plus tard les lignes locales par une API Rust sans changer le contrat de chart.
-
-## 8. Query execution feature
-
-```text
-features/query-execution/
-├── types/
-│   └── QueryExecutor.ts
-├── compiler/
-│   └── QueryCompiler.ts
-├── validators/
-│   └── QueryValidator.ts
-├── executors/
-│   └── SampleQueryExecutor.ts
-└── index.ts
-```
-
-Le compilateur transforme le modèle sémantique en SQL.
-
-Le validateur vérifie les références, les expressions et les contraintes du modèle.
-
-L'exécuteur décide **où** la query est exécutée.
-
-## 9. Chart feature et plugins
-
-```text
-features/charts/
-├── adapters/
-├── registry/
-├── components/
-├── hooks/
-├── types/
-└── index.ts
-
-plugins/
-└── plugin-chart-*/
-```
-
-Responsabilités :
-
-### Query layer
-
-- construit ChartQuery
-- valide
-- compile
-- exécute
-
-### Chart feature
-
-- sélectionne un plugin
-- prépare ChartResult
-- applique la configuration de visualisation
-
-### Plugin
-
-- transforme ChartResult en propriétés de rendu
-- rend le graphique
-- expose ses contrôles visuels
-
-Un plugin ne doit pas :
-
-- construire du SQL ;
-- charger une base ;
-- connaître SQL.js ;
-- charger un dataset ;
-- agréger des lignes sources.
-
-## 10. Pages
-
-Les pages sont les points d'entrée des parcours :
-
-```text
-pages/
-├── home/
-├── login/
-├── dashboards/
-├── dashboard-editor/
-├── charts/
-├── chart-builder/
-├── datasets/
-├── sql-lab/
-├── documentation/
-└── administration/
-```
-
-Une page compose des features ; elle ne doit pas devenir un service métier géant.
-
-## 11. Infrastructure
-
-L'infrastructure contient les implémentations techniques :
-
-```text
-infrastructure/
-├── database/
-│   └── sqlite/
-├── query-execution/
-│   ├── SampleQueryExecutor.ts
-│   └── RustApiQueryExecutor.ts
+platform/
+├── routing/
 ├── persistence/
-│   ├── DatasetRepository.ts
-│   ├── ChartRepository.ts
-│   └── DashboardRepository.ts
-└── http/
-    ├── httpClient.ts
-    └── apiClient.ts
+│   ├── local/
+│   └── sqlite/
+├── runtime/
+└── configuration/
 ```
 
-Le principe est important :
+Platform is technical infrastructure. It must not become a generic business-logic dumping ground.
+
+## 5. Generic UI
 
 ```text
-domain = ce que le système est
-infrastructure = comment cela fonctionne techniquement
+ui/
+├── components/
+├── layout/
+└── documentation/
 ```
 
-## 12. Shared
+Only reusable, business-agnostic presentation primitives belong here.
 
-`shared/` contient uniquement ce qui est réellement transversal :
-
-- primitives UI ;
-- feedback ;
-- navigation ;
-- hooks génériques ;
-- formatage ;
-- utilitaires génériques.
-
-On n'y place pas de logique Dataset, Query, Chart ou Dashboard.
-
-## 13. Migration de l'ancienne architecture
-
-L'ancien code contient encore des zones historiques :
+## 6. Canonical BI pipeline
 
 ```text
-core/types/
-core/utils/
-lib/
-components/
-features/visualization-editor/
-features/data-sources/
-pages/DashboardList/
-pages/DashboardEditor/
-```
-
-La migration est volontairement progressive.
-
-Le premier slice migré est **Dataviz + métadonnées + query execution**.
-
-Les anciens modules ne doivent plus devenir la nouvelle architecture de référence. Ils seront déplacés par domaines, avec mise à jour des imports et suppression des doubles contrats.
-
-## 14. Architecture runtime finale
-
-```text
-                         ┌───────────────────┐
-                         │       Pages       │
-                         └─────────┬─────────┘
-                                   ↓
-                         ┌───────────────────┐
-                         │     Features      │
-                         └─────────┬─────────┘
-                                   ↓
-                         ┌───────────────────┐
-                         │      Domain       │
-                         │ metadata / query  │
-                         │ chart / dashboard │
-                         └─────────┬─────────┘
-                                   ↓
-                         ┌───────────────────┐
-                         │  Infrastructure   │
-                         │ SQL / HTTP / DB   │
-                         └─────────┬─────────┘
-                                   ↓
-                         ┌───────────────────┐
-                         │ Rust Query Engine │
-                         │      FUTURE       │
-                         └───────────────────┘
-
-Chart rendering is a parallel presentation concern:
-
+DataSource
+  ↓
+DatasetMetadata
+  ↓
+ChartQuery
+  ↓
+QueryValidator
+  ↓
+QueryCompiler
+  ↓
+QueryExecutor
+  ├── SampleQueryExecutor
+  └── Rust API executor (future)
+  ↓
 ChartResult
-    ↓
-Chart Adapter
-    ↓
+  ↓
+Visualization Adapter
+  ↓
 Chart Plugin
-    ↓
+  ↓
 ECharts / D3
 ```
 
-## 15. Règles d'architecture
+The fundamental separation is:
 
-1. Un seul modèle canonique de métadonnées.
-2. Un seul modèle canonique de ChartQuery.
-3. Aucun SQL construit dans un plugin.
-4. Aucun dataset chargé directement par un plugin.
-5. Aucun renderer ne décide comment les données sont interrogées.
-6. Les labels UI ne sont jamais des identifiants SQL.
-7. Les noms sémantiques sont séparés des noms physiques.
-8. Les expressions SQL restent des données déclaratives.
-9. Le frontend peut utiliser un executor local sans modifier le domain.
-10. Le futur backend Rust implémente un port existant ; il ne redéfinit pas le contrat frontend.
+```text
+METADATA ≠ QUERY ≠ EXECUTION ≠ VISUALIZATION ≠ PERSISTENCE
+```
+
+## 7. Service boundaries
+
+Cross-service dependencies must use the owning service public API.
+
+```ts
+import { ChartQuery, executeQuery } from '@/services/query';
+import { DatasetMetadata } from '@/services/data';
+```
+
+Deep imports across another service internals should be avoided.
+
+Generic UI components are imported from @/ui; platform mechanisms from @/platform.
+
+## 8. Visualization plugins
+
+Visualization plugins are isolated under frontend/plugins/. The visualization service owns the registry; plugin packages own chart-specific rendering and configuration.
+
+## 9. Future Rust backend
+
+```text
+React Business Service
+        ↓
+Platform API Adapter
+        ↓
+Rust Business Module
+        ↓
+Persistence / Connectors
+```
+
+The current repository remains a modular monolith; splitting into deployable services is a future deployment decision, not a prerequisite for clean modularity.
+
+## 10. Migration status
+
+The previous technical-layer directories have been removed from frontend/src/. The target structure is therefore the active source architecture, not a parallel documentation-only proposal.
