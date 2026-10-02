@@ -1,11 +1,11 @@
-import type { Chart } from '../chart';
-import type { Dashboard } from '../content';
-import type { AuditLog } from '../audit';
-import type { DataSource } from '../catalog';
-import type { Group, Permission, Role, User } from '../identity';
-import type { Report } from '../reporting';
-import type { RowLevelSecurityPolicy } from '../security';
-import type { SavedQuery } from '../content';
+import type { Chart } from '@/services/visualization/models/chart-index';
+import type { Dashboard } from '@/services/dashboard/models/content-index';
+import type { AuditLog } from '@/services/governance/models/audit-index';
+import type { DataSource } from '@/services/data/models/catalog-index';
+import type { Group, Permission, Role, User } from '@/services/identity/models/identity-index';
+import type { Report } from '@/services/reporting/models/reporting-index';
+import type { RowLevelSecurityPolicy } from '@/services/governance/models/security-index';
+import type { SavedQuery } from '@/services/dashboard/models/content-index';
 import type { DatasetMetadata } from './DatasetMetadata';
 
 export interface MetadataCatalog {
