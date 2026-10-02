@@ -29,7 +29,7 @@ import { hifadihService } from '@/platform/runtime/hifadihService';
 import { ChartCard } from '@/ui/components/cards/base/ChartCard';
 import { ChartCardSkeleton, ChartSkeleton, Skeleton } from '@/ui/components/Skeleton';
 import { Badge } from '@/ui/components/Badge';
-import { MiniChart } from '../../components/ui/cards/MiniChart';
+import { MiniChart } from '@/ui/components/cards/base/MiniChart';
 import { cn } from '@/platform/runtime/utils';
 import { AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
