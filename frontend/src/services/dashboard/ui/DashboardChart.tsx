@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { executeQuery } from '@/platform/persistence/local/db';
-import { EChartsChart } from '@/services/visualization/ui/charts/EChartsChart';
+import { EChartsChart, PivotTable } from '@/services/visualization';
 import { DataTable } from '@/ui/components/DataTable';
-import { PivotTable } from '@/services/visualization/ui/charts/PivotTable';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { ChartSkeleton } from '@/ui/components/Skeleton';
 
