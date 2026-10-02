@@ -10,7 +10,7 @@ import {
   deleteDashboard,
   saveDashboard,
   saveChart,
-} from '../../../core/utils/db';
+} from '@/platform/persistence/local/db';
 
 type DatasetRecord = {
   id: string;
