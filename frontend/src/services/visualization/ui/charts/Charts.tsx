@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { getCharts as getLocalCharts, getChart as getLocalChart, executeQuery } from '@/platform/persistence/local/db';
 import Papa from 'papaparse';
-import { hifadihService } from '@/platform/runtime/hifadihService';
+import { visualizationService } from '@/services/visualization';
 import { ChartCard } from '@/ui/components/cards/base/ChartCard';
 import { ChartCardSkeleton, ChartSkeleton, Skeleton } from '@/ui/components/Skeleton';
 import { Badge } from '@/ui/components/Badge';
@@ -68,7 +68,7 @@ export const Charts = () => {
   const loadCharts = async () => {
     try {
       setIsLoading(true);
-      const { result } = await hifadihService.getCharts();
+      const { result } = await visualizationService.listCharts();
       
       // Combiner avec les graphiques locaux
       const local = await getLocalCharts();
