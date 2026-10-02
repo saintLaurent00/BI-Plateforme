@@ -18,15 +18,15 @@ import {
   ChevronDown,
   GitBranch
 } from 'lucide-react';
-import { getTables, getTableSchema } from '../../core/utils/db';
-import { Badge } from '../../components/ui/Badge';
-import { hifadihService } from '../../lib/hifadihService';
-import type { Dataset } from '../datasets/types/DatasetRecord';
+import { getTables, getTableSchema } from '@/platform/persistence/local/db';
+import { Badge } from '@/ui/components/Badge';
+import { hifadihService } from '@/platform/runtime/hifadihService';
+import type { Dataset } from '@/services/data/models/DatasetRecord';
 
-import { Stepper } from '../../components/ui/Stepper';
+import { Stepper } from '@/ui/components/Stepper';
 
-import { chartPlugins } from '../../../plugins';
-import { ChartPlugin } from '../../../plugins/types';
+import { chartPlugins } from '@/plugins';
+import { ChartPlugin } from '@/plugins/types';
 
 // Categories mapping to icons
 const CATEGORY_ICONS: Record<string, any> = {
@@ -129,7 +129,7 @@ const getChartImageUrl = (label: string, width: number, height: number, suffix: 
   return `https://loremflickr.com/${width}/${height}/${tags}${suffix}?lock=${label.length}`;
 };
 
-import { cn } from '../../core/utils/utils';
+import { cn } from '@/platform/runtime/utils';
 
 export const ChartSelector = () => {
   const navigate = useNavigate();
