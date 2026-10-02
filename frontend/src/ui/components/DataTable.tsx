@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { cn } from '../../core/utils/utils';
+import { cn } from '@/platform/runtime/utils';
 import { 
   Search, 
   X, 
