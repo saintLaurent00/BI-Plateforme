@@ -1,8 +1,8 @@
 import React from 'react';
-import { EChartsChart } from '../../components/charts/EChartsChart';
-import { SAMPLE_SALES_DATASET, SAMPLE_SALES_DATA } from '../../features/datasets/sample';
-import { SampleQueryExecutor } from '../../features/query-execution';
-import type { ChartQuery } from '../../domain/query';
+import { EChartsChart } from '@/services/visualization/ui/charts/EChartsChart';
+import { SAMPLE_SALES_DATASET, SAMPLE_SALES_DATA } from '@/services/data/sample';
+import { SampleQueryExecutor } from '@/services/query';
+import type { ChartQuery } from '@/services/query/models';
 
 const SAMPLE_QUERY: ChartQuery = {
   datasetId: SAMPLE_SALES_DATASET.id,
