@@ -14,10 +14,10 @@ import {
   LayoutDashboard,
   Plus
 } from 'lucide-react';
-import { DashboardCard } from '../../components/ui/cards/DashboardCard';
-import { Badge } from '../../components/ui/Badge';
-import { hifadihService } from '../../lib/hifadihService';
-import { getDashboards as getLocalDashboards } from '../../core/utils/db';
+import { DashboardCard } from '@/ui/components/cards/base/DashboardCard';
+import { Badge } from '@/ui/components/Badge';
+import { hifadihService } from '@/platform/runtime/hifadihService';
+import { getDashboards as getLocalDashboards } from '@/platform/persistence/local/db';
 import { useNavigate } from 'react-router-dom';
 
 const StatCard = ({ label, value, trend, icon: Icon }: any) => (
