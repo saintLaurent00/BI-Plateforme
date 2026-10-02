@@ -1,4 +1,4 @@
-import { UserDTO } from '@/services/identity/models/user.dto';
+import { UserDTO } from '@/services/identity/user.dto';
 
 export type DashboardStatus = 'Published' | 'Draft' | 'Archived';
 
