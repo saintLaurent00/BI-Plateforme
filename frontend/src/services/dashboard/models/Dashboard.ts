@@ -1,4 +1,4 @@
-import type { ResourceAccess } from '../security';
+import type { ResourceAccess } from '@/services/governance/models/security-index';
 
 export type DashboardStatus = 'draft' | 'published' | 'archived';
 
