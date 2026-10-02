@@ -1,1 +1,1 @@
-export { type ChartPlugin, type ChartPluginProps, type ChartMetadata, type ChartType } from '../frontend/plugins/types';
+export type { ChartPlugin, ChartPluginProps, ChartMetadata, ChartType } from '@/services/visualization/plugins/types';
