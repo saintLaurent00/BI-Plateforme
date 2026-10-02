@@ -1,4 +1,4 @@
-import type { DatasetMetadata, MetricMetadata, CalculatedColumnMetadata } from '../../../domain/dataset';
+import type { DatasetMetadata, MetricMetadata, CalculatedColumnMetadata } from '@/services/data/models';
 import { SAMPLE_SALES_COLUMNS, SAMPLE_SALES_DATA, type SampleSalesRecord } from './SampleSalesData';
 
 export const SAMPLE_SALES_DATASET: DatasetMetadata = {
