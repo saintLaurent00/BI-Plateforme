@@ -71,8 +71,7 @@ platform/
 ├── persistence/
 │   ├── local/
 │   └── sqlite/
-├── runtime/
-└── configuration/
+└── runtime/
 ```
 
 Platform is technical infrastructure. It must not become a generic business-logic dumping ground.
@@ -135,7 +134,7 @@ Generic UI components are imported from @/ui; platform mechanisms from @/platfor
 
 ## 8. Visualization plugins
 
-Visualization plugins are isolated under frontend/plugins/. The visualization service owns the registry; plugin packages own chart-specific rendering and configuration.
+Visualization plugins are isolated under `frontend/plugins/`. The visualization service owns the registry and plugin contract under `services/visualization/plugins/`; plugin packages own chart-specific rendering and configuration.
 
 ## 9. Future Rust backend
 
