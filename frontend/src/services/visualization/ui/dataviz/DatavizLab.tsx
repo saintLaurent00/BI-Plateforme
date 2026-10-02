@@ -2,7 +2,7 @@ import React from 'react';
 import { EChartsChart } from '@/services/visualization/ui/charts/EChartsChart';
 import { SAMPLE_SALES_DATASET, SAMPLE_SALES_DATA } from '@/services/data/sample';
 import { SampleQueryExecutor } from '@/services/query';
-import type { ChartQuery } from '@/services/query/models';
+import type { ChartQuery } from '@/services/query';
 
 const SAMPLE_QUERY: ChartQuery = {
   datasetId: SAMPLE_SALES_DATASET.id,
