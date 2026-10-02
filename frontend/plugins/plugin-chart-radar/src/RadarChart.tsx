@@ -1,4 +1,4 @@
-import { ChartPluginProps } from '../../types';
+import { ChartPluginProps } from '@/services/visualization/plugins/types';
 
 export default function RadarChart(props: ChartPluginProps) {
   const { data, xAxis, yAxis } = props;
