@@ -1,1 +1,1 @@
-export { hifadihService } from '../infrastructure/persistence/local/HifadihLocalService';
+export { hifadihService } from '@/platform/persistence/local/HifadihLocalService';
