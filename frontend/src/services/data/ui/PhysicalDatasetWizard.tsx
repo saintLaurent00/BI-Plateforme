@@ -18,13 +18,13 @@ import {
   Server
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getTables, getTableSchema, executeQuery, getDataSources } from '../../core/utils/db';
-import { Badge } from '../../components/ui/Badge';
-import { Stepper } from '../../components/ui/Stepper';
-import { FormSection, FormInput, FormSelect, FormActions, FormButton } from '../../components/ui/FormElements';
-import { cn } from '../../core/utils/utils';
+import { getTables, getTableSchema, executeQuery, getDataSources } from '@/platform/persistence/local/db';
+import { Badge } from '@/ui/components/Badge';
+import { Stepper } from '@/ui/components/Stepper';
+import { FormSection, FormInput, FormSelect, FormActions, FormButton } from '@/ui/components/FormElements';
+import { cn } from '@/platform/runtime/utils';
 import { toast } from 'sonner';
-import { hifadihService } from '../../lib/hifadihService';
+import { hifadihService } from '@/platform/runtime/hifadihService';
 
 export const PhysicalDatasetWizard = () => {
   const navigate = useNavigate();
