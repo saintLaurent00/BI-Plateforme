@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { DashboardItemData } from './types';
 import { getAllContainers, canMoveToContainer } from './treeUtils';
-import { cn } from '../../core/utils/utils';
+import { cn } from '@/platform/runtime/utils';
 
 interface MoveLayoutModalProps {
   isOpen: boolean;
