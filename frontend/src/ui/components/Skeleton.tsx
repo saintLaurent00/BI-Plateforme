@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '../../core/utils/utils';
+import { cn } from '@/platform/runtime/utils';
 
 export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
