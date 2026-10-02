@@ -30,7 +30,7 @@ import {
 } from '@/ui/components/FormElements';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { executeQuery, getTables, getTableSchema, saveQuery, getSavedQueries, getDataSources } from '@/platform/persistence/local/db';
-import { hifadihService } from '@/platform/runtime/hifadihService';
+import { dataCatalogService } from '@/services/data';
 import { cn } from '@/platform/runtime/utils';
 import { toast } from 'sonner';
 
@@ -101,7 +101,7 @@ export const SqlLab = () => {
 
   const loadDatabases = async () => {
     try {
-      const dbsRes = await hifadihService.getDatabases();
+      const dbsRes = await dataCatalogService.listDatabases();
       const dbs = dbsRes.result || [];
       
       let sqliteDbs: any[] = [];
@@ -248,7 +248,7 @@ export const SqlLab = () => {
       const id = activeQueryId || crypto.randomUUID();
       if (saveType === 'dataset') {
           // Logic for Hifadih BI internal datasets
-          await hifadihService.createDataset({
+          await dataCatalogService.createDataset({
               name: queryInfo.name,
               table_name: queryInfo.name,
               database_id: selectedDatabase.id === 'local' ? 1 : selectedDatabase.id,
