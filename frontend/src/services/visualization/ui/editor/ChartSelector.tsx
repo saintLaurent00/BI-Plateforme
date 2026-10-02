@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { getTables, getTableSchema } from '@/platform/persistence/local/db';
 import { Badge } from '@/ui/components/Badge';
-import { hifadihService } from '@/platform/runtime/hifadihService';
+import { dataCatalogService } from '@/services/data';
 import type { Dataset } from '@/services/data/models/DatasetRecord';
 
 import { Stepper } from '@/ui/components/Stepper';
@@ -158,7 +158,7 @@ export const ChartSelector = () => {
     try {
       const [localTables, hifadihResponse] = await Promise.all([
         getTables(),
-        hifadihService.getDatasets().catch(() => ({ result: [] }))
+        dataCatalogService.listDatasets().catch(() => ({ result: [] }))
       ]);
       
       const localDs = localTables.map(t => ({
