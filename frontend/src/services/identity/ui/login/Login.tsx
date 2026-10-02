@@ -10,13 +10,13 @@ import {
   ShieldCheck,
   CheckCircle2
 } from 'lucide-react';
-import { hifadihService } from '../../lib/hifadihService';
+import { hifadihService } from '@/platform/runtime/hifadihService';
 import { toast } from 'sonner';
 import { 
   FormSection, 
   FormInput, 
   FormButton 
-} from '../../components/ui/FormElements';
+} from '@/ui/components/FormElements';
 
 export const Login = ({ onLogin }: { onLogin: () => void }) => {
   const [email, setEmail] = React.useState('admin@hifadih.ai');
