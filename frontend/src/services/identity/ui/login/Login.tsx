@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   CheckCircle2
 } from 'lucide-react';
-import { hifadihService } from '@/platform/runtime/hifadihService';
+import { identityService } from '@/services/identity';
 import { toast } from 'sonner';
 import { 
   FormSection, 
@@ -36,7 +36,7 @@ export const Login = ({ onLogin }: { onLogin: () => void }) => {
 
   const handleSSO = async (provider: 'google' | 'github' | 'ldap') => {
     try {
-      await hifadihService.authenticateSSO(provider);
+      await identityService.authenticateSSO(provider);
       toast.success(`Authentification ${provider.toUpperCase()} réussie`);
       onLogin();
     } catch (error) {
