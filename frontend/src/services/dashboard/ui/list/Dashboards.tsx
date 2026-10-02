@@ -11,8 +11,8 @@ import {
   Tag,
   Trash2
 } from 'lucide-react';
-import { Badge } from '../../components/ui/Badge';
-import { Modal } from '../../components/ui/Modal';
+import { Badge } from '@/ui/components/Badge';
+import { Modal } from '@/ui/components/Modal';
 import { 
   FormSection, 
   FormInput, 
@@ -20,13 +20,13 @@ import {
   FormActions, 
   FormButton,
   FormLabel
-} from '../../components/ui/FormElements';
-import { getDashboards as getLocalDashboards, saveDashboard, deleteDashboard } from '../../core/utils/db';
-import { DASHBOARD_TEMPLATES, DashboardTemplate } from '../../constants/templates';
-import { hifadihService } from '../../lib/hifadihService';
-import { DashboardCard } from '../../components/ui/cards/DashboardCard';
-import { DashboardCardSkeleton } from '../../components/ui/Skeleton';
-import { cn } from '../../core/utils/utils';
+} from '@/ui/components/FormElements';
+import { getDashboards as getLocalDashboards, saveDashboard, deleteDashboard } from '@/platform/persistence/local/db';
+import { DASHBOARD_TEMPLATES, DashboardTemplate } from '@/platform/configuration/templates';
+import { hifadihService } from '@/platform/runtime/hifadihService';
+import { DashboardCard } from '@/ui/components/cards/base/DashboardCard';
+import { DashboardCardSkeleton } from '@/ui/components/Skeleton';
+import { cn } from '@/platform/runtime/utils';
 import { Check } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -45,7 +45,7 @@ const FilterSection = ({ title, options }: any) => (
   </div>
 );
 
-import { DataTable } from '../../components/ui/DataTable';
+import { DataTable } from '@/ui/components/DataTable';
 
 export const Dashboards = () => {
   const navigate = useNavigate();
