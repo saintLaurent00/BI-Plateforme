@@ -23,17 +23,17 @@ import {
   Copy,
   Share2
 } from 'lucide-react';
-import { getCharts as getLocalCharts, getChart as getLocalChart, executeQuery } from '../../core/utils/db';
+import { getCharts as getLocalCharts, getChart as getLocalChart, executeQuery } from '@/platform/persistence/local/db';
 import Papa from 'papaparse';
-import { hifadihService } from '../../lib/hifadihService';
-import { ChartCard } from '../../components/ui/cards/ChartCard';
-import { ChartCardSkeleton, ChartSkeleton, Skeleton } from '../../components/ui/Skeleton';
-import { Badge } from '../../components/ui/Badge';
+import { hifadihService } from '@/platform/runtime/hifadihService';
+import { ChartCard } from '@/ui/components/cards/base/ChartCard';
+import { ChartCardSkeleton, ChartSkeleton, Skeleton } from '@/ui/components/Skeleton';
+import { Badge } from '@/ui/components/Badge';
 import { MiniChart } from '../../components/ui/cards/MiniChart';
-import { cn } from '../../core/utils/utils';
+import { cn } from '@/platform/runtime/utils';
 import { AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { exportToPDF } from '../../lib/pdfExport';
+import { exportToPDF } from '@/platform/runtime/pdfExport';
 import { FileText } from 'lucide-react';
 
 const FilterSection = ({ title, options }: any) => (
@@ -51,7 +51,7 @@ const FilterSection = ({ title, options }: any) => (
   </div>
 );
 
-import { DataTable } from '../../components/ui/DataTable';
+import { DataTable } from '@/ui/components/DataTable';
 
 export const Charts = () => {
   const navigate = useNavigate();
@@ -156,7 +156,7 @@ export const Charts = () => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette visualisation stratégique ?')) return;
     
     try {
-      const { initDatabase } = await import('../../core/utils/db');
+      const { initDatabase } = await import('@/platform/persistence/local/db');
       const { db } = await initDatabase();
       db.run(`DELETE FROM charts WHERE id = ?`, [id]);
       toast.success("Graphique supprimé");
