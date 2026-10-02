@@ -1,4 +1,4 @@
-import { ChartPlugin } from '../../types';
+import { ChartPlugin } from '@/services/visualization/plugins/types';
 import WaterfallChart from './WaterfallChart';
 
 export const WaterfallPlugin: ChartPlugin = {
