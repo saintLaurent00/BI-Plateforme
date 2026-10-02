@@ -1,4 +1,4 @@
-import type { ColumnMetadata } from '../../../domain/dataset';
+import type { ColumnMetadata } from '@/services/data/models';
 
 export interface SampleSalesRecord {
   id: string;
