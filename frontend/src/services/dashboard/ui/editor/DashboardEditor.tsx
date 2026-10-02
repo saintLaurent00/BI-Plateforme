@@ -28,11 +28,11 @@ import {
   Layout,
   Image as ImageIcon
 } from 'lucide-react';
-import { getCharts as getLocalCharts, saveDashboard as saveLocalDashboard, getDashboard as getLocalDashboard } from '../../core/utils/db';
-import { hifadihService } from '../../lib/hifadihService';
+import { getCharts as getLocalCharts, saveDashboard as saveLocalDashboard, getDashboard as getLocalDashboard } from '@/platform/persistence/local/db';
+import { hifadihService } from '@/platform/runtime/hifadihService';
 import { toast } from 'sonner';
-import { cn } from '../../core/utils/utils';
-import { Skeleton, DashboardEditorCanvasSkeleton } from '../../components/ui/Skeleton';
+import { cn } from '@/platform/runtime/utils';
+import { Skeleton, DashboardEditorCanvasSkeleton } from '@/ui/components/Skeleton';
 import { DashboardItemData, DashboardItemMeta, generateId } from './types';
 import { EditorItemNode } from './EditorItemNode';
 import { 
