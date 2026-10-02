@@ -30,7 +30,7 @@ import {
   Moon,
   BookOpen
 } from 'lucide-react';
-import { cn } from '../../core/utils/utils';
+import { cn } from '@/platform/runtime/utils';
 
 export const Layout = ({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) => {
   const location = useLocation();
