@@ -1,4 +1,0 @@
-export type UserStatus = 'Active' | 'Inactive' | 'Pending' | 'Suspended';
-export interface UserDTO { id:string|number; username:string; first_name:string; last_name:string; email:string; roles:string[]; active:boolean; avatar_url?:string; job_title?:string; department?:string; section?:string; region?:string; zone?:string; country?:string; city?:string; site_location?:string; branch?:string; manager_name?:string; phone?:string; bio?:string; tags?:string[]; metadata?:Record<string,any>; last_login?:string; status?:UserStatus; created_at?:string; updated_at?:string; [key:string]:any }
-export type CreateUserDTO=Partial<Omit<UserDTO,'id'|'created_at'|'updated_at'>> & Pick<UserDTO,'first_name'|'last_name'|'email'>;
-export type UpdateUserDTO=Partial<Omit<UserDTO,'id'>> & {id:string|number};
