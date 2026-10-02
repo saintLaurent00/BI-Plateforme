@@ -1,4 +1,4 @@
-import { ChartPlugin } from '../../types';
+import { ChartPlugin } from '@/services/visualization/plugins/types';
 import RadarChart from './RadarChart';
 import transformProps from './transformProps';
 import buildQuery from './buildQuery';
