@@ -56,7 +56,7 @@ const BACKGROUNDS = [
 ];
 
 import { getDashboard as getLocalDashboard, executeQuery } from '@/platform/persistence/local/db';
-import { hifadihService } from '@/platform/runtime/hifadihService';
+import { dashboardService } from '@/services/dashboard';
 import { DashboardChart } from '@/services/dashboard/ui/DashboardChart';
 import ReactMarkdown from 'react-markdown';
 import { mapLegacyToHifadihLayout, denormalizeLayout } from '@/services/dashboard/layout/dashboardLayout';
@@ -513,7 +513,7 @@ export const DashboardDetail = () => {
     
     try {
       // Try Hifadih Service first
-      const d = await hifadihService.getDashboard(dashboardId);
+      const d = await dashboardService.get(dashboardId);
       
       if (d) {
         // Handle layout transformation if it's from a external source (like our former legacy platform)
