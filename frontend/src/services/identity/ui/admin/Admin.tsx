@@ -49,7 +49,7 @@ import {
   FormCheckbox,
   FormSwitch
 } from '@/ui/components/FormElements';
-import { hifadihService } from '@/platform/runtime/hifadihService';
+import { identityService } from '@/services/identity';
 import { 
   getRoles as getLocalRoles, 
   saveRole as saveLocalRole, 
@@ -201,13 +201,13 @@ export const Admin = () => {
 
     try {
       if (activeSection === 'users') {
-        const { result } = await hifadihService.getUsers();
+        const { result } = await identityService.listUsers();
         setHifadihUsers(result || []);
       } else if (activeSection === 'reports') {
-        const { result } = await hifadihService.getReports();
+        const { result } = await identityService.listReports();
         setHifadihReports(result || []);
       } else if (activeSection === 'audit') {
-        const { result } = await hifadihService.getLogs();
+        const { result } = await identityService.listAuditLogs();
         setHifadihLogs(result || []);
       }
     } catch (err) {
@@ -369,7 +369,7 @@ export const Admin = () => {
     try {
       const firstName = newUser.first_name || newUser.name.split(' ')[0] || 'User';
       const lastName = newUser.last_name || newUser.name.split(' ').slice(1).join(' ') || '.';
-      await hifadihService.createUser({
+      await identityService.createUser({
         first_name: firstName,
         last_name: lastName,
         username: newUser.username || newUser.email,
@@ -431,7 +431,7 @@ export const Admin = () => {
     try {
       const [firstName, ...lastNameParts] = (selectedUser.name || '').split(' ');
       const lastName = lastNameParts.join(' ') || '.';
-      await hifadihService.updateUser(selectedUser.id, {
+      await identityService.updateUser(selectedUser.id, {
         id: selectedUser.id,
         first_name: firstName,
         last_name: lastName,
@@ -457,7 +457,7 @@ export const Admin = () => {
 
   const handleDeleteUser = async () => {
     try {
-      await hifadihService.deleteUser(selectedUser.id);
+      await identityService.removeUser(selectedUser.id);
       toast.success('User deleted successfully');
       setIsDeleteModalOpen(false);
       loadSectionData();
