@@ -1,4 +1,4 @@
-import { ChartPlugin } from '../../types';
+import { ChartPlugin } from '@/services/visualization/plugins/types';
 import SunburstChart from './SunburstChart';
 
 export const SunburstPlugin: ChartPlugin = {
