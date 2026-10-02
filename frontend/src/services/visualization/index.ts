@@ -1,1 +1,1 @@
-export * from './types/ChartResult';
+export * from './models/ChartResult';
