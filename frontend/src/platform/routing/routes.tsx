@@ -1,22 +1,11 @@
 import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { Admin } from '@/services/identity/ui/admin/Admin';
-import { Charts } from '@/services/visualization/ui/charts/Charts';
-import { DashboardEditor } from '@/services/dashboard/ui/editor/DashboardEditor';
-import { DashboardDetail } from '@/services/dashboard/ui/list/DashboardDetail';
-import { Dashboards } from '@/services/dashboard/ui/list/Dashboards';
-import { Datasets as DatasetDetail } from '@/services/data/ui/datasets/Datasets';
-import { DatasetsExplorer } from '@/services/data/ui/datasets/DatasetsExplorer';
 import { Documentation } from '@/ui/documentation/Documentation';
-import { Home } from '@/services/dashboard/ui/home/Home';
-import { Login } from '@/services/identity/ui/login/Login';
-import { DatavizLab } from '@/services/visualization/ui/dataviz/DatavizLab';
-import { SqlLab } from '@/services/exploration/ui/sql-lab/SqlLab';
-import { DatasetWizard } from '@/services/data/ui/DatasetWizard';
-import { PhysicalDatasetEdit } from '@/services/data/ui/PhysicalDatasetEdit';
-import { PhysicalDatasetWizard } from '@/services/data/ui/PhysicalDatasetWizard';
-import { ChartEditor } from '@/services/visualization/ui/editor/ChartEditor';
-import { ChartSelector } from '@/services/visualization/ui/editor/ChartSelector';
+import { Admin, Login } from '@/services/identity';
+import { Charts, ChartEditor, ChartSelector, DatavizLab, EChartsChart } from '@/services/visualization';
+import { DashboardEditor, DashboardDetail, Dashboards, Home } from '@/services/dashboard';
+import { Datasets as DatasetDetail, DatasetsExplorer, DatasetWizard, PhysicalDatasetEdit, PhysicalDatasetWizard } from '@/services/data';
+import { SqlLab } from '@/services/exploration';
 
 export function PublicRoutes({ onLogin }: { onLogin: () => void }) {
   return (
