@@ -17,8 +17,8 @@ import {
   AlertCircle,
   FileText
 } from 'lucide-react';
-import { Badge } from '../../components/ui/Badge';
-import { Modal } from '../../components/ui/Modal';
+import { Badge } from '@/ui/components/Badge';
+import { Modal } from '@/ui/components/Modal';
 import { 
   FormSection, 
   FormInput, 
@@ -27,11 +27,11 @@ import {
   FormButton,
   FormLabel,
   FormButtonGroup
-} from '../../components/ui/FormElements';
+} from '@/ui/components/FormElements';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { executeQuery, getTables, getTableSchema, saveQuery, getSavedQueries, getDataSources } from '../../core/utils/db';
-import { hifadihService } from '../../lib/hifadihService';
-import { cn } from '../../core/utils/utils';
+import { executeQuery, getTables, getTableSchema, saveQuery, getSavedQueries, getDataSources } from '@/platform/persistence/local/db';
+import { hifadihService } from '@/platform/runtime/hifadihService';
+import { cn } from '@/platform/runtime/utils';
 import { toast } from 'sonner';
 
 const SchemaItem = ({ name, type, icon: Icon, onClick }: any) => (
@@ -63,7 +63,7 @@ const SchemaFolder = ({ title, children, defaultOpen = false }: any) => {
   );
 };
 
-import { DataTable } from '../../components/ui/DataTable';
+import { DataTable } from '@/ui/components/DataTable';
 
 export const SqlLab = () => {
   const navigate = useNavigate();
