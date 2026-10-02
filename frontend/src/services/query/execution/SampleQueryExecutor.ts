@@ -1,6 +1,6 @@
 import initSqlJs, { type Database } from 'sql.js';
 import sqlWasm from 'sql.js/dist/sql-wasm.wasm?url';
-import type { DatasetMetadata } from '@/services/data/models';
+import type { DatasetMetadata } from '@/services/data';
 import type { ChartQuery, ChartResult } from '@/services/query/models';
 import type { QueryExecutor } from '@/services/query/execution/QueryExecutor';
 import { compileChartQuery } from '../compiler/QueryCompiler';
