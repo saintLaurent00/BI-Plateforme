@@ -1,4 +1,4 @@
-export * from './types/QueryExecutor';
+export * from './execution/QueryExecutor';
 export * from './compiler/QueryCompiler';
-export * from './validators/QueryValidator';
-export * from './executors/SampleQueryExecutor';
+export * from './validation/QueryValidator';
+export * from './execution/SampleQueryExecutor';
