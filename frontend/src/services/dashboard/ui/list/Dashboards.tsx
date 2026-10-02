@@ -22,7 +22,7 @@ import {
   FormLabel
 } from '@/ui/components/FormElements';
 import { getDashboards as getLocalDashboards, saveDashboard, deleteDashboard } from '@/platform/persistence/local/db';
-import { DASHBOARD_TEMPLATES, DashboardTemplate } from '@/platform/configuration/templates';
+import { DASHBOARD_TEMPLATES, type DashboardTemplate } from '@/services/dashboard/configuration/templates';
 import { dashboardService } from '@/services/dashboard';
 import { DashboardCard } from '@/ui/components/cards/base/DashboardCard';
 import { DashboardCardSkeleton } from '@/ui/components/Skeleton';
