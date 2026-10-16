@@ -1,1 +1,2 @@
-export type { DatasetDTO as Dataset, DatasetColumn, DatasetMetric } from '@/services/data/models/dataset.dto';
+/** @deprecated Use @/features/datasets/models/DatasetRecord. */
+export * from '@/features/datasets/models/DatasetRecord';
