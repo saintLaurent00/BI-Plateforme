@@ -1,1 +1,1 @@
-export * from './SavedQuery';
+export * from '@/features/exploration/models';
