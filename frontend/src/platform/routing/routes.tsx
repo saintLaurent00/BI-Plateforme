@@ -1,12 +1,11 @@
 import React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Documentation } from '@/ui/documentation/Documentation';
-import { Admin, Login } from '@/services/identity';
-import { Charts, DatavizLab } from '@/visualizations';
-import { ChartEditor, ChartSelector } from '@/explore';
-import { DashboardEditor, DashboardDetail, Dashboards, Home } from '@/dashboard';
-import { Datasets as DatasetDetail, DatasetsExplorer, DatasetWizard, PhysicalDatasetEdit, PhysicalDatasetWizard } from '@/services/data';
-import { SqlLab } from '@/SqlLab';
+import { Admin, Login } from '@/features/identity';
+import { Charts, DatavizLab, ChartEditor, ChartSelector } from '@/features/charts';
+import { DashboardEditor, DashboardDetail, Dashboards, Home } from '@/features/dashboards';
+import { Datasets as DatasetDetail, DatasetsExplorer, DatasetWizard, PhysicalDatasetEdit, PhysicalDatasetWizard } from '@/features/datasets';
+import { SqlLab } from '@/features/sqlLab';
 
 export function PublicRoutes({ onLogin }: { onLogin: () => void }) {
   return (

@@ -4,6 +4,7 @@ export interface ChartMetadata {
   name: string;
   description: string;
   category?: string;
+  thumbnail?: string;
 }
 
 export interface ChartPluginProps {

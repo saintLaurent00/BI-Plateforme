@@ -201,13 +201,13 @@ export const Admin = () => {
 
     try {
       if (activeSection === 'users') {
-        const { result } = await identityService.listUsers();
+        const result = await identityService.listUsers();
         setHifadihUsers(result || []);
       } else if (activeSection === 'reports') {
-        const { result } = await identityService.listReports();
+        const result = await identityService.listReports();
         setHifadihReports(result || []);
       } else if (activeSection === 'audit') {
-        const { result } = await identityService.listAuditLogs();
+        const result = await identityService.listAuditLogs();
         setHifadihLogs(result || []);
       }
     } catch (err) {

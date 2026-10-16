@@ -72,7 +72,7 @@ export const PhysicalDatasetWizard = () => {
   const loadDatabases = async () => {
     try {
         const dbsRes = await dataCatalogService.listDatabases();
-        const dbs = dbsRes.result || [];
+        const dbs = dbsRes || [];
         
         let sqliteDbs: any[] = [];
         try {

@@ -133,12 +133,12 @@ export const DatasetsExplorer = () => {
     try {
       const [tables, dsResponse, dbResponse] = await Promise.all([
         getTables(),
-        dataCatalogService.listDatasets().catch(() => ({ result: [] })),
-        dataCatalogService.listDatabases().catch(() => ({ result: [] }))
+        dataCatalogService.listDatasets().catch(() => []),
+        dataCatalogService.listDatabases().catch(() => [])
       ]);
       setLocalTables(tables);
-      setHifadihDatasets(dsResponse.result);
-      setDatabases(dbResponse.result);
+      setHifadihDatasets(dsResponse);
+      setDatabases(dbResponse);
     } catch (err) {
       console.error('Data load error:', err);
     } finally {

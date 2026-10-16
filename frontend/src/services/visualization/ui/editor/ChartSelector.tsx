@@ -158,7 +158,7 @@ export const ChartSelector = () => {
     try {
       const [localTables, hifadihResponse] = await Promise.all([
         getTables(),
-        dataCatalogService.listDatasets().catch(() => ({ result: [] }))
+        dataCatalogService.listDatasets().catch(() => [])
       ]);
       
       const localDs = localTables.map(t => ({
@@ -169,7 +169,7 @@ export const ChartSelector = () => {
         source: 'local'
       }));
 
-      const remoteDs = hifadihResponse.result.map((ds: any) => ({
+      const remoteDs = hifadihResponse.map((ds: any) => ({
         id: ds.id,
         name: ds.table_name || ds.name,
         type: ds.kind === 'physical' ? 'Physical' : 'Virtual',

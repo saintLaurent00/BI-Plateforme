@@ -196,11 +196,11 @@ export const DashboardEditor: React.FC = () => {
       // 1. Fetch available charts from local DB and remote hifadihService
       const [localCharts, remoteRes] = await Promise.all([
         getLocalCharts().catch(() => []),
-        visualizationService.listCharts().catch(() => ({ result: [] }))
+        visualizationService.listCharts().catch(() => [])
       ]);
 
       const combinedCharts: any[] = [...localCharts];
-      const remoteList = remoteRes?.result || [];
+      const remoteList = remoteRes ?? [];
 
       remoteList.forEach((remote: any) => {
         if (!combinedCharts.find(c => String(c.id) === String(remote.id))) {

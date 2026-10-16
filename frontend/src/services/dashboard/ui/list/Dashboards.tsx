@@ -71,7 +71,7 @@ export const Dashboards = () => {
   const loadDashboards = async () => {
     try {
       setIsLoading(true);
-      const { result } = await dashboardService.list();
+      const result = await dashboardService.list();
       
       // Combiner avec les dashboards locaux si nécessaire ou prioriser Hifadih
       const local = await getLocalDashboards();

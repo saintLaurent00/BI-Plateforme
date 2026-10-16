@@ -68,7 +68,7 @@ export const Charts = () => {
   const loadCharts = async () => {
     try {
       setIsLoading(true);
-      const { result } = await visualizationService.listCharts();
+      const result = await visualizationService.listCharts();
       
       // Combiner avec les graphiques locaux
       const local = await getLocalCharts();

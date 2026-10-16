@@ -63,7 +63,7 @@ export const Home = () => {
     const loadDashboards = async () => {
       try {
         setIsLoading(true);
-        const { result } = await dashboardService.list();
+        const result = await dashboardService.list();
         
         // Prioritize results from service, with fallback to local
         if (result && result.length > 0) {
