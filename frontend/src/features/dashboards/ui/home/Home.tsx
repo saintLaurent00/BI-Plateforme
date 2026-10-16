@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { DashboardCard } from '@/ui/components/cards/base/DashboardCard';
 import { Badge } from '@/ui/components/Badge';
-import { dashboardService } from '@/features/dashboards';
+import { dashboardService } from '@/features/dashboards/application/DashboardService';
 import { getDashboards as getLocalDashboards } from '@/platform/persistence/local/db';
 import { useNavigate } from 'react-router-dom';
 
