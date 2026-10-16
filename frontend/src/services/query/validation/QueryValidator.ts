@@ -1,6 +1,6 @@
 import type { ChartQuery } from '@/services/query/models';
-import { getDatasetColumn, getDatasetMetric } from '@/services/data';
-import type { DatasetMetadata } from '@/services/data';
+import { getDatasetColumn, getDatasetMetric } from '@/features/datasets';
+import type { DatasetMetadata } from '@/features/datasets';
 
 const AGGREGATE_FUNCTIONS = /\b(SUM|AVG|MIN|MAX|COUNT)\s*\(/i;
 
