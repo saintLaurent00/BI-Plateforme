@@ -135,7 +135,7 @@ export const D3Chart: React.FC<D3ChartProps> = ({ data, type, xAxis, yAxis, conf
     // Override type if configured in editor (e.g. pie_type -> Donut, line_type -> Area)
     const effectiveType = chartConfig.pieType || chartConfig.lineType || chartConfig.barMode || type;
 
-    if (plugin) {
+    if (plugin?.render) {
       plugin.render(g, {
         data,
         xAxis,
