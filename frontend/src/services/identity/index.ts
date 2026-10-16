@@ -1,4 +1,2 @@
-export * from './models';
-export * from './application/IdentityService';
-export * from './ui/admin/Admin';
-export * from './ui/login/Login';
+/** Backward-compatible exports; new code should import from @/features/identity. */
+export * from '@/features/identity';
