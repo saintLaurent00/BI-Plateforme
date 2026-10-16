@@ -280,10 +280,28 @@ export const Admin = () => {
 
   const handleConnectDatabase = async (e: React.FormEvent) => {
     e.preventDefault();
+    const isEmbedded = newDatabase.engine === 'sqlite' || newDatabase.engine === 'duckdb';
+    if (!newDatabase.name.trim()) {
+      toast.error('Donnez un nom à cette source de données.');
+      setWizardStep(2);
+      return;
+    }
+    if (!isEmbedded && (!newDatabase.host.trim() || !newDatabase.database.trim() || !newDatabase.username.trim())) {
+      toast.error('Renseignez l’hôte, la base de données et l’utilisateur.');
+      setWizardStep(2);
+      return;
+    }
+    if (!isEmbedded && (!newDatabase.port || Number(newDatabase.port) < 1 || Number(newDatabase.port) > 65535)) {
+      toast.error('Le port doit être un nombre compris entre 1 et 65535.');
+      setWizardStep(2);
+      return;
+    }
     try {
       const dbPayload = {
         id: selectedDatabase?.id,
-        ...newDatabase
+        ...newDatabase,
+        port: newDatabase.port ? Number(newDatabase.port) : null,
+        password: '',
       };
 
       await saveLocalDataSource(dbPayload);
@@ -335,7 +353,7 @@ export const Admin = () => {
       port: db.port || '',
       database: db.database || '',
       username: db.username || '',
-      password: db.password || '',
+      password: '',
       useSsl: db.useSsl || false,
       useSshTunnel: db.useSshTunnel || false,
       sshHost: db.sshHost || '',
@@ -348,20 +366,19 @@ export const Admin = () => {
   };
 
   const handleTestConnection = async () => {
-    const loadingToast = toast.loading('Testing connection to ' + newDatabase.host + '...');
-    try {
-      // Simulate real connection test
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Basic validation for "test"
-      if (!newDatabase.name || !newDatabase.host) {
-        throw new Error('Connection parameters missing');
-      }
-      
-      toast.success('Connection to ' + newDatabase.name + ' established successfully', { id: loadingToast });
-    } catch (err: any) {
-      toast.error(err.message || 'Connection attempt timed out', { id: loadingToast });
+    const isEmbedded = newDatabase.engine === 'sqlite' || newDatabase.engine === 'duckdb';
+    const missing = [
+      !newDatabase.name.trim() ? 'nom de la source' : '',
+      !isEmbedded && !newDatabase.host.trim() ? 'hôte' : '',
+      !newDatabase.database.trim() ? 'nom de la base' : '',
+      !isEmbedded && !newDatabase.username.trim() ? 'utilisateur' : '',
+      !isEmbedded && (!newDatabase.port || Number(newDatabase.port) < 1 || Number(newDatabase.port) > 65535) ? 'port valide' : '',
+    ].filter(Boolean);
+    if (missing.length) {
+      toast.error('Informations manquantes ou invalides : ' + missing.join(', ') + '.');
+      return;
     }
+    toast.info('Configuration vérifiée localement. Le test réseau réel sera disponible après intégration du connecteur backend Rust.', { duration: 6000 });
   };
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -1542,8 +1559,8 @@ export const Admin = () => {
                           </div>
                           <div className="flex items-center gap-2">
                              <div className="flex flex-col items-end">
-                                <Badge variant="success" className="px-2 py-0 text-[7px] uppercase tracking-widest font-black">Online</Badge>
-                                <span className="text-[8px] text-muted-foreground mt-1 font-bold">Latency: 14ms</span>
+                                <Badge variant="neutral" className="px-2 py-0 text-[7px] uppercase tracking-widest font-black">Configuration enregistrée</Badge>
+                                <span className="text-[8px] text-muted-foreground mt-1 font-bold">Connexion non testée</span>
                              </div>
                              <button className="p-2 text-muted-foreground/30 hover:text-foreground transition-all hover:bg-muted rounded-lg">
                                <MoreVertical className="w-4 h-4" />
@@ -1577,7 +1594,7 @@ export const Admin = () => {
                                         <div className="w-full h-full bg-emerald-500 rounded-full animate-pulse" />
                                     </div>
                                 ))}
-                                <span className="text-[8px] text-muted-foreground ml-2 font-bold uppercase tracking-widest">Running</span>
+                                <span className="text-[8px] text-muted-foreground ml-2 font-bold uppercase tracking-widest">Enregistrée</span>
                              </div>
                              <div className="flex items-center gap-4">
                                 <button 
@@ -1657,7 +1674,7 @@ export const Admin = () => {
                                 <h4 className="font-bold text-sm text-accent">Sécurité Level-Up</h4>
                             </div>
                             <p className="text-[10px] text-muted-foreground font-medium leading-relaxed italic">
-                                "Hifadih BI utilise un cryptage AES-256 pour stocker vos credentials de base de données. Aucune donnée n'est stockée sur nos serveurs de manière déchiffrée."
+                                "Ne saisissez pas de mot de passe de production dans cette version : le test de connexion réel et le coffre de secrets serveur seront intégrés avec les connecteurs backend. Les identifiants ne doivent pas être persistés dans le navigateur."
                             </p>
                         </div>
                     </div>
