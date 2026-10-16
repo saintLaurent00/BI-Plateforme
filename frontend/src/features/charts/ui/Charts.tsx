@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { getCharts as getLocalCharts, getChart as getLocalChart, executeQuery } from '@/platform/persistence/local/db';
 import Papa from 'papaparse';
-import { visualizationService } from '@/features/charts';
+import { visualizationService } from '@/features/charts/application/VisualizationService';
 import { ChartCard } from '@/ui/components/cards/base/ChartCard';
 import { ChartCardSkeleton, ChartSkeleton, Skeleton } from '@/ui/components/Skeleton';
 import { Badge } from '@/ui/components/Badge';
