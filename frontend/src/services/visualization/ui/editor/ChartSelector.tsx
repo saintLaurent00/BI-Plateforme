@@ -20,8 +20,8 @@ import {
 } from 'lucide-react';
 import { getTables, getTableSchema } from '@/platform/persistence/local/db';
 import { Badge } from '@/ui/components/Badge';
-import { dataCatalogService } from '@/services/data';
-import type { Dataset } from '@/services/data/models/DatasetRecord';
+import { dataCatalogService } from '@/features/datasets';
+import type { Dataset } from '@/features/datasets/models/DatasetRecord';
 
 import { Stepper } from '@/ui/components/Stepper';
 
