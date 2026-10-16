@@ -1,3 +1,1 @@
-export * from './Chart';
-export * from './ChartResult';
-export * from './chart-index';
+export * from '@/features/charts/models';
