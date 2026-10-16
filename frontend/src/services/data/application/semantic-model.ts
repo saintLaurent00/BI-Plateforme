@@ -1,1 +1,2 @@
-export * from '@/services/data/models';
+/** @deprecated Use @/features/datasets/models. */
+export * from '@/features/datasets/models';
