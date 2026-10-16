@@ -1,8 +1,8 @@
 import React from 'react';
-import { EChartsChart } from '@/services/visualization/ui/charts/EChartsChart';
+import { EChartsChart } from '@/features/charts';
 import { SAMPLE_SALES_DATASET, SAMPLE_SALES_DATA } from '@/features/datasets/sample';
-import { SampleQueryExecutor } from '@/services/query';
-import type { ChartQuery } from '@/services/query';
+import { SampleQueryExecutor } from '@/features/queries';
+import type { ChartQuery } from '@/features/queries';
 
 const SAMPLE_QUERY: ChartQuery = {
   datasetId: SAMPLE_SALES_DATASET.id,
