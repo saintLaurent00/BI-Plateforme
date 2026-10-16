@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   CheckCircle2
 } from 'lucide-react';
-import { identityService } from '@/features/identity';
+import { identityService } from '@/features/identity/application/IdentityService';
 import { toast } from 'sonner';
 import { 
   FormSection, 
