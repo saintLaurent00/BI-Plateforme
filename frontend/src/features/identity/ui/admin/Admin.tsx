@@ -49,7 +49,7 @@ import {
   FormCheckbox,
   FormSwitch
 } from '@/ui/components/FormElements';
-import { identityService } from '@/features/identity';
+import { identityService } from '@/features/identity/application/IdentityService';
 import { 
   getRoles as getLocalRoles, 
   saveRole as saveLocalRole, 
