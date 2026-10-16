@@ -1,25 +1,25 @@
 # Frontend Architecture
 
-The frontend uses a Business Services / Modular Monolith architecture.
+The frontend follows a feature-first modular monolith. Business capabilities live under `frontend/src/features`; platform mechanisms and generic presentation primitives remain shared.
 
 ```text
 frontend/src/
-├── services/
-│   ├── identity/
-│   ├── data/
-│   ├── query/
-│   ├── visualization/
-│   ├── dashboard/
-│   ├── exploration/
-│   ├── governance/
-│   └── reporting/
+├── features/
+│   ├── identity/       # models, application services and identity UI
+│   ├── datasets/       # datasets, data catalog and metadata
+│   ├── queries/        # query models, validation and execution
+│   ├── charts/         # chart models, adapters, editors and plugins
+│   ├── dashboards/     # dashboard models, listing, detail and editor
+│   ├── exploration/    # SQL Lab and saved-query workflows
+│   ├── governance/     # audit, permissions and row-level security
+│   └── reporting/      # report definitions and workflows
 ├── platform/
 │   ├── routing/
 │   ├── persistence/
 │   ├── runtime/
 │   └── configuration/
 ├── ui/
-│   ├── components/
+│   ├── components/     # reusable presentation primitives
 │   ├── layout/
 │   └── documentation/
 ├── App.tsx
@@ -27,30 +27,34 @@ frontend/src/
 └── index.css
 ```
 
-## Business services
+## Feature ownership
 
-Each service owns its business capability, including models, application logic, execution logic and UI where applicable.
+A feature owns its domain models, application services, feature-specific UI, and adapters where applicable.
 
-- identity — users, groups, roles, permissions, administration and login.
-- data — data sources, datasets, metadata, semantic model, catalog and sample data.
-- query — query models, builder, validation, compilation and execution.
-- visualization — chart models, visualization adapters, chart editor and chart plugins.
-- dashboard — dashboard models, layout, dashboard listing, detail and editor.
-- exploration — SQL Lab and saved-query workflows.
-- governance — audit, access control and row-level security.
-- reporting — report definitions and reporting contracts.
+- **identity** — users, groups, roles, permissions, administration and login.
+- **datasets** — data sources, datasets, metadata, semantic model, catalog and sample data.
+- **queries** — query models, builder, validation, compilation and execution.
+- **charts** — chart models, visualization adapters, chart editor and chart plugins.
+- **dashboards** — dashboard models, layout, listing, detail and editor.
+- **exploration** — SQL Lab and saved-query workflows.
+- **governance** — audit, access control and row-level security.
+- **reporting** — report definitions and reporting contracts.
+
+New business code must be added to its owning feature, not to a generic service directory.
+
+## Migration compatibility
+
+The `services/` tree is being retired as the implementation location. Where legacy imports still exist, files under `services/` should be thin re-export facades pointing to the corresponding feature. They must not contain a second copy of the business implementation.
+
+The identity feature is the reference migration: its models, application service and UI are located under `features/identity`; legacy identity paths remain only as compatibility facades. Other feature directories are migrated incrementally, and should not be considered fully relocated until their implementation files—not only their index exports—live under `features/`.
 
 ## Platform
 
-platform/ contains runtime mechanisms that are not business capabilities: routing, local persistence and SQLite, runtime utilities, and configuration.
-
-Business logic must not be moved into platform/.
+`platform/` contains runtime mechanisms that are not business capabilities: routing, local persistence and SQLite, runtime utilities, and configuration. Business logic must not be moved into platform.
 
 ## Generic UI
 
-ui/ contains reusable presentation primitives only: DataTable, Modal, Badge, Skeleton, generic cards, and application layout.
-
-Business-specific UI belongs to its owning service.
+`ui/` contains reusable presentation primitives only: tables, modals, badges, skeletons, generic cards, and application layout. Business-specific UI belongs to its owning feature.
 
 ## Query and visualization boundary
 
@@ -78,18 +82,14 @@ Metadata, query construction, execution, visualization and persistence remain se
 
 ## Plugin boundary
 
-Visualization plugins live in frontend/plugins/.
-
-The visualization service owns the registry and adapters; plugin packages implement chart-specific rendering and query behavior.
-
-The registry contract lives at `services/visualization/plugins/`; plugin packages consume that contract rather than defining a global plugin API.
+The charts feature owns the registry and adapters; plugin packages implement chart-specific rendering and query behavior. Plugin packages consume the shared plugin contract rather than defining a global plugin API.
 
 ## Backend evolution
 
-The current frontend is a modular monolith. Its module boundaries are intentionally compatible with a future Rust backend:
+The current frontend is a modular monolith. Its module boundaries are compatible with a future Rust backend:
 
 ```text
-Frontend service
+Frontend feature
       ↓
 platform/API adapter
       ↓
