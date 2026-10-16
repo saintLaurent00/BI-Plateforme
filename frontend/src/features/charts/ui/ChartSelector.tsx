@@ -25,7 +25,7 @@ import type { Dataset } from '@/features/datasets';
 
 import { Stepper } from '@/ui/components/Stepper';
 
-import { chartPlugins } from '@/features/charts';
+import { chartPlugins } from '@/features/charts/plugins';
 import type { ChartPlugin } from '@/features/charts/plugins/types';
 
 // Categories mapping to icons
