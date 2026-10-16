@@ -1,8 +1,2 @@
-export * from './CalculatedColumnMetadata';
-export * from './ColumnMetadata';
-export * from './DataSourceMetadata';
-export * from './DataType';
-export * from './DatasetMetadata';
-export * from './MetricMetadata';
-export * from './MetadataCatalog';
-export * from './DataSource';
+/** Compatibility entry point. Prefer @/features/datasets/models. */
+export * from '@/features/datasets/models';
