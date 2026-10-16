@@ -1,4 +1,2 @@
-export * from './User';
-export * from './Group';
-export * from './Role';
-export * from './Permission';
+/** Compatibility facade for legacy identity model imports. */
+export * from '../../../features/identity/models/identity-index';
