@@ -1,2 +1,2 @@
-/** SQL Lab feature entry point aligned with Superset's SqlLab capability. */
-export { SqlLab } from '../../services/exploration/ui/sql-lab/SqlLab';
+/** Compatibility entry point; SQL Lab is owned by the exploration feature. */
+export { SqlLab } from '../exploration/ui/SqlLab';
