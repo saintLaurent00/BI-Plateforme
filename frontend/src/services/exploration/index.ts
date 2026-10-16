@@ -1,2 +1,3 @@
-export * from './models';
-export * from './ui/sql-lab/SqlLab';
+/** Compatibility entry point. Prefer imports from @/features/exploration. */
+export * from '@/features/exploration/models';
+export * from '@/features/exploration/ui';
