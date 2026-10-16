@@ -23,7 +23,7 @@ import {
 } from '@/ui/components/FormElements';
 import { getDashboards as getLocalDashboards, saveDashboard, deleteDashboard } from '@/platform/persistence/local/db';
 import { DASHBOARD_TEMPLATES, type DashboardTemplate } from '@/features/dashboards/configuration/templates';
-import { dashboardService } from '@/features/dashboards';
+import { dashboardService } from '@/features/dashboards/application/DashboardService';
 import { DashboardCard } from '@/ui/components/cards/base/DashboardCard';
 import { DashboardCardSkeleton } from '@/ui/components/Skeleton';
 import { cn } from '@/platform/runtime/utils';
