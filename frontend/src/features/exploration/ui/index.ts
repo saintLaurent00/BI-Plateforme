@@ -1,1 +1,2 @@
-export * from '@/services/exploration/ui/sql-lab/SqlLab';
+/** Public UI API for SQL exploration. */
+export * from './SqlLab';
