@@ -21,7 +21,7 @@ import {
 import { getTables, getTableSchema } from '@/platform/persistence/local/db';
 import { Badge } from '@/ui/components/Badge';
 import { dataCatalogService } from '@/features/datasets';
-import type { Dataset } from '@/features/datasets/models/DatasetRecord';
+import type { Dataset } from '@/features/datasets';
 
 import { Stepper } from '@/ui/components/Stepper';
 
