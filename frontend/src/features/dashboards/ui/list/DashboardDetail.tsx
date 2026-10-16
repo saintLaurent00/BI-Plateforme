@@ -56,7 +56,7 @@ const BACKGROUNDS = [
 ];
 
 import { getDashboard as getLocalDashboard, executeQuery } from '@/platform/persistence/local/db';
-import { dashboardService } from '@/features/dashboards';
+import { dashboardService } from '@/features/dashboards/application/DashboardService';
 import { DashboardChart } from '@/features/dashboards/ui/DashboardChart';
 import ReactMarkdown from 'react-markdown';
 import { mapLegacyToHifadihLayout, denormalizeLayout } from '@/features/dashboards/layout/dashboardLayout';
