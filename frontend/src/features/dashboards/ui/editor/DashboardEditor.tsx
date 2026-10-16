@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { getCharts as getLocalCharts, saveDashboard as saveLocalDashboard, getDashboard as getLocalDashboard } from '@/platform/persistence/local/db';
 import { dashboardService } from '@/features/dashboards/application/DashboardService';
-import { visualizationService } from '@/features/charts';
+import { visualizationService } from '@/features/charts/application/VisualizationService';
 import { toast } from 'sonner';
 import { cn } from '@/platform/runtime/utils';
 import { Skeleton, DashboardEditorCanvasSkeleton } from '@/ui/components/Skeleton';
