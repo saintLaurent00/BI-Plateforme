@@ -1,2 +1,3 @@
-/** Dataset feature entry point; implementation remains in the existing service layer. */
-export * from '../../services/data';
+/** Public API for the datasets feature. */
+export * from './models';
+export * from './application/DataCatalogService';
