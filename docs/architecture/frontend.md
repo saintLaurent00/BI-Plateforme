@@ -46,7 +46,7 @@ New business code must be added to its owning feature, not to a generic service 
 
 The `services/` tree is being retired as the implementation location. Where legacy imports still exist, files under `services/` should be thin re-export facades pointing to the corresponding feature. They must not contain a second copy of the business implementation.
 
-The identity feature is the reference migration: its models, application service and UI are located under `features/identity`; legacy identity paths remain only as compatibility facades. Other feature directories are migrated incrementally, and should not be considered fully relocated until their implementation files—not only their index exports—live under `features/`.
+The identity and datasets features are the first concrete migrations: their domain models, application services and feature-specific UI now live under `features/identity` and `features/datasets`; the former `services/identity` and `services/data` paths are compatibility facades. Query, visualization, exploration and the remaining domains are still being migrated incrementally, so their implementation files must be moved before they can be considered fully relocated.
 
 ## Platform
 
