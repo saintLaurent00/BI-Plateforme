@@ -1,6 +1,6 @@
 import React from 'react';
 import { EChartsChart } from '@/services/visualization/ui/charts/EChartsChart';
-import { SAMPLE_SALES_DATASET, SAMPLE_SALES_DATA } from '@/services/data/sample';
+import { SAMPLE_SALES_DATASET, SAMPLE_SALES_DATA } from '@/features/datasets/sample';
 import { SampleQueryExecutor } from '@/services/query';
 import type { ChartQuery } from '@/services/query';
 
