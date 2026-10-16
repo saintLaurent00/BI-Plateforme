@@ -1,5 +1,2 @@
-export * from './models';
-export * from './execution/QueryExecutor';
-export * from './compiler/QueryCompiler';
-export * from './validation/QueryValidator';
-export * from './execution/SampleQueryExecutor';
+/** Compatibility entry point. Prefer imports from @/features/queries. */
+export * from '@/features/queries';
