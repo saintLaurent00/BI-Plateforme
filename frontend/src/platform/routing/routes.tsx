@@ -5,7 +5,7 @@ import { Admin, Login } from '@/features/identity';
 import { Charts, DatavizLab, ChartEditor, ChartSelector } from '@/features/charts';
 import { DashboardEditor, DashboardDetail, Dashboards, Home } from '@/features/dashboards';
 import { Datasets as DatasetDetail, DatasetsExplorer, DatasetWizard, PhysicalDatasetEdit, PhysicalDatasetWizard } from '@/features/datasets';
-import { SqlLab } from '@/features/sqlLab';
+import { SqlLab } from '@/features/exploration';
 
 export function PublicRoutes({ onLogin }: { onLogin: () => void }) {
   return (
