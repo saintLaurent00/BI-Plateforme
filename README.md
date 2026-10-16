@@ -27,33 +27,44 @@
 
 Le dépôt est actuellement centré sur le **frontend React/TypeScript**. La cible backend est un **backend unique en Rust**.
 
-> **État du projet — 30 septembre 2026**  
-> Le backend Rust est une cible d'architecture et n'est pas encore présent dans l'arborescence actuelle.
+> **État du projet — 16 octobre 2026**  
+> Le backend Rust est initialisé et son découpage par domaines commence à suivre les frontières fonctionnelles d'Apache Superset. Les implémentations métier Rust restent à construire et à valider.
 
 ## Architecture
 
+L'organisation du code prend **Apache Superset** comme référence structurelle pour le frontend et le backend, adaptée à la stack React/TypeScript + Rust. La cible détaillée et la stratégie de migration sont documentées dans [docs/architecture/APACHE_SUPERSET_STRUCTURE.md](docs/architecture/APACHE_SUPERSET_STRUCTURE.md).
+
 ```text
 BI-Plateforme/
-├── README.md
-├── .gitignore
-├── docs/                  # Documentation
-├── frontend/              # Application React + TypeScript
+├── frontend/
 │   ├── src/
-│   ├── plugins/           # Registre des plugins côté application
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── tsconfig.json
-├── infrastructure/        # Infrastructure locale
-│   └── docker/
-│       └── docker-compose.yml
-└── plugins/               # Packages de plugins de visualisation
-    ├── plugin-chart-bar/
-    ├── plugin-chart-line/
-    ├── plugin-chart-pie/
-    └── ...
+│   │   ├── SqlLab/              # SQL Lab
+│   │   ├── dashboard/           # Dashboards et éditeur
+│   │   ├── database/            # Connexions et métadonnées
+│   │   ├── explore/             # Chart builder
+│   │   ├── features/            # Capacités transversales
+│   │   ├── visualizations/      # Adaptateurs et registre de charts
+│   │   └── ...                  # UI, routing, types, hooks
+│   ├── plugins/plugin-chart-*/  # Plugins de visualisation
+│   └── packages/                # Packages frontend réutilisables
+├── backend/
+│   └── src/
+│       ├── charts/              # Charts
+│       ├── dashboards/          # Dashboards
+│       ├── databases/           # Connexions et moteurs
+│       ├── datasets/            # Catalogue de données
+│       ├── db_engine_specs/     # Capacités SQL par moteur
+│       ├── explore/             # Exploration
+│       ├── queries/             # Compilation et exécution
+│       ├── reports/             # Rapports et exports
+│       ├── security/            # Sécurité et permissions
+│       ├── sqllab/              # SQL Lab
+│       └── ...                  # API, cache, tâches, erreurs
+├── docs/                        # Documentation du projet
+└── infrastructure/              # Environnement d'exécution
 ```
 
-L'objectif est de garder la racine du dépôt orientée **navigation et documentation**, tandis que l'implémentation frontend vit dans `frontend/`.
+La migration du code réel se fait progressivement, par domaine, avec mise à jour des imports et validation CI. Les anciens chemins ne sont supprimés qu'après vérification de leurs usages.
 
 ## Stack
 
