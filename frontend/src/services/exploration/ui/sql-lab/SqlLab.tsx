@@ -30,7 +30,7 @@ import {
 } from '@/ui/components/FormElements';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { executeQuery, getTables, getTableSchema, saveQuery, getSavedQueries, getDataSources } from '@/platform/persistence/local/db';
-import { dataCatalogService } from '@/services/data';
+import { dataCatalogService } from '@/features/datasets';
 import { cn } from '@/platform/runtime/utils';
 import { toast } from 'sonner';
 
