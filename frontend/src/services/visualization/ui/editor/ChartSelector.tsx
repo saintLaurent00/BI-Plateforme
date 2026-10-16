@@ -25,8 +25,8 @@ import type { Dataset } from '@/features/datasets';
 
 import { Stepper } from '@/ui/components/Stepper';
 
-import { chartPlugins } from '@/services/visualization';
-import type { ChartPlugin } from '@/services/visualization/plugins/types';
+import { chartPlugins } from '@/features/charts';
+import type { ChartPlugin } from '@/features/charts/plugins/types';
 
 // Categories mapping to icons
 const CATEGORY_ICONS: Record<string, any> = {
