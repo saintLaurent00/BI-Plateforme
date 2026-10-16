@@ -733,7 +733,7 @@ export const saveDataSource = async (ds: any) => {
     ds.port,
     ds.database,
     ds.username,
-    ds.password,
+    null, // Never persist database credentials in browser IndexedDB.
     ds.useSsl ? 1 : 0,
     ds.useSshTunnel ? 1 : 0,
     ds.sshHost || null,
