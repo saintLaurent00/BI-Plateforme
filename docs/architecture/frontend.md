@@ -46,7 +46,7 @@ New business code must be added to its owning feature, not to a generic service 
 
 The `services/` tree is being retired as the implementation location. Where legacy imports still exist, files under `services/` should be thin re-export facades pointing to the corresponding feature. They must not contain a second copy of the business implementation.
 
-The identity and datasets features are the first concrete migrations: their domain models, application services and feature-specific UI now live under `features/identity` and `features/datasets`; the former `services/identity` and `services/data` paths are compatibility facades. Query, visualization, exploration and the remaining domains are still being migrated incrementally, so their implementation files must be moved before they can be considered fully relocated.
+Identity, datasets and the core of charts now follow the feature-first structure: domain models, visualization application service and chart plugin registry/contracts live under `features/identity`, `features/datasets` and `features/charts`. Legacy `services/identity`, `services/data` and core `services/visualization` entry points are compatibility facades. Chart-specific UI is still being relocated incrementally; queries and exploration remain in migration.
 
 ## Platform
 
