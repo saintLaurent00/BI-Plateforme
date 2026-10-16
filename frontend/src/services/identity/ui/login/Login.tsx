@@ -1,2 +1,2 @@
-/** @deprecated Import Login from @/features/identity. */
-export { Login } from '@/features/identity/ui/login/Login';
+/** @deprecated Use @/features/identity/ui/login/Login. */
+export { Login } from '../../../features/identity/ui/login/Login';
