@@ -13,11 +13,11 @@ export default function App() {
 
   return (
     <Router>
+      <Toaster position="top-right" richColors />
       {!isAuthenticated ? (
         <PublicRoutes onLogin={handleLogin} />
       ) : (
         <>
-          <Toaster position="top-right" richColors />
           <Layout onLogout={handleLogout}>
             <AuthenticatedRoutes />
           </Layout>
