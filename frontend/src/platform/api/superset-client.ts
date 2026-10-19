@@ -28,7 +28,7 @@ let refreshInFlight: Promise<boolean> | null = null;
 export const supersetAuth = {
   getAccessToken: () => window.sessionStorage.getItem(TOKEN_KEY),
   getRefreshToken: () => window.sessionStorage.getItem(REFRESH_TOKEN_KEY),
-  isAuthenticated: () => Boolean(window.localStorage.getItem(TOKEN_KEY)),
+  isAuthenticated: () => Boolean(window.sessionStorage.getItem(TOKEN_KEY)),
   clear() {
     window.sessionStorage.removeItem(TOKEN_KEY);
     window.sessionStorage.removeItem(REFRESH_TOKEN_KEY);
@@ -141,7 +141,6 @@ export async function supersetRequest<T>(path: string, options: SupersetRequestO
 
   if (response.status === 401 && authenticated && await refreshAccessToken()) {
     headers.set('Authorization', `Bearer ${supersetAuth.getAccessToken()}`);
-    csrfToken = null;
     response = await fetch(url, { ...init, headers, credentials: 'include' });
   }
 
