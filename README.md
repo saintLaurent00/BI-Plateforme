@@ -32,6 +32,9 @@ Dans la branche `refonte/pages-superset`, le dépôt est centré sur le **fronte
 
 ## Architecture
 
+L’intégration directe avec les API REST d’Apache Superset, la configuration et les limites de compatibilité sont documentées dans [SUPERSET_API_INTEGRATION.md](docs/architecture/SUPERSET_API_INTEGRATION.md).
+
+
 L'organisation du code prend **Apache Superset** comme référence structurelle pour le frontend et le backend, adaptée à la stack React/TypeScript + Rust. La cible détaillée et la stratégie de migration sont documentées dans [docs/architecture/APACHE_SUPERSET_STRUCTURE.md](docs/architecture/APACHE_SUPERSET_STRUCTURE.md).
 
 ```text
