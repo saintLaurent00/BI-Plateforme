@@ -22,6 +22,7 @@ export class SupersetApiError extends Error {
 
 const TOKEN_KEY = 'hifadih.superset.access_token';
 const REFRESH_TOKEN_KEY = 'hifadih.superset.refresh_token';
+let csrfToken: string | null = null;
 
 export const supersetAuth = {
   getAccessToken: () => window.localStorage.getItem(TOKEN_KEY),
@@ -30,6 +31,7 @@ export const supersetAuth = {
   clear() {
     window.localStorage.removeItem(TOKEN_KEY);
     window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+    csrfToken = null;
   },
   async login(username: string, password: string, provider: SupersetLoginProvider = 'db') {
     if (!supersetBaseUrl) {
@@ -87,6 +89,22 @@ export async function supersetRequest<T>(path: string, options: SupersetRequestO
     const token = supersetAuth.getAccessToken();
     if (!token) throw new SupersetApiError('Session Superset absente. Connectez-vous à nouveau.', 401);
     headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  const method = (init.method ?? 'GET').toUpperCase();
+  if (authenticated && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    if (!csrfToken) {
+      const csrfResponse = await fetch(`${supersetBaseUrl}${API_PREFIX}/security/csrf_token/`, {
+        headers: { Accept: 'application/json', Authorization: `Bearer ${supersetAuth.getAccessToken()}` },
+        credentials: 'include',
+      });
+      const csrfPayload = await parseResponse(csrfResponse);
+      if (!csrfResponse.ok) {
+        throw new SupersetApiError(readErrorMessage(csrfPayload, 'Impossible de récupérer le jeton CSRF Superset.'), csrfResponse.status, csrfPayload);
+      }
+      csrfToken = csrfPayload?.result ?? csrfPayload?.csrf_token ?? null;
+    }
+    if (csrfToken) headers.set('X-CSRFToken', csrfToken);
   }
 
   const response = await fetch(`${supersetBaseUrl}${path.startsWith('/') ? path : `/${path}`}`, {
