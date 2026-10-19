@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { dataCatalogService } from '@/features/datasets';
 import { Badge } from '@/ui/components/Badge';
-import { dataCatalogService } from '@/features/datasets';
+import { toast } from 'sonner';
 
 import { Stepper } from '@/ui/components/Stepper';
 
