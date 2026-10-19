@@ -236,16 +236,17 @@ export const DashboardEditor: React.FC = () => {
           }
           
           const normalizeItem = (item: any): DashboardItemData => {
-            const isRowOrCol = item.type === 'row' || item.type === 'column';
+            const normalizedType = String(item.type || 'chart').toLowerCase();
+            const isRowOrCol = normalizedType === 'row' || normalizedType === 'column';
             return {
               id: item.id || generateId(),
-              type: String(item.type || 'chart').toLowerCase(),
+              type: normalizedType,
               content: item.content || (!isRowOrCol ? item : undefined),
               children: Array.isArray(item.children) ? item.children.map(normalizeItem) : (isRowOrCol ? [] : undefined),
               meta: {
-                width: item.meta?.width || (item.type === 'row' ? 12 : 6),
-                height: item.meta?.height || (item.type === 'chart' ? 380 : 420),
-                title: item.meta?.title || item.content?.name || (item.type === 'row' ? 'Ligne' : item.type === 'column' ? 'Colonne' : ''),
+                width: item.meta?.width || (normalizedType === 'row' ? 12 : 6),
+                height: item.meta?.height || (normalizedType === 'chart' ? 380 : 420),
+                title: item.meta?.title || item.content?.name || (normalizedType === 'row' ? 'Ligne' : normalizedType === 'column' ? 'Colonne' : ''),
                 backgroundColor: item.meta?.backgroundColor,
                 borderColor: item.meta?.borderColor,
                 borderWidth: item.meta?.borderWidth,
