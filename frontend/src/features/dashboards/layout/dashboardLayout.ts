@@ -232,10 +232,11 @@ export const mapHifadihLayoutToEngine = (layout: Layout): any => {
   
   Object.keys(layout).forEach(id => {
     const item = layout[id];
-    if (item.type === 'ROOT' || item.type === 'GRID') {
+    const normalizedType = String(item.type || '').toUpperCase();
+    if (normalizedType === 'ROOT' || normalizedType === 'GRID') {
       position[id] = {
         id,
-        type: item.type,
+        type: normalizedType,
         children: item.children,
         parents: item.parents,
         meta: item.meta
@@ -245,14 +246,14 @@ export const mapHifadihLayoutToEngine = (layout: Layout): any => {
 
     position[id] = {
       id,
-      type: item.type,
+      type: normalizedType,
       children: item.children,
       parents: item.parents,
       meta: {
         ...item.meta,
-        chartId: item.type === 'CHART' ? item.content?.id : undefined,
-        sliceName: item.type === 'CHART' ? item.content?.name : undefined,
-        text: (item.type === 'MARKDOWN' || item.type === 'HEADER') ? item.content : undefined
+        chartId: normalizedType === 'CHART' ? item.content?.id : undefined,
+        sliceName: normalizedType === 'CHART' ? item.content?.name : undefined,
+        text: (normalizedType === 'MARKDOWN' || normalizedType === 'HEADER') ? item.content : undefined
       }
     };
   });
