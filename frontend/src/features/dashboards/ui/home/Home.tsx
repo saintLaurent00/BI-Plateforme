@@ -17,7 +17,8 @@ import {
 import { DashboardCard } from '@/ui/components/cards/base/DashboardCard';
 import { Badge } from '@/ui/components/Badge';
 import { dashboardService } from '@/features/dashboards/application/DashboardService';
-import { getDashboards as getLocalDashboards } from '@/platform/persistence/local/db';
+import { visualizationService } from '@/features/charts/application/VisualizationService';
+import { dataCatalogService } from '@/features/datasets/application/DataCatalogService';
 import { useNavigate } from 'react-router-dom';
 
 const StatCard = ({ label, value, trend, icon: Icon }: any) => (
@@ -58,31 +59,39 @@ export const Home = () => {
   const navigate = useNavigate();
   const [dashboards, setDashboards] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [stats, setStats] = React.useState({ dashboards: 0, charts: 0, datasets: 0, databases: 0 });
+  const [loadError, setLoadError] = React.useState('');
 
   React.useEffect(() => {
-    const loadDashboards = async () => {
+    let active = true;
+    const loadOverview = async () => {
+      setIsLoading(true);
+      setLoadError('');
       try {
-        setIsLoading(true);
-        const result = await dashboardService.list();
-        
-        // Prioritize results from service, with fallback to local
-        if (result && result.length > 0) {
-          setDashboards(result.slice(0, 4));
-        } else {
-          const local = await getLocalDashboards();
-          setDashboards(local.slice(0, 4));
-        }
+        const [dashboardRows, chartRows, datasetRows, databaseRows] = await Promise.all([
+          dashboardService.list(),
+          visualizationService.listCharts(),
+          dataCatalogService.listDatasets(),
+          dataCatalogService.listDatabases(),
+        ]);
+        if (!active) return;
+        setDashboards(dashboardRows.slice(0, 4));
+        setStats({
+          dashboards: dashboardRows.length,
+          charts: chartRows.length,
+          datasets: datasetRows.length,
+          databases: databaseRows.length,
+        });
       } catch (err) {
-        console.error('Failed to load home dashboards:', err);
-        try {
-          const local = await getLocalDashboards();
-          setDashboards(local.slice(0, 4));
-        } catch (lerr) {}
+        if (!active) return;
+        setDashboards([]);
+        setLoadError(err instanceof Error ? err.message : 'Impossible de charger les données Superset.');
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     };
-    loadDashboards();
+    void loadOverview();
+    return () => { active = false; };
   }, []);
 
   return (
@@ -108,12 +117,14 @@ export const Home = () => {
         </div>
       </motion.div>
 
+      {loadError && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{loadError}</div>}
+
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard label="Active Users" value="1,284" trend="+4.2%" icon={Users} />
-        <StatCard label="Total Queries" value="48.2k" trend="+12.5%" icon={Activity} />
-        <StatCard label="Data Health" value="98.4%" trend="+0.2%" icon={TrendingUp} />
-        <StatCard label="Dashboards" value="246" trend="+8.1%" icon={LayoutDashboard} />
+        <StatCard label="Datasets" value={isLoading ? "…" : stats.datasets.toLocaleString()} trend="Superset" icon={Users} />
+        <StatCard label="Graphiques" value={isLoading ? "…" : stats.charts.toLocaleString()} trend="Superset" icon={Activity} />
+        <StatCard label="Bases de données" value={isLoading ? "…" : stats.databases.toLocaleString()} trend="Superset" icon={TrendingUp} />
+        <StatCard label="Dashboards" value={isLoading ? "…" : stats.dashboards.toLocaleString()} trend="Superset" icon={LayoutDashboard} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
@@ -154,20 +165,17 @@ export const Home = () => {
         {/* Activity */}
         <div className="space-y-8">
           <div className="flex items-center justify-between">
-            <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Activité Récente</h3>
+            <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">État du catalogue</h3>
             <button className="p-2 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-all">
               <MoreHorizontal className="w-4 h-4" />
             </button>
           </div>
           
-          <div className="space-y-1">
-            <ActivityItem user="Sarah Chen" action="updated" target="Sales Dashboard" time="12m ago" />
-            <ActivityItem user="Mike Ross" action="created" target="Churn Rate Chart" time="45m ago" />
-            <ActivityItem user="Alex Kim" action="commented on" target="Executive Overview" time="2h ago" />
-            <ActivityItem user="System" action="refreshed" target="Global Revenue" time="3h ago" />
-            <ActivityItem user="Laurent O." action="shared" target="Marketing KPIs" time="5h ago" />
-          </div>
-        </div>
+          <div className="space-y-3 rounded-2xl border border-border bg-background p-5">
+            <p className="text-sm font-semibold">Connexion à Apache Superset</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">Les indicateurs et tableaux de bord de cette page proviennent de l’API de l’instance configurée. Les activités utilisateur ne sont pas simulées.</p>
+            <button onClick={() => navigate('/datasets')} className="text-xs font-semibold text-accent hover:underline">Ouvrir le catalogue de données</button>
+          </div>        </div>
       </div>
     </div>
   );
