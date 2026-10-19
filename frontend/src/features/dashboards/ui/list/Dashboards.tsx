@@ -21,9 +21,9 @@ import {
   FormButton,
   FormLabel
 } from '@/ui/components/FormElements';
-import { getDashboards as getLocalDashboards, saveDashboard, deleteDashboard } from '@/platform/persistence/local/db';
 import { DASHBOARD_TEMPLATES, type DashboardTemplate } from '@/features/dashboards/configuration/templates';
 import { dashboardService } from '@/features/dashboards/application/DashboardService';
+import { supersetBaseUrl, SupersetApiError } from '@/platform/api/superset-client';
 import { DashboardCard } from '@/ui/components/cards/base/DashboardCard';
 import { DashboardCardSkeleton } from '@/ui/components/Skeleton';
 import { cn } from '@/platform/runtime/utils';
@@ -58,6 +58,7 @@ export const Dashboards = () => {
   const [newDashboard, setNewDashboard] = React.useState({ title: '', description: '', tags: '' });
   const [isCreating, setIsCreating] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [loadError, setLoadError] = React.useState('');
 
   const filteredDashboards = dashboards.filter(d => {
     const title = d.dashboard_title || d.name || d.title || '';
@@ -71,24 +72,17 @@ export const Dashboards = () => {
   const loadDashboards = async () => {
     try {
       setIsLoading(true);
+      setLoadError('');
       const result = await dashboardService.list();
-      
-      // Combiner avec les dashboards locaux si nécessaire ou prioriser Hifadih
-      const local = await getLocalDashboards();
-      
-      // Pour l'UX, on fusionne ou on préfère les données du service
-      const combined = [...local];
-      result.forEach((remote: any) => {
-        if (!combined.find(l => l.id === remote.id)) {
-          combined.push(remote);
-        }
-      });
-      
-      setDashboards(combined);
+      setDashboards(result);
     } catch (err) {
-      console.error('Failed to load dashboards:', err);
-      const local = await getLocalDashboards();
-      setDashboards(local);
+      console.error('Failed to load dashboards from Apache Superset:', err);
+      setDashboards([]);
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : 'Impossible de charger les tableaux de bord depuis Apache Superset.',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +92,7 @@ export const Dashboards = () => {
     if (!window.confirm('Are you sure you want to delete this dashboard? This action cannot be undone.')) return;
     
     try {
-      await deleteDashboard(id);
+      await dashboardService.remove(id);
       toast.success('Dashboard deleted successfully');
       loadDashboards();
     } catch (err) {
@@ -119,21 +113,16 @@ export const Dashboards = () => {
       const template = DASHBOARD_TEMPLATES.find(t => t.id === selectedTemplate);
       const dashboardId = crypto.randomUUID();
       
-      await saveDashboard({
-        id: dashboardId,
-        name: newDashboard.title,
-        description: newDashboard.description,
-        layout: template?.layout || [],
-        backgroundColor: '#f8fafc'
-      });
+      const created = await dashboardService.create({ dashboard_title: newDashboard.title, published: false });
 
       setIsModalOpen(false);
       setNewDashboard({ title: '', description: '', tags: '' });
       setStep(1);
       setSelectedTemplate('blank');
-      navigate(`/dashboard-editor/${dashboardId}`);
+      navigate(`/dashboard-editor/${created.id}`);
     } catch (err) {
-      console.error('Failed to create dashboard:', err);
+      console.error('Failed to create dashboard in Apache Superset:', err);
+      toast.error(err instanceof Error ? err.message : 'Impossible de créer le tableau de bord dans Superset.');
     } finally {
       setIsCreating(false);
     }
@@ -177,6 +166,17 @@ export const Dashboards = () => {
 
       {/* Content Area */}
       <div className="flex-1 p-6 lg:p-10 space-y-10 overflow-y-auto bg-muted/20">
+        {!supersetBaseUrl && (
+          <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+            Apache Superset n’est pas configuré. Ajoutez <code className="font-mono">VITE_SUPERSET_URL</code> dans <code className="font-mono">frontend/.env.local</code>, puis redémarrez Vite.
+          </div>
+        )}
+        {loadError && (
+          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span>{loadError}</span>
+            <button onClick={() => void loadDashboards()} className="btn-secondary shrink-0">Réessayer</button>
+          </div>
+        )}
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
