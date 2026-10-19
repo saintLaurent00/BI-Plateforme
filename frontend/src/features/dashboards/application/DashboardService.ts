@@ -58,6 +58,20 @@ export const dashboardService = {
     throw new Error('Superset a créé le tableau de bord sans renvoyer ses informations.');
   },
 
+  async update(id: string | number, input: {
+    dashboard_title?: string;
+    position_json?: string;
+    json_metadata?: string;
+    css?: string;
+    published?: boolean;
+  }): Promise<SupersetDashboard> {
+    const response = await supersetRequest<{ result?: SupersetDashboard }>(
+      `/api/v1/dashboard/${encodeURIComponent(String(id))}`,
+      { method: 'PUT', body: JSON.stringify(input) },
+    );
+    return response.result ?? { id, dashboard_title: input.dashboard_title || 'Tableau de bord' };
+  },
+
   async remove(id: string | number): Promise<void> {
     await supersetRequest<unknown>(`/api/v1/dashboard/${encodeURIComponent(String(id))}`, {
       method: 'DELETE',
