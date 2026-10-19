@@ -32,6 +32,34 @@ export const dataCatalogService = {
     const response = await supersetRequest<{ result: SupersetDataset }>(`/api/v1/dataset/${encodeURIComponent(String(id))}`);
     return response.result;
   },
+  async createDataset(input: {
+    table_name: string;
+    name?: string;
+    database_id?: string | number;
+    database?: { id?: string | number };
+    schema?: string;
+    sql?: string;
+    kind?: string;
+    [key: string]: unknown;
+  }): Promise<SupersetDataset> {
+    const databaseId = input.database_id ?? input.database?.id;
+    if (!databaseId || databaseId === 'local') {
+      throw new Error('Sélectionnez une base de données configurée dans Apache Superset.');
+    }
+    const body: Record<string, unknown> = {
+      database: Number(databaseId),
+      table_name: input.table_name,
+      schema: input.schema ?? null,
+    };
+    if (input.sql) body.sql = input.sql;
+    const response = await supersetRequest<{ id?: number; result?: SupersetDataset }>(
+      '/api/v1/dataset/',
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+    if (response.result) return response.result;
+    if (response.id !== undefined) return { id: response.id, table_name: input.table_name, name: input.name };
+    throw new Error('Superset n’a pas renvoyé le dataset créé.');
+  },
   async deleteDataset(id: string | number): Promise<void> {
     await supersetRequest<unknown>(`/api/v1/dataset/${encodeURIComponent(String(id))}`, { method: 'DELETE' });
   },
