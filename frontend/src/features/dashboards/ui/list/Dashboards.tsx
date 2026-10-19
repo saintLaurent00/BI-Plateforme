@@ -110,13 +110,14 @@ export const Dashboards = () => {
 
     setIsCreating(true);
     try {
-            const created = await dashboardService.create({ dashboard_title: newDashboard.title, published: false });
+      await dashboardService.create({ dashboard_title: newDashboard.title, published: false });
 
       setIsModalOpen(false);
       setNewDashboard({ title: '', description: '', tags: '' });
       setStep(1);
       setSelectedTemplate('blank');
-      navigate(`/dashboard-editor/${created.id}`);
+      toast.success('Tableau de bord créé dans Apache Superset.');
+      await loadDashboards();
     } catch (err) {
       console.error('Failed to create dashboard in Apache Superset:', err);
       toast.error(err instanceof Error ? err.message : 'Impossible de créer le tableau de bord dans Superset.');
