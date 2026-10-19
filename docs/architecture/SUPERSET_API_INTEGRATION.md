@@ -31,8 +31,8 @@ Les jetons sont conservés dans `sessionStorage` pour limiter leur durée de vie
 | --- | --- |
 | Authentification | `POST /api/v1/security/login`, `POST /api/v1/security/refresh` |
 | Dashboards | `GET/POST/DELETE /api/v1/dashboard/`, `GET /api/v1/dashboard/{id}` |
-| Charts | `GET /api/v1/chart/`, `GET /api/v1/chart/{id}`, `POST/PUT/DELETE /api/v1/chart/{id}`, `GET /api/v1/chart/{id}/data/` |
-| Datasets | `GET/POST/DELETE /api/v1/dataset/`, `GET /api/v1/dataset/{id}` |
+| Charts | `GET/POST /api/v1/chart/`, `GET/PUT/DELETE /api/v1/chart/{id}`, `GET /api/v1/chart/{id}/data/` |
+| Datasets | `GET/POST /api/v1/dataset/`, `GET/PUT/DELETE /api/v1/dataset/{id}` |
 | Bases et tables | `GET /api/v1/database/`, `GET /api/v1/database/{id}/tables/`, `GET /api/v1/database/{id}/table/{table}/{schema}` |
 | SQL Lab | `POST /api/v1/sqllab/execute/`, `GET/POST/PUT /api/v1/saved_query/` |
 
