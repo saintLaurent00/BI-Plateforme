@@ -25,6 +25,7 @@ import { FormSection, FormInput, FormSelect, FormActions, FormButton } from '@/u
 import { cn } from '@/platform/runtime/utils';
 import { toast } from 'sonner';
 import { dataCatalogService } from '@/features/datasets/application/DataCatalogService';
+import { sqlLabService } from '@/features/exploration/application/SqlLabService';
 
 export const PhysicalDatasetWizard = () => {
   const navigate = useNavigate();
@@ -80,181 +81,6 @@ export const PhysicalDatasetWizard = () => {
       setDatabases([]);
       toast.error(err instanceof Error ? err.message : 'Impossible de charger les bases Superset.');
     }
-  };
-
-  const MOCK_SCHEMAS: Record<string, { name: string; type: string; notnull?: number; pk?: number }[]> = {
-    commandes: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'client_id', type: 'INTEGER' },
-      { name: 'date_commande', type: 'TEXT' },
-      { name: 'montant_total', type: 'REAL' },
-      { name: 'statut', type: 'TEXT' }
-    ],
-    clients: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'nom', type: 'TEXT' },
-      { name: 'email', type: 'TEXT' },
-      { name: 'ville', type: 'TEXT' },
-      { name: 'pays', type: 'TEXT' }
-    ],
-    produits: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'nom_produit', type: 'TEXT' },
-      { name: 'categorie', type: 'TEXT' },
-      { name: 'prix_unitaire', type: 'REAL' },
-      { name: 'stock_disponible', type: 'INTEGER' }
-    ],
-    details_commandes: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'commande_id', type: 'INTEGER' },
-      { name: 'produit_id', type: 'INTEGER' },
-      { name: 'quantite', type: 'INTEGER' },
-      { name: 'prix_facture', type: 'REAL' }
-    ],
-    regions_vente: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'nom_region', type: 'TEXT' },
-      { name: 'responsable', type: 'TEXT' },
-      { name: 'objectif_annuel', type: 'REAL' }
-    ],
-    transactions: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'compte_id', type: 'INTEGER' },
-      { name: 'date_transaction', type: 'TEXT' },
-      { name: 'description', type: 'TEXT' },
-      { name: 'montant', type: 'REAL' },
-      { name: 'type_transaction', type: 'TEXT' }
-    ],
-    budgets: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'categorie_id', type: 'INTEGER' },
-      { name: 'annee', type: 'INTEGER' },
-      { name: 'mois', type: 'INTEGER' },
-      { name: 'montant_alloue', type: 'REAL' }
-    ],
-    comptes_bancaires: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'libelle', type: 'TEXT' },
-      { name: 'type_compte', type: 'TEXT' },
-      { name: 'solde_actuel', type: 'REAL' },
-      { name: 'devise', type: 'TEXT' }
-    ],
-    categories_depenses: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'nom_categorie', type: 'TEXT' },
-      { name: 'limite_mensuelle', type: 'REAL' }
-    ],
-    flux_tresorerie: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'periode', type: 'TEXT' },
-      { name: 'entrees', type: 'REAL' },
-      { name: 'sorties', type: 'REAL' }
-    ],
-    employes: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'nom_complet', type: 'TEXT' },
-      { name: 'email', type: 'TEXT' },
-      { name: 'date_embauche', type: 'TEXT' },
-      { name: 'departement_id', type: 'INTEGER' },
-      { name: 'statut', type: 'TEXT' }
-    ],
-    departements: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'nom_departement', type: 'TEXT' },
-      { name: 'manager_id', type: 'INTEGER' },
-      { name: 'budget_annuel', type: 'REAL' }
-    ],
-    salaires: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'employe_id', type: 'INTEGER' },
-      { name: 'salaire_base', type: 'REAL' },
-      { name: 'primes', type: 'REAL' },
-      { name: 'date_effet', type: 'TEXT' }
-    ],
-    conges_absences: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'employe_id', type: 'INTEGER' },
-      { name: 'type_conge', type: 'TEXT' },
-      { name: 'date_debut', type: 'TEXT' },
-      { name: 'date_fin', type: 'TEXT' },
-      { name: 'statut_validation', type: 'TEXT' }
-    ],
-    evaluations: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'employe_id', type: 'INTEGER' },
-      { name: 'annee_review', type: 'INTEGER' },
-      { name: 'note_performance', type: 'INTEGER' },
-      { name: 'commentaire', type: 'TEXT' }
-    ],
-    utilisateurs: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'pseudo', type: 'TEXT' },
-      { name: 'email', type: 'TEXT' },
-      { name: 'role', type: 'TEXT' },
-      { name: 'derniere_connexion', type: 'TEXT' }
-    ],
-    stocks: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'produit_id', type: 'INTEGER' },
-      { name: 'quantite_stock', type: 'INTEGER' },
-      { name: 'seuil_alerte', type: 'INTEGER' }
-    ],
-    factures: [
-      { name: 'id', type: 'INTEGER', pk: 1 },
-      { name: 'client_id', type: 'INTEGER' },
-      { name: 'numero_facture', type: 'TEXT' },
-      { name: 'montant_du', type: 'REAL' },
-      { name: 'date_echeance', type: 'TEXT' },
-      { name: 'statut_paiement', type: 'TEXT' }
-    ]
-  };
-
-  const MOCK_PREVIEWS: Record<string, Record<string, any>[]> = {
-    commandes: [
-      { id: 1, client_id: 101, date_commande: '2026-06-01', montant_total: 150.50, statut: 'Léguée' },
-      { id: 2, client_id: 102, date_commande: '2026-06-02', montant_total: 89.99, statut: 'En cours' },
-      { id: 3, client_id: 103, date_commande: '2026-06-03', montant_total: 420.00, statut: 'Payée' },
-      { id: 4, client_id: 104, date_commande: '2026-06-04', montant_total: 75.00, statut: 'Annulée' },
-      { id: 5, client_id: 105, date_commande: '2026-06-05', montant_total: 110.20, statut: 'Payée' }
-    ],
-    clients: [
-      { id: 101, nom: 'Société Dupont', email: 'dupont@exist.fr', ville: 'Paris', pays: 'France' },
-      { id: 102, nom: 'Jean Martin', email: 'j.martin@mail.com', ville: 'Lyon', pays: 'France' },
-      { id: 103, nom: 'Marta Gomez', email: 'marta@gomez.es', ville: 'Madrid', pays: 'Espagne' },
-      { id: 104, nom: 'Paul Smith', email: 'psmith@tech.co.uk', ville: 'Londres', pays: 'Royaume-Uni' },
-      { id: 105, nom: 'Alice Müller', email: 'alice@mueller.de', ville: 'Berlin', pays: 'Allemagne' }
-    ],
-    produits: [
-      { id: 201, nom_produit: 'Licence SaaS Hifadih', categorie: 'Logiciel', prix_unitaire: 1200.00, stock_disponible: 999 },
-      { id: 202, nom_produit: 'Pack Installation & Audit', categorie: 'Service', prix_unitaire: 1500.00, stock_disponible: 150 },
-      { id: 203, nom_produit: 'Module AI Pro Add-on', categorie: 'Logiciel', prix_unitaire: 450.00, stock_disponible: 999 },
-      { id: 204, nom_produit: 'Formation Équipe (1 jour)', categorie: 'Service', prix_unitaire: 800.00, stock_disponible: 50 },
-      { id: 205, nom_produit: 'Support Dédié 24/7 (Annuel)', categorie: 'Assistance', prix_unitaire: 3000.00, stock_disponible: 12 }
-    ],
-    details_commandes: [
-      { id: 1, commande_id: 1, produit_id: 201, quantite: 1, prix_facture: 1200.00 },
-      { id: 2, commande_id: 1, produit_id: 203, quantite: 2, prix_facture: 900.00 },
-      { id: 3, commande_id: 2, produit_id: 204, quantite: 1, prix_facture: 800.00 },
-      { id: 4, commande_id: 3, produit_id: 202, quantite: 1, prix_facture: 1500.00 },
-      { id: 5, commande_id: 3, produit_id: 205, quantite: 1, prix_facture: 3000.00 }
-    ],
-    regions_vente: [
-      { id: 10, nom_region: 'Île-de-France', responsable: 'Sophie Leray', objectif_annuel: 500000 },
-      { id: 11, nom_region: 'Auvergne-Rhône-Alpes', responsable: 'Marc Dubois', objectif_annuel: 350000 },
-      { id: 12, nom_region: 'Europe Occidentale', responsable: 'Carlos Mendez', objectif_annuel: 1200000 },
-      { id: 13, nom_region: 'Amérique du Nord', responsable: 'Johnathan Doe', objectif_annuel: 2000000 }
-    ],
-    transactions: [
-      { id: 1, compte_id: 1, date_transaction: '2026-06-01', description: 'Licence logicielle Hifadih', montant: 1200.00, type_transaction: 'CREDIT' },
-      { id: 2, compte_id: 1, date_transaction: '2026-06-02', description: 'Hosting infrastructure AWS', montant: -450.25, type_transaction: 'DEBIT' },
-      { id: 3, compte_id: 2, date_transaction: '2026-06-03', description: 'Abonnement Marketing Tools', montant: -99.00, type_transaction: 'DEBIT' },
-      { id: 4, compte_id: 1, date_transaction: '2026-06-04', description: 'Facture Client #40922', montant: 5500.00, type_transaction: 'CREDIT' },
-      { id: 5, compte_id: 3, date_transaction: '2026-06-05', description: 'Remboursement Taxes', montant: 185.00, type_transaction: 'CREDIT' }
-    ],
-    utilisateurs: [
-      { id: 1, pseudo: 'admin', email: 'admin@hifadih.com', role: 'Administrateur', derniere_connexion: '2026-06-11 14:22' },
-      { id: 2, pseudo: 'laurent', email: 'ouattaralaurent69@gmail.com', role: 'Analyste senior', derniere_connexion: '2026-06-12 09:30' }
-    ]
   };
 
   const getSchemaForTable = async (table: string) => {
@@ -351,10 +177,16 @@ export const PhysicalDatasetWizard = () => {
     setColumns(allCols);
     
     try {
-        const sample = await executeQuery(`SELECT * FROM "${selectedTables[0]}" LIMIT 5`, selectedDatabaseId);
-        setDataPreview(sample);
-    } catch (e) {
+        const sample = await sqlLabService.execute({
+          databaseId: Number(selectedDatabaseId),
+          sql: `SELECT * FROM "${selectedTables[0]}" LIMIT 5`,
+          queryLimit: 5,
+        });
+        setDataPreview(Array.isArray(sample.data) ? sample.data : []);
+    } catch (err) {
+        console.error('Superset dataset preview failed:', err);
         setDataPreview([]);
+        toast.error(err instanceof Error ? err.message : 'Impossible de prévisualiser les données Superset.');
     }
     
     setIsLoading(false);
