@@ -23,7 +23,7 @@ import {
 } from '@/ui/components/FormElements';
 import { DASHBOARD_TEMPLATES, type DashboardTemplate } from '@/features/dashboards/configuration/templates';
 import { dashboardService } from '@/features/dashboards/application/DashboardService';
-import { supersetBaseUrl, SupersetApiError } from '@/platform/api/superset-client';
+import { supersetBaseUrl } from '@/platform/api/superset-client';
 import { DashboardCard } from '@/ui/components/cards/base/DashboardCard';
 import { DashboardCardSkeleton } from '@/ui/components/Skeleton';
 import { cn } from '@/platform/runtime/utils';
@@ -110,10 +110,7 @@ export const Dashboards = () => {
 
     setIsCreating(true);
     try {
-      const template = DASHBOARD_TEMPLATES.find(t => t.id === selectedTemplate);
-      const dashboardId = crypto.randomUUID();
-      
-      const created = await dashboardService.create({ dashboard_title: newDashboard.title, published: false });
+            const created = await dashboardService.create({ dashboard_title: newDashboard.title, published: false });
 
       setIsModalOpen(false);
       setNewDashboard({ title: '', description: '', tags: '' });
