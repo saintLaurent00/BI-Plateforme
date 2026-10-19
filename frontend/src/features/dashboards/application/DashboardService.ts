@@ -20,24 +20,11 @@ interface SupersetListResponse<T> {
   result?: T[];
 }
 
-function encodeQuery(params: Record<string, string | number | boolean | undefined>) {
-  const query = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== '') query.set(key, String(value));
-  });
-  const serialized = query.toString();
-  return serialized ? `?${serialized}` : '';
-}
+const listQuery = (page = 0, pageSize = 100) => `?q=${encodeURIComponent(`(page:${page},page_size:${pageSize})`)}`;
 
 export const dashboardService = {
   async list(search = ''): Promise<SupersetDashboard[]> {
-    const query = encodeQuery({
-      q: JSON.stringify({
-        page: 0,
-        page_size: 100,
-        ...(search ? { filters: [{ col: 'dashboard_title', opr: 'ct', value: search }] } : {}),
-      }),
-    });
+    const query = listQuery();
     const response = await supersetRequest<SupersetListResponse<SupersetDashboard>>(
       `/api/v1/dashboard/${query}`,
     );
