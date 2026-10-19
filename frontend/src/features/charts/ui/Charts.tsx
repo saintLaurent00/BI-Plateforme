@@ -23,7 +23,7 @@ import {
   Copy,
   Share2
 } from 'lucide-react';
-import { executeQuery } from '@/platform/persistence/local/db';
+
 import Papa from 'papaparse';
 import { visualizationService } from '@/features/charts/application/VisualizationService';
 import { ChartCard } from '@/ui/components/cards/base/ChartCard';
@@ -98,31 +98,32 @@ export const Charts = () => {
 
   const handleExportCSV = async (chart: any) => {
     try {
-      toast.loading("Extraction des données...", { id: 'export-csv' });
-      const xAxis = chart.x_axis?.[0];
-      const yAxes = chart.y_axis?.map((y: any) => y.column);
-      
-      if (!xAxis || !yAxes) {
-        toast.error("Données insuffisantes pour l'exportation", { id: 'export-csv' });
-        return;
+      toast.loading('Extraction des données depuis Apache Superset…', { id: 'export-csv' });
+      const response: any = await visualizationService.getChartData(chart.id);
+      const payload = response?.result ?? response;
+      const rows = Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload?.[0]?.data)
+          ? payload[0].data
+          : Array.isArray(response?.data)
+            ? response.data
+            : null;
+      if (!rows) {
+        throw new Error('Superset n’a pas renvoyé de lignes exportables pour ce graphique.');
       }
-
-      const sql = `SELECT "${xAxis}", ${yAxes.map((y: string) => `SUM("${y}") as "${y}"`).join(', ')} FROM "${chart.table_name}" GROUP BY "${xAxis}" LIMIT 5000`;
-      const data = await executeQuery(sql);
-      
-      const csv = Papa.unparse(data);
+      const csv = Papa.unparse(rows);
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.setAttribute('download', `${chart.name || 'chart'}_data.csv`);
+      link.download = `${chart.slice_name || 'chart'}_data.csv`;
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      
-      toast.success("Données exportées avec succès", { id: 'export-csv' });
+      URL.revokeObjectURL(link.href);
+      link.remove();
+      toast.success('Données Superset exportées en CSV', { id: 'export-csv' });
     } catch (err) {
-      console.error('CSV Export failed:', err);
-      toast.error("L'exportation CSV a échoué", { id: 'export-csv' });
+      console.error('Superset CSV export failed:', err);
+      toast.error(err instanceof Error ? err.message : 'L’export CSV a échoué.', { id: 'export-csv' });
     }
   };
 
