@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   CheckCircle2
 } from 'lucide-react';
-import { identityService } from '@/features/identity/application/IdentityService';
+import { supersetAuth, supersetBaseUrl } from '@/platform/api/superset-client';
 import { toast } from 'sonner';
 import { 
   FormSection, 
@@ -19,29 +19,27 @@ import {
 } from '@/ui/components/FormElements';
 
 export const Login = ({ onLogin }: { onLogin: () => void }) => {
-  const [email, setEmail] = React.useState('admin@hifadih.ai');
-  const [password, setPassword] = React.useState('••••••••••••');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
   const [rememberMe, setRememberMe] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      await supersetAuth.login(email.trim(), password, 'db');
       onLogin();
+      toast.success('Connexion à Apache Superset réussie');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Connexion à Apache Superset impossible.');
+    } finally {
       setIsSubmitting(false);
-      toast.success('Connexion réussie à Hifadih BI');
-    }, 500);
+    }
   };
 
-  const handleSSO = async (provider: 'google' | 'github' | 'ldap') => {
-    try {
-      await identityService.authenticateSSO(provider);
-      toast.success(`Authentification ${provider.toUpperCase()} réussie`);
-      onLogin();
-    } catch (error) {
-      toast.error(`Échec de l'authentification ${provider.toUpperCase()}`);
-    }
+  const handleSSO = (provider: 'google' | 'github' | 'ldap') => {
+    toast.info(`Le fournisseur ${provider.toUpperCase()} doit être configuré sur votre instance Apache Superset.`);
   };
 
   return (
@@ -68,7 +66,7 @@ export const Login = ({ onLogin }: { onLogin: () => void }) => {
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Hifadih BI</h1>
           <p className="text-muted-foreground text-xs mt-1">
-            Connectez-vous à votre espace
+            Connectez-vous à votre instance Apache Superset
           </p>
         </div>
 
@@ -79,17 +77,17 @@ export const Login = ({ onLogin }: { onLogin: () => void }) => {
             <label className="flex items-center justify-between text-xs font-semibold text-foreground tracking-tight select-none">
               <span className="flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>Adresse e-mail</span>
+                <span>Identifiant Superset</span>
               </span>
               <span className="text-[10px] font-medium text-muted-foreground/70 tracking-normal">
                 Professionnel
               </span>
             </label>
             <FormInput 
-              type="email" 
+              type="text" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="nom@entreprise.com" 
+              placeholder="Nom d’utilisateur ou e-mail" 
               required
             />
           </div>
@@ -175,11 +173,11 @@ export const Login = ({ onLogin }: { onLogin: () => void }) => {
         <div className="mt-8 pt-6 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground/70">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Chiffrement 256-bit</span>
+            <span>Session Superset</span>
           </div>
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>SOC-2 & RGPD</span>
+            <span>API REST sécurisée</span>
           </div>
         </div>
       </motion.div>
