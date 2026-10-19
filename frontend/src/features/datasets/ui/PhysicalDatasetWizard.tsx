@@ -18,7 +18,7 @@ import {
   Server
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getTables, getTableSchema, executeQuery, getDataSources } from '@/platform/persistence/local/db';
+
 import { Badge } from '@/ui/components/Badge';
 import { Stepper } from '@/ui/components/Stepper';
 import { FormSection, FormInput, FormSelect, FormActions, FormButton } from '@/ui/components/FormElements';
@@ -71,37 +71,14 @@ export const PhysicalDatasetWizard = () => {
 
   const loadDatabases = async () => {
     try {
-        const dbsRes = await dataCatalogService.listDatabases();
-        const dbs = dbsRes || [];
-        
-        let sqliteDbs: any[] = [];
-        try {
-          sqliteDbs = await getDataSources();
-        } catch (sqliteErr) {
-          console.error('Failed to load SQL data sources:', sqliteErr);
-        }
-
-        const formattedSqliteDbs = sqliteDbs.map((db: any) => ({
-          ...db,
-          database_name: db.name || db.databaseName || db.database_name || 'Base de données',
-        }));
-
-        setDatabases([
-          ...formattedSqliteDbs,
-          ...dbs, 
-          { id: 'local', database_name: 'Base Locale (SQLite)' }
-        ]);
-    } catch (e) {
-        try {
-          const sqliteDbs = await getDataSources();
-          const formattedSqliteDbs = sqliteDbs.map((db: any) => ({
-            ...db,
-            database_name: db.name || db.databaseName || db.database_name || 'Base de données',
-          }));
-          setDatabases([...formattedSqliteDbs, { id: 'local', database_name: 'Base Locale (SQLite)' }]);
-        } catch (err) {
-          setDatabases([{ id: 'local', database_name: 'Base Locale (SQLite)' }]);
-        }
+      const available = await dataCatalogService.listDatabases();
+      setDatabases(available);
+      if (available.length > 0) setSelectedDatabaseId(String(available[0].id));
+      else toast.info('Aucune base de données configurée dans Apache Superset.');
+    } catch (err) {
+      console.error('Failed to load Superset databases:', err);
+      setDatabases([]);
+      toast.error(err instanceof Error ? err.message : 'Impossible de charger les bases Superset.');
     }
   };
 
@@ -281,23 +258,26 @@ export const PhysicalDatasetWizard = () => {
   };
 
   const getSchemaForTable = async (table: string) => {
-    return await getTableSchema(table, selectedDatabaseId);
+    const metadata: any = await dataCatalogService.getDatabaseTable(selectedDatabaseId, table);
+    return (metadata.columns ?? metadata.result?.columns ?? []).map((column: any) => ({
+      name: column.column_name || column.name,
+      originalName: column.column_name || column.name,
+      type: column.type || 'UNKNOWN',
+      table,
+    }));
   };
 
   const loadTables = async (dbId: string) => {
     setIsLoading(true);
     try {
-        const allTables = await getTables(dbId);
-        if (dbId === 'local') {
-            const businessTables = allTables.filter(t => !['charts', 'dashboards', 'saved_queries', 'roles', 'permissions', 'data_sources'].includes(t));
-            setTables(businessTables);
-        } else {
-            setTables(allTables);
-        }
-    } catch (e) {
-        setTables([]);
+      const allTables = await dataCatalogService.listDatabaseTables(dbId);
+      setTables(allTables.map((table: any) => String(table.value || table.table_name || table.name || table.label)).filter(Boolean));
+    } catch (err) {
+      console.error('Failed to load Superset tables:', err);
+      setTables([]);
+      toast.error(err instanceof Error ? err.message : 'Impossible de charger les tables de cette base.');
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
