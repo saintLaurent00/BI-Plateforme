@@ -25,6 +25,62 @@ export const visualizationService = {
     const response = await supersetRequest<{ result: SupersetChart }>(`/api/v1/chart/${encodeURIComponent(String(id))}`);
     return response.result;
   },
+  async saveChart(input: {
+    id?: string | number;
+    name: string;
+    datasetId: string | number;
+    chartType: string;
+    xAxis: string[];
+    yAxis: Array<{ column: string; agg?: string; alias?: string }>;
+    config?: Record<string, unknown>;
+  }): Promise<SupersetChart> {
+    const vizTypeMap: Record<string, string> = {
+      bar: 'echarts_timeseries_bar',
+      line: 'echarts_timeseries_line',
+      area: 'echarts_area',
+      pie: 'echarts_pie',
+      table: 'table',
+    };
+    const normalizedType = String(input.chartType).toLowerCase();
+    const vizType = vizTypeMap[normalizedType] ?? input.chartType;
+    const params = {
+      datasource: `${input.datasetId}__table`,
+      viz_type: vizType,
+      slice_name: input.name,
+      groupby: input.xAxis,
+      metrics: input.yAxis.map(metric => ({
+        expressionType: 'SIMPLE',
+        column: { column_name: metric.column },
+        aggregate: metric.agg || 'SUM',
+        label: metric.alias || metric.column,
+        optionName: `metric_${metric.column}`,
+      })),
+      row_limit: 1000,
+      show_legend: input.config?.showLegend ?? true,
+      show_legend_on_hover: true,
+    };
+    const payload = {
+      slice_name: input.name,
+      datasource_id: Number(input.datasetId),
+      datasource_type: 'table',
+      viz_type: vizType,
+      params: JSON.stringify(params),
+    };
+    const response = input.id
+      ? await supersetRequest<{ result?: SupersetChart }>(`/api/v1/chart/${encodeURIComponent(String(input.id))}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        })
+      : await supersetRequest<{ id?: number; result?: SupersetChart }>('/api/v1/chart/', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+    if (response.result) return response.result;
+    if ('id' in response && response.id !== undefined) {
+      return { id: response.id, slice_name: input.name, viz_type: vizType, datasource_id: Number(input.datasetId), datasource_type: 'table' };
+    }
+    throw new Error('Superset n’a pas renvoyé les informations du graphique enregistré.');
+  },
   async deleteChart(id: string | number): Promise<void> {
     await supersetRequest<unknown>(`/api/v1/chart/${encodeURIComponent(String(id))}`, { method: 'DELETE' });
   },
