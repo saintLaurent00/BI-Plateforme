@@ -174,14 +174,6 @@ export const SqlLab = () => {
     }
   };
 
-  const handleTableClick = async (tableName: string) => {
-    setSelectedTable(tableName);
-    const s = await getTableSchema(tableName, selectedDatabase.id);
-    setSchema(s);
-    setSql(`SELECT * FROM "${tableName}" LIMIT 100;`);
-    setActiveQueryId(null);
-  };
-
   const handleQueryClick = (query: any) => {
     setSql(query.sql);
     setQueryInfo({ name: query.name, description: query.description });
