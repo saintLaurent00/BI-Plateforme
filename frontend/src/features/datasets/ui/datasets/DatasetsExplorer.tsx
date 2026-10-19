@@ -222,7 +222,7 @@ export const DatasetsExplorer = () => {
               <div className="absolute right-0 mt-2 w-72 bg-background border border-border rounded-xl shadow-2xl p-6 z-50 space-y-6">
                 <FormSection label="Dataset Type">
                   <div className="grid grid-cols-3 gap-2">
-                    {['All', 'Physical', 'Virtual'].map((t) => (
+                    {['All', 'Physical'].map((t) => (
                       <button
                         key={t}
                         onClick={() => setTypeFilter(t as any)}
@@ -262,11 +262,11 @@ export const DatasetsExplorer = () => {
           </div>
 
           <button 
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => toast.info('Pour importer un CSV, utilisez la fonction de téléversement configurée dans Apache Superset sur une base autorisant les imports.')}
             className="px-6 py-2.5 bg-background border border-border rounded-2xl text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 hover:border-accent/30 transition-all shadow-sm"
           >
             <Upload className="w-4 h-4 text-muted-foreground/60" />
-            Importer CSV
+            Importer via Superset
           </button>
 
           <button 
