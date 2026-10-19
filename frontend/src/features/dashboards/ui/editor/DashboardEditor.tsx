@@ -28,7 +28,7 @@ import {
   Layout,
   Image as ImageIcon
 } from 'lucide-react';
-import { getCharts as getLocalCharts, saveDashboard as saveLocalDashboard, getDashboard as getLocalDashboard } from '@/platform/persistence/local/db';
+import { mapLegacyToHifadihLayout, denormalizeLayout, normalizeLayout, mapHifadihLayoutToEngine, DASHBOARD_GRID_ID } from '@/features/dashboards/layout/dashboardLayout';
 import { dashboardService } from '@/features/dashboards/application/DashboardService';
 import { visualizationService } from '@/features/charts/application/VisualizationService';
 import { toast } from 'sonner';
@@ -193,27 +193,13 @@ export const DashboardEditor: React.FC = () => {
   const loadAllData = async () => {
     setIsLoading(true);
     try {
-      // 1. Fetch available charts from local DB and remote hifadihService
-      const [localCharts, remoteRes] = await Promise.all([
-        getLocalCharts().catch(() => []),
-        visualizationService.listCharts().catch(() => [])
-      ]);
-
-      const combinedCharts: any[] = [...localCharts];
-      const remoteList = remoteRes ?? [];
-
-      remoteList.forEach((remote: any) => {
-        if (!combinedCharts.find(c => String(c.id) === String(remote.id))) {
-          combinedCharts.push({
-            ...remote,
-            name: remote.slice_name || remote.name || 'Graphique sans titre',
-            chart_type: remote.viz_type || remote.chart_type || 'Bar',
-            table_name: remote.datasource_name || remote.table_name || 'Données',
-          });
-        }
-      });
-
-      setAvailableCharts(combinedCharts);
+      const remoteList = await visualizationService.listCharts();
+      setAvailableCharts(remoteList.map((remote: any) => ({
+        ...remote,
+        name: remote.slice_name || 'Graphique sans titre',
+        chart_type: remote.viz_type || 'echarts_timeseries_bar',
+        table_name: remote.datasource_name || remote.datasource_name_text || 'Dataset Superset',
+      })));
 
       // 2. Load existing dashboard if editing
       if (id && id !== 'new') {
@@ -222,10 +208,6 @@ export const DashboardEditor: React.FC = () => {
           loadedDashboard = await dashboardService.get(id);
         } catch (e) {
           // ignore
-        }
-
-        if (!loadedDashboard) {
-          loadedDashboard = await getLocalDashboard(id);
         }
 
         if (loadedDashboard) {
@@ -241,13 +223,23 @@ export const DashboardEditor: React.FC = () => {
           }
 
           // Parse layout recursively
-          const rawLayout = loadedDashboard.layout || [];
+          let rawLayout = loadedDashboard.layout || [];
+          if (loadedDashboard.position_json) {
+            try {
+              const parsedPosition = typeof loadedDashboard.position_json === 'string' ? JSON.parse(loadedDashboard.position_json) : loadedDashboard.position_json;
+              const normalizedPosition = mapLegacyToHifadihLayout(parsedPosition);
+              rawLayout = denormalizeLayout(normalizedPosition, DASHBOARD_GRID_ID);
+            } catch (layoutError) {
+              console.error('Unable to parse Superset dashboard position_json:', layoutError);
+              rawLayout = [];
+            }
+          }
           
           const normalizeItem = (item: any): DashboardItemData => {
             const isRowOrCol = item.type === 'row' || item.type === 'column';
             return {
               id: item.id || generateId(),
-              type: item.type || 'chart',
+              type: String(item.type || 'chart').toLowerCase(),
               content: item.content || (!isRowOrCol ? item : undefined),
               children: Array.isArray(item.children) ? item.children.map(normalizeItem) : (isRowOrCol ? [] : undefined),
               meta: {
@@ -900,47 +892,46 @@ export const DashboardEditor: React.FC = () => {
 
     setIsSaving(true);
     try {
-      const dashboardPayload = {
-        id: dashboardId,
-        name: dashboardName.trim(),
-        dashboard_title: dashboardName.trim(),
-        layout: items,
-        canvas_background: canvasConfig.backgroundColor,
-        canvasConfig: canvasConfig,
-        created_at: new Date().toISOString(),
-        lastModified: new Date().toISOString()
-      };
-
-      // 1. Save to SQLite database
-      await saveLocalDashboard(dashboardPayload);
-
-      // 2. Sync to localStorage hifadih_dashboards
-      try {
-        const stored = localStorage.getItem('hifadih_dashboards');
-        const list = stored ? JSON.parse(stored) : [];
-        const existingIndex = list.findIndex((d: any) => String(d.id) === String(dashboardId));
-        if (existingIndex >= 0) {
-          list[existingIndex] = { ...list[existingIndex], ...dashboardPayload };
-        } else {
-          list.push(dashboardPayload);
-        }
-        localStorage.setItem('hifadih_dashboards', JSON.stringify(list));
-      } catch (e) {
-        console.warn('Erreur de synchronisation locale:', e);
+      let targetId = id && id !== 'new' ? id : '';
+      if (!targetId) {
+        const created = await dashboardService.create({ dashboard_title: dashboardName.trim(), published: false });
+        targetId = String(created.id);
       }
 
-      // A successful save always enters the dashboard preview.
-      // For a new dashboard, dashboardId is already generated before saving,
-      // so there is no intermediate redirect back to the editor/home.
+      const normalizedLayout = normalizeLayout(items);
+      const enginePosition = mapHifadihLayoutToEngine(normalizedLayout);
+      const supersetPosition: Record<string, any> = { DASHBOARD_VERSION_KEY: 'v2' };
+      Object.entries(enginePosition).forEach(([key, value]: [string, any]) => {
+        const typeMap: Record<string, string> = {
+          row: 'ROW', column: 'COLUMN', chart: 'CHART',
+          markdown: 'MARKDOWN', header: 'MARKDOWN', divider: 'DIVIDER',
+          tabs: 'TABS', tab: 'TAB',
+        };
+        supersetPosition[key] = {
+          ...value,
+          type: typeMap[String(value.type).toLowerCase()] || value.type,
+        };
+      });
+
+      const existing = id && id !== 'new' ? await dashboardService.get(targetId) : null;
+      await dashboardService.update(targetId, {
+        dashboard_title: dashboardName.trim(),
+        position_json: JSON.stringify(supersetPosition),
+        json_metadata: typeof existing?.json_metadata === 'string' ? existing.json_metadata : JSON.stringify(existing?.json_metadata || {}),
+        css: typeof existing?.css === 'string' ? existing.css : '',
+        published: existing?.published ?? false,
+      });
+      setDashboardId(targetId);
+
       try {
         localStorage.removeItem(`hifadih_dashboard_editor_draft_${id || 'new'}`);
-        localStorage.removeItem(`hifadih_dashboard_editor_draft_${dashboardId}`);
+        localStorage.removeItem(`hifadih_dashboard_editor_draft_${targetId}`);
       } catch (e) {
         console.warn('Erreur de nettoyage du brouillon:', e);
       }
 
-      toast.success('Tableau de bord enregistré avec succès !');
-      navigate(`/dashboards/${dashboardId}`);
+      toast.success('Tableau de bord enregistré dans Apache Superset.');
+      navigate(`/dashboards/${targetId}`);
     } catch (err) {
       console.error('Erreur lors de l\'enregistrement:', err);
       toast.error('Impossible d\'enregistrer le tableau de bord');
