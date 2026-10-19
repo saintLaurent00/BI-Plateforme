@@ -59,10 +59,13 @@ export const Dashboards = () => {
   const [isCreating, setIsCreating] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [loadError, setLoadError] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState<'all' | 'published' | 'draft'>('all');
 
   const filteredDashboards = dashboards.filter(d => {
     const title = d.dashboard_title || d.name || d.title || '';
-    return title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || (statusFilter === 'published' ? d.published === true : d.published !== true);
+    return matchesSearch && matchesStatus;
   });
 
   React.useEffect(() => {
@@ -89,15 +92,15 @@ export const Dashboards = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this dashboard? This action cannot be undone.')) return;
+    if (!window.confirm('Supprimer définitivement ce tableau de bord dans Apache Superset ?')) return;
     
     try {
       await dashboardService.remove(id);
-      toast.success('Dashboard deleted successfully');
-      loadDashboards();
+      toast.success('Tableau de bord supprimé dans Apache Superset');
+      await loadDashboards();
     } catch (err) {
       console.error('Failed to delete dashboard:', err);
-      toast.error('Failed to delete dashboard');
+      toast.error(err instanceof Error ? err.message : 'Échec de la suppression du tableau de bord.');
     }
   };
 
@@ -145,12 +148,24 @@ export const Dashboards = () => {
           <div className="flex items-center gap-3">
             <span className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Statut:</span>
             <div className="flex items-center gap-1.5">
-              {["Published", "Draft", "Archived"].map(status => (
-                <button 
-                  key={status}
-                  className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border border-border hover:border-accent/30 hover:bg-accent/5 transition-all"
+              {[
+                { label: 'Tous', value: 'all' },
+                { label: 'Publiés', value: 'published' },
+                { label: 'Brouillons', value: 'draft' },
+              ].map(status => (
+                <button
+                  key={status.value}
+                  type="button"
+                  aria-pressed={statusFilter === status.value}
+                  onClick={() => setStatusFilter(status.value as 'all' | 'published' | 'draft')}
+                  className={cn(
+                    "px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border transition-all",
+                    statusFilter === status.value
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-border hover:border-accent/30 hover:bg-accent/5"
+                  )}
                 >
-                  {status}
+                  {status.label}
                 </button>
               ))}
             </div>
@@ -159,7 +174,7 @@ export const Dashboards = () => {
 
         <div className="flex-1"></div>
 
-        <button className="text-[9px] font-black text-muted-foreground hover:text-foreground uppercase tracking-[0.2em] transition-colors">Réinitialiser</button>
+        <button onClick={() => { setStatusFilter('all'); setSearchQuery(''); }} className="text-[9px] font-black text-muted-foreground hover:text-foreground uppercase tracking-[0.2em] transition-colors">Réinitialiser</button>
       </div>
 
       {/* Content Area */}
@@ -307,7 +322,7 @@ export const Dashboards = () => {
                     label: 'Jeux de données',
                     render: (_, row) => {
                       // Note: In a real app, we'd list the datasets used in the dashboard's charts
-                      return <Badge variant="neutral" className="bg-muted text-[10px]">Multiples</Badge>;
+                      return <span className="text-xs text-muted-foreground">—</span>;
                     }
                   },
                   { 
@@ -346,7 +361,7 @@ export const Dashboards = () => {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title={step === 1 ? "Create New Dashboard" : "Select a Template"}
+        title={step === 1 ? "Créer un tableau de bord" : "Choisir un modèle"}
       >
         <form onSubmit={handleCreate} className="space-y-8">
           {step === 1 ? (
