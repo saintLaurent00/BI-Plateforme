@@ -4,7 +4,7 @@
 
 [![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![Build](https://img.shields.io/badge/Build-Vite-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
-[![Backend cible](https://img.shields.io/badge/Backend%20cible-Rust-orange?logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Backend](https://img.shields.io/badge/Backend-Apache%20Superset%206.1%2B-orange)](https://superset.apache.org/)
 [![Status](https://img.shields.io/badge/Status-In%20Development-yellow)](https://github.com/saintLaurent00/BI-Plateforme)
 
 ## Aperçu
@@ -25,7 +25,7 @@
 - plugins de visualisation extensibles ;
 - exploration et visualisation interactive des données.
 
-Le dépôt est actuellement centré sur le **frontend React/TypeScript**. La cible backend est un **backend unique en Rust**.
+Dans la branche `refonte/pages-superset`, le dépôt est centré sur le **frontend React/TypeScript**, qui consomme directement les API REST officielles d’**Apache Superset 6.1.0 ou supérieur**. Aucun backend applicatif intermédiaire n’est ajouté dans cette branche.
 
 > **État du projet — 16 octobre 2026**  
 > Le backend Rust est initialisé et son découpage par domaines commence à suivre les frontières fonctionnelles d'Apache Superset. Les implémentations métier Rust restent à construire et à valider.
