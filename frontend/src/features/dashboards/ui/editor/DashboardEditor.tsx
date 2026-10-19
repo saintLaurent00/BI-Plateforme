@@ -240,7 +240,7 @@ export const DashboardEditor: React.FC = () => {
             const isRowOrCol = normalizedType === 'row' || normalizedType === 'column';
             return {
               id: item.id || generateId(),
-              type: normalizedType,
+              type: normalizedType as DashboardItemData['type'],
               content: item.content || (!isRowOrCol ? item : undefined),
               children: Array.isArray(item.children) ? item.children.map(normalizeItem) : (isRowOrCol ? [] : undefined),
               meta: {
