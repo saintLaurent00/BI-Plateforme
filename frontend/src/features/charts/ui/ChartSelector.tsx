@@ -206,7 +206,7 @@ export const ChartSelector = () => {
     const selectedChart = CHART_TYPES.find(t => t.label === selectedType);
     if (!selectedDataset || !selectedChart) return;
     
-    let url = `/chart-editor?dataset=${encodeURIComponent(selectedDataset.name)}&datasetId=${selectedDataset.id}&type=${selectedChart.type}&label=${selectedChart.label}&source=${selectedDataset.source}`;
+    let url = `/chart-editor?dataset=${encodeURIComponent(selectedDataset.name)}&datasetId=${selectedDataset.id}&databaseId=${selectedDataset.database_id ?? selectedDataset.database?.id ?? ''}&schema=${encodeURIComponent(selectedDataset.schema || '')}&type=${selectedChart.type}&label=${encodeURIComponent(selectedChart.label)}&source=superset`;
     if (selectedX) url += `&xAxis=${selectedX}`;
     if (selectedY.length > 0) url += `&yAxis=${selectedY.join(',')}`;
     
