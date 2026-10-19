@@ -258,6 +258,10 @@ export const SqlLab = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!queryInfo.name) return;
+    if (!selectedDatabase?.id || !Number.isFinite(Number(selectedDatabase.id))) {
+      toast.error('Sélectionnez une base de données Apache Superset avant d’enregistrer.');
+      return;
+    }
 
     try {
       const id = activeQueryId || crypto.randomUUID();
@@ -323,7 +327,7 @@ export const SqlLab = () => {
             >
               <div className="flex items-center gap-2 truncate">
                 <Database className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">{selectedDatabase.database_name}</span>
+                <span className="truncate">{selectedDatabase?.database_name || 'Aucune base sélectionnée'}</span>
               </div>
               <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground transition-transform", isDbSelectorOpen && "rotate-180")} />
             </button>
@@ -340,7 +344,7 @@ export const SqlLab = () => {
                     }}
                     className={cn(
                       "w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors flex items-center gap-2",
-                      selectedDatabase.id === db.id ? "text-accent font-bold" : "text-muted-foreground"
+                      selectedDatabase?.id === db.id ? "text-accent font-bold" : "text-muted-foreground"
                     )}
                   >
                     <Database className="w-3 h-3" />
@@ -481,7 +485,7 @@ export const SqlLab = () => {
             spellCheck={false}
           />
           <div className="absolute bottom-4 right-6 flex items-center gap-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            <span>{selectedDatabase.id === 'local' ? 'SQLite WASM' : 'Hifadih BI Engine'}</span>
+            <span>{selectedDatabase?.id ? 'Apache Superset' : 'Non connecté'}</span>
             <span>UTF-8</span>
           </div>
         </div>
