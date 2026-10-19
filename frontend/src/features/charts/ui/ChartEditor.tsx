@@ -39,7 +39,9 @@ import {
   FormButton,
   FormLabel
 } from '@/ui/components/FormElements';
-import { executeQuery, getTables, getTableSchema, saveChart } from '@/platform/persistence/local/db';
+import { dataCatalogService } from '@/features/datasets/application/DataCatalogService';
+import { visualizationService } from '@/features/charts/application/VisualizationService';
+import { sqlLabService } from '@/features/exploration/application/SqlLabService';
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { Modal } from '@/ui/components/Modal';
 import { EChartsChart } from '@/features/charts/ui/EChartsChart';
@@ -266,10 +268,12 @@ export const ChartEditor = () => {
   const [selectedCategory, setSelectedCategory] = React.useState('Tout');
   
   const [datasets, setDatasets] = React.useState<any[]>([]);
-  const [selectedDataset, setSelectedDataset] = React.useState<{ name: string, id: string | number, source: 'local' | 'hifadih' }>({
+  const [selectedDataset, setSelectedDataset] = React.useState<{ name: string, id: string | number, source: 'local' | 'hifadih' | 'superset', databaseId?: string | number, schema?: string }>({
     name: searchParams.get('dataset') || searchParams.get('table') || '',
     id: searchParams.get('datasetId') || searchParams.get('table') || '',
-    source: (searchParams.get('source') as any) || 'local'
+    source: 'superset',
+    databaseId: searchParams.get('databaseId') || undefined,
+    schema: searchParams.get('schema') || undefined,
   });
   const [schema, setSchema] = React.useState<any[]>([]);
   const [xAxis, setXAxis] = React.useState<string[]>(() => {
@@ -336,24 +340,29 @@ return {
 
   const loadChartData = async (chartId: string) => {
     try {
-      const { getChart } = await import('@/platform/persistence/local/db');
-      const chart = await getChart(chartId);
-      if (chart) {
-        setChartName(chart.name || '');
+      const chart = await visualizationService.getChart(chartId);
+      const params = typeof chart.params === 'string' ? JSON.parse(chart.params || '{}') : (chart.params || {});
+      const dataset = chart.datasource_id ? await dataCatalogService.getDataset(chart.datasource_id) : null;
+      setChartName(chart.slice_name || '');
+      if (dataset) {
         setSelectedDataset({
-            name: chart.table_name,
-            id: chart.table_name,
-            source: 'local'
+          name: dataset.table_name || dataset.name || '',
+          id: dataset.id,
+          source: 'superset',
+          databaseId: dataset.database_id ?? dataset.database?.id,
+          schema: dataset.schema || '',
         });
-        setChartType(chart.chart_type);
-        setXAxis(chart.x_axis || []);
-        setYAxis(chart.y_axis || []);
-        setCustomConfig(prev => ({ ...prev, ...(chart.config || {}) }));
-        setChartLabel(chart.name || chart.chart_type);
       }
+      setChartType(chart.viz_type || 'echarts_timeseries_bar');
+      setXAxis(Array.isArray(params.groupby) ? params.groupby : params.x_axis ? [params.x_axis] : []);
+      setYAxis(Array.isArray(params.metrics) ? params.metrics.map((metric: any) => typeof metric === 'string'
+        ? { column: metric, agg: 'SUM', alias: metric }
+        : { column: metric.column?.column_name || metric.label || '', agg: metric.aggregate || 'SUM', alias: metric.label || metric.column?.column_name || '' }) : []);
+      setCustomConfig(prev => ({ ...prev, ...(params || {}) }));
+      setChartLabel(chart.slice_name || chart.viz_type || 'Graphique');
     } catch (err) {
-      console.error('Failed to load chart data:', err);
-      toast.error('Impossible de charger les données du graphique.');
+      console.error('Failed to load Superset chart:', err);
+      toast.error(err instanceof Error ? err.message : 'Impossible de charger le graphique Superset.');
     }
   };
 
@@ -373,32 +382,41 @@ return {
   }, [xAxis, yAxis, chartType]);
 
   const loadData = async () => {
-    const t = await getTables();
-    const ds = t.map(name => ({ name, id: name, source: 'local' as const }));
-    setDatasets(ds);
+    try {
+      const remoteDatasets = await dataCatalogService.listDatasets();
+      const ds = remoteDatasets.map((dataset: any) => ({
+        ...dataset,
+        name: dataset.table_name || dataset.name || `Dataset ${dataset.id}`,
+        id: dataset.id,
+        source: 'superset' as const,
+        databaseId: dataset.database_id ?? dataset.database?.id,
+        schema: dataset.schema || '',
+      }));
+      setDatasets(ds);
+      const requestedId = searchParams.get('datasetId');
+      const selected = ds.find((dataset: any) => String(dataset.id) === String(requestedId))
+        || ds.find((dataset: any) => dataset.name === (searchParams.get('dataset') || searchParams.get('table')));
+      if (selected) setSelectedDataset(selected);
+    } catch (err) {
+      console.error('Failed to load Superset datasets:', err);
+      setDatasets([]);
+      setError(err instanceof Error ? err.message : 'Impossible de charger les datasets Superset.');
+    }
   };
 
   const loadSchema = async (ds: any) => {
-    if (ds.source === 'local') {
-        const s = await getTableSchema(ds.id);
-        setSchema(s);
-        
-        // Fetch sample rows
-        try {
-          const sample = await executeQuery(`SELECT * FROM "${ds.id}" LIMIT 100;`);
-          setSampleRows(sample);
-        } catch (err) {
-          setSampleRows([]);
-        }
-    } else {
-        // Mock schema for remote
-        setSchema([
-          { name: 'date', type: 'TIMESTAMP' },
-          { name: 'sales', type: 'FLOAT' },
-          { name: 'quantity', type: 'INT' },
-          { name: 'category', type: 'VARCHAR' }
-        ]);
-        setSampleRows([]);
+    if (!ds?.id || ds.source !== 'superset') return;
+    try {
+      const dataset = await dataCatalogService.getDataset(ds.id);
+      setSchema((dataset.columns ?? []).map((column: any) => ({
+        name: column.column_name || column.name,
+        type: column.type || 'UNKNOWN',
+      })));
+      setSampleRows([]);
+    } catch (err) {
+      setSchema([]);
+      setSampleRows([]);
+      setError(err instanceof Error ? err.message : 'Impossible de charger le schéma du dataset.');
     }
   };
 
@@ -433,8 +451,19 @@ return {
     setIsExecuting(true);
     setError(null);
     try {
-      const res = await executeQuery(sql);
-      setResults(res);
+      if (!selectedDataset.databaseId || !Number.isFinite(Number(selectedDataset.databaseId))) {
+        throw new Error('Ce dataset ne possède pas de base Superset accessible pour exécuter la requête.');
+      }
+      const response = await sqlLabService.execute({
+        databaseId: Number(selectedDataset.databaseId),
+        sql,
+        schema: selectedDataset.schema,
+        queryLimit: Number(customConfig.rowLimit) || 1000,
+      });
+      if (response.errorMessage || response.query?.errorMessage) {
+        throw new Error(String(response.errorMessage || response.query?.errorMessage));
+      }
+      setResults(Array.isArray(response.data) ? response.data : []);
       setActivePreviewTab('preview');
     } catch (err: any) {
       setError(err.message);
@@ -452,14 +481,17 @@ return {
     }
 
     try {
-      await saveChart({
-        id: id || crypto.randomUUID(),
+      if (!selectedDataset.id || !Number.isFinite(Number(selectedDataset.id))) {
+        throw new Error('Sélectionnez un dataset Apache Superset valide avant d’enregistrer le graphique.');
+      }
+      await visualizationService.saveChart({
+        id: id || undefined,
         name: chartName,
-        tableName: selectedDataset.name,
+        datasetId: selectedDataset.id,
         chartType,
         xAxis,
         yAxis,
-        config: customConfig
+        config: customConfig,
       });
       toast.success("Graphique enregistré avec succès");
       setIsSaveModalOpen(false);
