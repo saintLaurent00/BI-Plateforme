@@ -76,8 +76,18 @@ export const Datasets = () => {
   const loadDataset = async () => {
     setIsLoading(true);
     try {
-      const ds = await dataCatalogService.getDataset(id!);
-      setDataset(ds);
+      const ds: any = await dataCatalogService.getDataset(id!);
+      setDataset({
+        ...ds,
+        name: ds.table_name || ds.name || `Dataset ${ds.id}`,
+        kind: ds.sql ? 'virtual' : 'physical',
+        columns: (ds.columns ?? []).map((column: any) => ({
+          ...column,
+          name: column.column_name || column.name,
+          type: column.type || 'UNKNOWN',
+        })),
+        metrics: Array.isArray(ds.metrics) ? ds.metrics : [],
+      } as unknown as Dataset);
     } catch (err) {
       toast.error("Impossible de charger le dataset.");
     } finally {
@@ -111,7 +121,7 @@ export const Datasets = () => {
     setDataset({ ...dataset, columns: newCols });
     setEditingColumn(null);
     setIsCalculatedColumn(false);
-    toast.success("Configuration sauvegardée.");
+    toast.info("Cette modification est temporaire dans l’interface ; la persistance des métadonnées de colonnes sera raccordée à l’API Superset.");
   };
 
   const handleSaveMetric = (metric: DatasetMetric) => {
@@ -124,7 +134,7 @@ export const Datasets = () => {
     }
     setDataset({ ...dataset, metrics: newMetrics });
     setEditingMetric(null);
-    toast.success("Métrique mise à jour.");
+    toast.info("Cette modification est temporaire dans l’interface ; la persistance des métriques sera raccordée à l’API Superset.");
   };
 
   if (isLoading) {
@@ -176,7 +186,7 @@ export const Datasets = () => {
           </div>
           <div className="h-6 w-px bg-border mx-2"></div>
           <button 
-            onClick={() => navigate('/chart-editor?dataset=' + dataset.name)}
+            onClick={() => navigate(`/chart-editor?dataset=${encodeURIComponent(dataset.name)}&datasetId=${encodeURIComponent(String((dataset as any).id || id))}&databaseId=${encodeURIComponent(String((dataset as any).database_id || (dataset as any).database?.id || ''))}&schema=${encodeURIComponent(String((dataset as any).schema || ''))}&source=superset`)}
             className="btn-primary px-6 py-2 shadow-lg shadow-accent/20 flex items-center gap-2"
           >
             Explorer <ArrowUpRight className="w-4 h-4" />
