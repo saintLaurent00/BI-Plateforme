@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   CheckCircle2
 } from 'lucide-react';
-import { supersetAuth, supersetBaseUrl } from '@/platform/api/superset-client';
+import { supersetAuth } from '@/platform/api/superset-client';
 import { toast } from 'sonner';
 import { 
   FormSection, 
