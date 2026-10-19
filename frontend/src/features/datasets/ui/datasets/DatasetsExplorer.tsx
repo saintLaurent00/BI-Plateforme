@@ -29,7 +29,7 @@ import {
 } from '@/ui/components/FormElements';
 import { Link, useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
-import { importCSV, getTables } from '@/platform/persistence/local/db';
+
 import { dataCatalogService } from '@/features/datasets/application/DataCatalogService';
 import { cn } from '@/platform/runtime/utils';
 
@@ -130,86 +130,57 @@ export const DatasetsExplorer = () => {
 
   const loadData = async () => {
     setIsLoading(true);
+    setErrorMessage('');
     try {
-      const [tables, dsResponse, dbResponse] = await Promise.all([
-        getTables(),
-        dataCatalogService.listDatasets().catch(() => []),
-        dataCatalogService.listDatabases().catch(() => [])
+      const [dsResponse, dbResponse] = await Promise.all([
+        dataCatalogService.listDatasets(),
+        dataCatalogService.listDatabases(),
       ]);
-      setLocalTables(tables);
+      setLocalTables([]);
       setHifadihDatasets(dsResponse);
       setDatabases(dbResponse);
     } catch (err) {
-      console.error('Data load error:', err);
+      console.error('Apache Superset catalog load error:', err);
+      setHifadihDatasets([]);
+      setDatabases([]);
+      setErrorMessage(err instanceof Error ? err.message : 'Impossible de charger le catalogue Superset.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setImportStatus('parsing');
-    const tableName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9]/g, "_");
-
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results) => {
-        setImportStatus('importing');
-        try {
-          await importCSV(tableName, results.data);
-          setImportStatus('success');
-          loadData();
-          setTimeout(() => {
-            setIsModalOpen(false);
-            setImportStatus('idle');
-          }, 2000);
-        } catch (err: any) {
-          setImportStatus('error');
-          setErrorMessage(err.message || 'Failed to import data');
-        }
-      },
-      error: (err) => {
-        setImportStatus('error');
-        setErrorMessage(err.message);
-      }
-    });
+  const handleFileUpload = (_e: React.ChangeEvent<HTMLInputElement>) => {
+    setImportStatus('error');
+    setErrorMessage('L’import CSV local est désactivé dans cette branche. Pour importer des données, configurez une base dans Apache Superset puis créez le dataset depuis son catalogue.');
+    toast.info('Les imports doivent être effectués dans Apache Superset.');
   };
 
-  const filteredDatasets = [
-    ...localTables.map(table => ({
-      name: table,
-      type: "Physical",
-      owner: "Local User",
-      lastModified: "À l'instant",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      health: 100
-    })),
-    ...hifadihDatasets.map(ds => ({
-      name: ds.table_name || ds.name,
+  const filteredDatasets = hifadihDatasets.map((ds: any) => {
+    const owners = Array.isArray(ds.owners) ? ds.owners : [];
+    const owner = owners[0]
+      ? [owners[0].first_name, owners[0].last_name].filter(Boolean).join(' ') || owners[0].username || 'Utilisateur Superset'
+      : 'Non attribué';
+    return {
+      ...ds,
+      name: ds.table_name || ds.name || `Dataset ${ds.id}`,
       id: ds.id,
-      type: ds.kind === 'physical' ? 'Physical' : 'Virtual',
-      owner: ds.owner || 'Hifadih BI',
+      type: 'Physical',
+      owner,
       created_at: ds.created_on || null,
       updated_at: ds.changed_on || null,
-      lastModified: ds.changed_on_delta_humanized || 'Récemment',
-      health: ds.healthScore || 95
-    }))
-  ].filter(ds => {
-    const matchesSearch = ds.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         ds.owner.toLowerCase().includes(searchQuery.toLowerCase());
+      lastModified: ds.changed_on_delta_humanized || (ds.changed_on ? new Date(ds.changed_on).toLocaleDateString() : '—'),
+      health: null,
+    };
+  }).filter(ds => {
+    const matchesSearch = String(ds.name).toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          String(ds.owner).toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = typeFilter === 'All' || ds.type === typeFilter;
-    const matchesHealth = ds.health >= minHealth;
-    return matchesSearch && matchesType && matchesHealth;
+    return matchesSearch && matchesType;
   });
 
   const handleDelete = async () => {
     if (!datasetToDelete) return;
     
-    // If it's a hifadih dataset
     if (datasetToDelete.id) {
       const loadingToast = toast.loading("Suppression du dataset...");
       try {
@@ -221,8 +192,7 @@ export const DatasetsExplorer = () => {
         console.error('Delete error:', err);
       }
     } else {
-      // Local table deletion
-      toast.info("La suppression des tables locales n'est pas supportée dans cette version.");
+      toast.info('Seuls les datasets gérés par Apache Superset peuvent être supprimés ici.');
     }
     
     setIsDeleteModalOpen(false);
@@ -336,6 +306,7 @@ export const DatasetsExplorer = () => {
         </div>
       </div>
 
+      {errorMessage && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 flex items-center justify-between gap-3"><span>{errorMessage}</span><button onClick={() => void loadData()} className="underline font-semibold">Réessayer</button></div>}
       <div className="flex flex-col gap-3">
         {isLoading ? (
           [1, 2, 3, 4, 5].map(i => (
@@ -392,12 +363,7 @@ export const DatasetsExplorer = () => {
                 key: 'health',
                 label: 'Santé',
                 render: (val) => (
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden min-w-[60px]">
-                      <div className="h-full bg-accent rounded-full transition-all duration-1000" style={{ width: `${val}%` }}></div>
-                    </div>
-                    <span className="text-[10px] font-black text-foreground">{val}%</span>
-                  </div>
+                  <span className="text-xs text-muted-foreground">Non disponible via l’API catalogue</span>
                 )
               },
               {
