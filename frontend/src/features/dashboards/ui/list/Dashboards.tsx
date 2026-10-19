@@ -106,11 +106,6 @@ export const Dashboards = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (step === 1) {
-      setStep(2);
-      return;
-    }
-
     setIsCreating(true);
     try {
       await dashboardService.create({ dashboard_title: newDashboard.title, published: false });
@@ -361,7 +356,7 @@ export const Dashboards = () => {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title={step === 1 ? "Créer un tableau de bord" : "Choisir un modèle"}
+        title="Créer un tableau de bord"
       >
         <form onSubmit={handleCreate} className="space-y-8">
           {step === 1 ? (
