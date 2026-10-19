@@ -232,7 +232,8 @@ export const mapHifadihLayoutToEngine = (layout: Layout): any => {
   
   Object.keys(layout).forEach(id => {
     const item = layout[id];
-    const normalizedType = String(item.type || '').toUpperCase();
+    const typeMap: Record<string, string> = { root: 'ROOT', grid: 'GRID', row: 'ROW', column: 'COLUMN', chart: 'CHART', markdown: 'MARKDOWN', header: 'MARKDOWN', divider: 'DIVIDER', tabs: 'TABS', tab: 'TAB' };
+    const normalizedType = typeMap[String(item.type || '').toLowerCase()] || String(item.type || '').toUpperCase();
     if (normalizedType === 'ROOT' || normalizedType === 'GRID') {
       position[id] = {
         id,
