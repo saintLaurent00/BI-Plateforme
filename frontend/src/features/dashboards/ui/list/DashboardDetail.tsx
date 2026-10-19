@@ -55,7 +55,6 @@ const BACKGROUNDS = [
   { name: 'Muted', value: 'bg-muted' },
 ];
 
-import { supersetBaseUrl } from '@/platform/api/superset-client';
 import { dashboardService } from '@/features/dashboards/application/DashboardService';
 import { DashboardChart } from '@/features/dashboards/ui/DashboardChart';
 import ReactMarkdown from 'react-markdown';
