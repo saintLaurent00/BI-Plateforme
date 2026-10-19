@@ -213,7 +213,7 @@ export const mapLegacyToHifadihLayout = (position: any): Layout => {
 
     layout[id] = {
       id,
-      type: component.type,
+      type: String(component.type).toLowerCase(),
       children: component.children || [],
       parents: component.parents || [],
       meta: component.meta || {},
