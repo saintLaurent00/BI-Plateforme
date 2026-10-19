@@ -50,7 +50,7 @@ export const dataCatalogService = {
     table_name: string;
     name?: string;
     database_id?: string | number;
-    database?: { id?: string | number };
+    database?: { id?: string | number; database_name?: string };
     schema?: string;
     sql?: string;
     kind?: string;
