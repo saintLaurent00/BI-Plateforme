@@ -88,8 +88,9 @@ export const visualizationService = {
           body: JSON.stringify(payload),
         });
     if (response.result) return response.result;
-    if ('id' in response && response.id !== undefined) {
-      return { id: response.id, slice_name: input.name, viz_type: vizType, datasource_id: Number(input.datasetId), datasource_type: 'table' };
+    const responseId = (response as { id?: number }).id;
+    if (responseId !== undefined) {
+      return { id: responseId, slice_name: input.name, viz_type: vizType, datasource_id: Number(input.datasetId), datasource_type: 'table' };
     }
     throw new Error('Superset n’a pas renvoyé les informations du graphique enregistré.');
   },
