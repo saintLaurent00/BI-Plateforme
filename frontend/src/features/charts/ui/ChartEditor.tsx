@@ -341,7 +341,7 @@ return {
   const loadChartData = async (chartId: string) => {
     try {
       const chart = await visualizationService.getChart(chartId);
-      const params = typeof chart.params === 'string' ? JSON.parse(chart.params || '{}') : (chart.params || {});
+      const params: Record<string, any> = typeof chart.params === 'string' ? JSON.parse(chart.params || '{}') : ((chart.params || {}) as Record<string, any>);
       const dataset = chart.datasource_id ? await dataCatalogService.getDataset(chart.datasource_id) : null;
       setChartName(chart.slice_name || '');
       if (dataset) {
