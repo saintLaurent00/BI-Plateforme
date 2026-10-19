@@ -23,7 +23,7 @@ import {
   Copy,
   Share2
 } from 'lucide-react';
-import { getCharts as getLocalCharts, getChart as getLocalChart, executeQuery } from '@/platform/persistence/local/db';
+import { executeQuery } from '@/platform/persistence/local/db';
 import Papa from 'papaparse';
 import { visualizationService } from '@/features/charts/application/VisualizationService';
 import { ChartCard } from '@/ui/components/cards/base/ChartCard';
@@ -69,22 +69,11 @@ export const Charts = () => {
     try {
       setIsLoading(true);
       const result = await visualizationService.listCharts();
-      
-      // Combiner avec les graphiques locaux
-      const local = await getLocalCharts();
-      const combined = [...local];
-      
-      result.forEach((remote: any) => {
-        if (!combined.find(l => l.id === remote.id)) {
-          combined.push(remote);
-        }
-      });
-      
-      setCharts(combined);
+      setCharts(result);
     } catch (err) {
-      console.error('Failed to load charts:', err);
-      const local = await getLocalCharts();
-      setCharts(local);
+      console.error('Failed to load charts from Apache Superset:', err);
+      setCharts([]);
+      toast.error(err instanceof Error ? err.message : 'Impossible de charger les graphiques depuis Superset.');
     } finally {
       setIsLoading(false);
     }
@@ -98,11 +87,8 @@ export const Charts = () => {
     setSelectedChart(chart);
     setIsDetailsLoading(true);
     try {
-      const fullId = typeof chart.id === 'number' ? String(chart.id) : chart.id;
-      const fullChart = await getLocalChart(fullId);
-      if (fullChart) {
-        setSelectedChart(fullChart);
-      }
+      const fullChart = await visualizationService.getChart(chart.id);
+      setSelectedChart(fullChart);
     } catch (err) {
       console.error('Failed to load full chart details:', err);
     } finally {
@@ -156,12 +142,10 @@ export const Charts = () => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette visualisation stratégique ?')) return;
     
     try {
-      const { initDatabase } = await import('@/platform/persistence/local/db');
-      const { db } = await initDatabase();
-      db.run(`DELETE FROM charts WHERE id = ?`, [id]);
-      toast.success("Graphique supprimé");
+      await visualizationService.deleteChart(id);
+      toast.success("Graphique supprimé dans Apache Superset");
       setSelectedChart(null);
-      loadCharts();
+      await loadCharts();
     } catch (err) {
       toast.error("Erreur lors de la suppression");
     }
