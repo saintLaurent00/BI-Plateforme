@@ -18,10 +18,9 @@ import {
   ChevronDown,
   GitBranch
 } from 'lucide-react';
-import { getTables, getTableSchema } from '@/platform/persistence/local/db';
+import { dataCatalogService } from '@/features/datasets';
 import { Badge } from '@/ui/components/Badge';
 import { dataCatalogService } from '@/features/datasets';
-import type { Dataset } from '@/features/datasets';
 
 import { Stepper } from '@/ui/components/Stepper';
 
@@ -156,47 +155,32 @@ export const ChartSelector = () => {
 
   const loadData = async () => {
     try {
-      const [localTables, hifadihResponse] = await Promise.all([
-        getTables(),
-        dataCatalogService.listDatasets().catch(() => [])
-      ]);
-      
-      const localDs = localTables.map(t => ({
-        id: t,
-        name: t,
+      const response = await dataCatalogService.listDatasets();
+      const remoteDatasets = response.map((ds: any) => ({
+        ...ds,
+        id: ds.id,
+        name: ds.table_name || ds.name || `Dataset ${ds.id}`,
         type: 'Physical',
         kind: 'physical',
-        source: 'local'
+        source: 'superset',
       }));
-
-      const remoteDs = hifadihResponse.map((ds: any) => ({
-        id: ds.id,
-        name: ds.table_name || ds.name,
-        type: ds.kind === 'physical' ? 'Physical' : 'Virtual',
-        kind: ds.kind,
-        source: 'hifadih'
-      }));
-
-      setDatasets([...localDs, ...remoteDs]);
+      setDatasets(remoteDatasets);
     } catch (err) {
-      console.error(err);
+      console.error('Unable to load Superset datasets:', err);
+      toast.error(err instanceof Error ? err.message : 'Impossible de charger les datasets Superset.');
+      setDatasets([]);
     }
   };
 
   const handleNext = () => {
     if (step === 1 && selectedDataset) setStep(2);
     else if (step === 2 && selectedType) {
-      if (selectedDataset.source === 'local') {
-        getTableSchema(selectedDataset.id).then(setSchema);
-      } else {
-        // Mock schema for remote datasets for now or fetch it if needed
-        setSchema([
-          { name: 'date', type: 'TIMESTAMP' },
-          { name: 'sales', type: 'FLOAT' },
-          { name: 'quantity', type: 'INT' },
-          { name: 'category', type: 'VARCHAR' }
-        ]);
-      }
+      setSchema(
+        (selectedDataset.columns ?? []).map((column: any) => ({
+          name: column.column_name || column.name,
+          type: column.type || column.type_generic || 'UNKNOWN',
+        })),
+      );
       setStep(3);
     }
     else if (step === 3) handleCreate();
