@@ -125,11 +125,8 @@ export const SqlLab = () => {
       return;
     }
     try {
-      const datasets = await dataCatalogService.listDatasets();
-      const databaseDatasets = datasets.filter((dataset: any) =>
-        String(dataset.database_id ?? dataset.database?.id) === String(dbObj.id),
-      );
-      setTables(databaseDatasets.map((dataset: any) => dataset.table_name || dataset.name).filter(Boolean));
+      const tableRows = await dataCatalogService.listDatabaseTables(dbObj.id);
+      setTables(tableRows.map((table: any) => table.value || table.table_name || table.name || table.label).filter(Boolean).map(String));
     } catch (err) {
       console.error('Failed to load Superset dataset metadata:', err);
       setTables([]);
@@ -143,12 +140,13 @@ export const SqlLab = () => {
   const handleTableClick = async (tableName: string) => {
     setSelectedTable(tableName);
     try {
-      const datasets = await dataCatalogService.listDatasets();
-      const dataset = datasets.find((item: any) =>
-        String(item.database_id ?? item.database?.id) === String(selectedDatabase?.id) &&
-        (item.table_name || item.name) === tableName,
+      if (!selectedDatabase?.id) throw new Error('Sélectionnez une base Superset.');
+      const metadata: any = await dataCatalogService.getDatabaseTable(
+        selectedDatabase.id,
+        tableName,
+        selectedDatabase.schema || '',
       );
-      const columns = (dataset?.columns ?? []).map((column: any) => ({
+      const columns = (metadata.columns ?? metadata.result?.columns ?? []).map((column: any) => ({
         name: column.column_name || column.name,
         type: column.type || 'UNKNOWN',
       }));
