@@ -18,17 +18,8 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/ui/components/Badge';
 import { Modal } from '@/ui/components/Modal';
-import { 
-  FormSection, 
-  FormInput, 
-  FormSelect, 
-  FormTextarea, 
-  FormActions, 
-  FormButton,
-  FormLabel
-} from '@/ui/components/FormElements';
+import { FormSection, FormInput, FormSelect, FormTextarea, FormActions, FormButton } from '@/ui/components/FormElements';
 import { Link, useNavigate } from 'react-router-dom';
-import Papa from 'papaparse';
 
 import { dataCatalogService } from '@/features/datasets/application/DataCatalogService';
 import { cn } from '@/platform/runtime/utils';
@@ -111,7 +102,6 @@ export const DatasetsExplorer = () => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [importStatus, setImportStatus] = React.useState<'idle' | 'parsing' | 'importing' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = React.useState('');
-  const [localTables, setLocalTables] = React.useState<string[]>([]);
   const [hifadihDatasets, setHifadihDatasets] = React.useState<any[]>([]);
   const [databases, setDatabases] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -121,7 +111,6 @@ export const DatasetsExplorer = () => {
   // Search and Filter State
   const [searchQuery, setSearchQuery] = React.useState('');
   const [typeFilter, setTypeFilter] = React.useState<'All' | 'Physical' | 'Virtual'>('All');
-  const [minHealth, setMinHealth] = React.useState(0);
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -136,7 +125,6 @@ export const DatasetsExplorer = () => {
         dataCatalogService.listDatasets(),
         dataCatalogService.listDatabases(),
       ]);
-      setLocalTables([]);
       setHifadihDatasets(dsResponse);
       setDatabases(dbResponse);
     } catch (err) {
@@ -223,7 +211,7 @@ export const DatasetsExplorer = () => {
               onClick={() => setIsFilterOpen(!isFilterOpen)}
               className={cn(
                 "px-5 py-2 bg-background border border-border rounded-xl text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 hover:border-accent/30 transition-all",
-                (typeFilter !== 'All' || minHealth > 0) && "border-accent text-accent"
+                (typeFilter !== 'All') && "border-accent text-accent"
               )}
             >
               <Filter className="w-4 h-4 text-muted-foreground/40" />
@@ -251,27 +239,12 @@ export const DatasetsExplorer = () => {
                   </div>
                 </FormSection>
 
-                <FormSection>
-                  <div className="flex items-center justify-between mb-2">
-                    <FormLabel className="p-0 mb-0">Min Health Score</FormLabel>
-                    <span className="text-[10px] font-bold text-accent">{minHealth}%</span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="100" 
-                    step="5"
-                    value={minHealth}
-                    onChange={(e) => setMinHealth(parseInt(e.target.value))}
-                    className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-accent"
-                  />
-                </FormSection>
+
 
                 <div className="pt-4 border-t border-border flex justify-between items-center">
                   <button 
                     onClick={() => {
                       setTypeFilter('All');
-                      setMinHealth(0);
                     }}
                     className="text-[10px] font-bold text-muted-foreground hover:text-foreground uppercase tracking-widest px-2 py-1"
                   >
