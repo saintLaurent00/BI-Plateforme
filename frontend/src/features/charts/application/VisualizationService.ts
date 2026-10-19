@@ -36,9 +36,21 @@ export const visualizationService = {
   }): Promise<SupersetChart> {
     const vizTypeMap: Record<string, string> = {
       bar: 'echarts_timeseries_bar',
+      stackedbar: 'echarts_timeseries_bar',
+      groupedbar: 'echarts_timeseries_bar',
       line: 'echarts_timeseries_line',
       area: 'echarts_area',
       pie: 'echarts_pie',
+      donut: 'echarts_pie',
+      radar: 'echarts_radar',
+      scatter: 'echarts_scatter',
+      heatmap: 'echarts_heatmap',
+      sankey: 'echarts_sankey',
+      treemap: 'treemap_v2',
+      boxplot: 'echarts_box_plot',
+      funnel: 'echarts_funnel',
+      sunburst: 'sunburst',
+      waterfall: 'echarts_waterfall',
       table: 'table',
     };
     const normalizedType = String(input.chartType).toLowerCase();
