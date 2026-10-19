@@ -29,7 +29,8 @@ import {
   FormButtonGroup
 } from '@/ui/components/FormElements';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { executeQuery, getTables, getTableSchema, saveQuery, getSavedQueries, getDataSources } from '@/platform/persistence/local/db';
+import { saveQuery, getSavedQueries } from '@/platform/persistence/local/db';
+import { sqlLabService } from '@/features/exploration/application/SqlLabService';
 import { dataCatalogService } from '@/features/datasets';
 import { cn } from '@/platform/runtime/utils';
 import { toast } from 'sonner';
@@ -75,7 +76,7 @@ export const SqlLab = () => {
   const [queryInfo, setQueryInfo] = React.useState({ name: '', description: '' });
   const [activeTab, setActiveTab] = React.useState<'results' | 'history'>('results');
   const [history, setHistory] = React.useState<any[]>([]);
-  const [sql, setSql] = React.useState(isCreateMode ? "-- Écrivez votre requête de dataset ici\nSELECT * FROM sales_data LIMIT 100;" : "SELECT * FROM sqlite_master;");
+  const [sql, setSql] = React.useState(isCreateMode ? "-- Écrivez votre requête de dataset ici\nSELECT * FROM sales_data LIMIT 100;" : "SELECT 1;");
   const [results, setResults] = React.useState<any[]>([]);
   const [tables, setTables] = React.useState<string[]>([]);
   const [tableSearchText, setTableSearchText] = React.useState('');
@@ -86,8 +87,8 @@ export const SqlLab = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [executionTime, setExecutionTime] = React.useState<number | null>(null);
   const [activeQueryId, setActiveQueryId] = React.useState<string | null>(null);
-  const [databases, setDatabases] = React.useState<any[]>([{ id: 'local', database_name: 'Base Locale (SQLite)' }]);
-  const [selectedDatabase, setSelectedDatabase] = React.useState<any>({ id: 'local', database_name: 'Base Locale (SQLite)' });
+  const [databases, setDatabases] = React.useState<any[]>([]);
+  const [selectedDatabase, setSelectedDatabase] = React.useState<any>(null);
   const [isDbSelectorOpen, setIsDbSelectorOpen] = React.useState(false);
   const [paramsModalOpen, setParamsModalOpen] = React.useState(false);
   const [queryParameters, setQueryParameters] = React.useState<Record<string, string>>({});
@@ -101,51 +102,64 @@ export const SqlLab = () => {
 
   const loadDatabases = async () => {
     try {
-      const dbsRes = await dataCatalogService.listDatabases();
-      const dbs = dbsRes || [];
-      
-      let sqliteDbs: any[] = [];
-      try {
-        sqliteDbs = await getDataSources();
-      } catch (sqliteErr) {
-        console.error('Failed to load SQL data sources:', sqliteErr);
+      const dbs = await dataCatalogService.listDatabases();
+      setDatabases(dbs);
+      if (dbs.length > 0) {
+        setSelectedDatabase(dbs[0]);
+        await loadSchemaForDatabase(dbs[0]);
+      } else {
+        setSelectedDatabase(null);
+        setTables([]);
+        setError('Aucune base de données accessible dans Apache Superset.');
       }
-
-      const formattedSqliteDbs = sqliteDbs.map((db: any) => ({
-        ...db,
-        database_name: db.name || db.databaseName || db.database_name || 'Base de données',
-      }));
-
-      const allDbs = [
-        { id: 'local', database_name: 'Base Locale (SQLite)' },
-        ...formattedSqliteDbs,
-        ...dbs
-      ];
-      setDatabases(allDbs);
-      setSelectedDatabase(allDbs[0]);
-      await loadSchemaForDatabase(allDbs[0]);
-    } catch (e) {
-      setDatabases([{ id: 'local', database_name: 'Base Locale (SQLite)' }]);
+    } catch (err) {
+      console.error('Failed to load Superset databases:', err);
+      setDatabases([]);
+      setSelectedDatabase(null);
+      setError(err instanceof Error ? err.message : 'Impossible de charger les bases Superset.');
     }
   };
 
   const loadSchemaForDatabase = async (dbObj: any) => {
-    if (!dbObj) return;
+    if (!dbObj?.id) {
+      setTables([]);
+      return;
+    }
     try {
-      const t = await getTables(dbObj.id);
-      if (dbObj.id === 'local') {
-        const businessTables = t.filter(x => !['charts', 'dashboards', 'saved_queries', 'roles', 'permissions', 'data_sources'].includes(x));
-        setTables(businessTables);
-      } else {
-        setTables(t);
-      }
+      const datasets = await dataCatalogService.listDatasets();
+      const databaseDatasets = datasets.filter((dataset: any) =>
+        String(dataset.database_id ?? dataset.database?.id) === String(dbObj.id),
+      );
+      setTables(databaseDatasets.map((dataset: any) => dataset.table_name || dataset.name).filter(Boolean));
     } catch (err) {
-      console.error('Failed to load tables:', err);
+      console.error('Failed to load Superset dataset metadata:', err);
+      setTables([]);
     }
   };
 
   const loadSchema = async () => {
     await loadSchemaForDatabase(selectedDatabase);
+  };
+
+  const handleTableClick = async (tableName: string) => {
+    setSelectedTable(tableName);
+    try {
+      const datasets = await dataCatalogService.listDatasets();
+      const dataset = datasets.find((item: any) =>
+        String(item.database_id ?? item.database?.id) === String(selectedDatabase?.id) &&
+        (item.table_name || item.name) === tableName,
+      );
+      const columns = (dataset?.columns ?? []).map((column: any) => ({
+        name: column.column_name || column.name,
+        type: column.type || 'UNKNOWN',
+      }));
+      setSchema(columns);
+      setSql(`SELECT * FROM "${tableName}" LIMIT 100;`);
+      setActiveQueryId(null);
+    } catch (err) {
+      setSchema([]);
+      toast.error(err instanceof Error ? err.message : 'Impossible de charger les colonnes du dataset.');
+    }
   };
 
   const loadSavedQueries = async () => {
@@ -211,22 +225,28 @@ export const SqlLab = () => {
         finalizedSql = finalizedSql.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g'), value);
       });
 
-      // We always run through the real executeQuery targeting the chosen database container.
-      const res = await executeQuery(finalizedSql, selectedDatabase.id);
-      setResults(res);
+      if (!selectedDatabase?.id || !Number.isFinite(Number(selectedDatabase.id))) {
+        throw new Error('Sélectionnez une base de données configurée dans Apache Superset.');
+      }
+      const response = await sqlLabService.execute({
+        databaseId: Number(selectedDatabase.id),
+        sql: finalizedSql,
+        queryLimit: 1000,
+      });
+      if (response.errorMessage || response.query?.errorMessage) {
+        throw new Error(String(response.errorMessage || response.query?.errorMessage));
+      }
+      setResults(Array.isArray(response.data) ? response.data : []);
       const time = Math.round(performance.now() - start);
       setExecutionTime(time);
       addToHistory(finalizedSql, time, true);
       setActiveTab('results');
       setParamsModalOpen(false);
-
-      // Reload tables and schemas if we ran a schema mutation/DDL query
-      const isMutation = !/^\s*SELECT\b/i.test(finalizedSql);
-      if (isMutation) {
+      if (!/^\s*SELECT\b/i.test(finalizedSql)) {
         await loadSchemaForDatabase(selectedDatabase);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to execute query');
+      setError(err.message || 'Échec de l’exécution SQL dans Apache Superset.');
       setResults([]);
       addToHistory(sql, 0, false);
       setActiveTab('results');
@@ -276,7 +296,7 @@ export const SqlLab = () => {
       setIsModalOpen(false);
       loadSavedQueries();
       if (saveType === 'dataset') {
-          toast.success("Dataset publié avec succès dans Hifadih BI");
+          toast.success("Dataset envoyé à Apache Superset");
           navigate('/datasets');
       } else {
           toast.success("Requête enregistrée avec succès");
