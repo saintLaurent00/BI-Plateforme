@@ -97,7 +97,7 @@ export const PhysicalDatasetWizard = () => {
     setIsLoading(true);
     try {
       const allTables = await dataCatalogService.listDatabaseTables(dbId);
-      setTables(allTables.map((table: any) => String(table.value || table.table_name || table.name || table.label)).filter(Boolean));
+      setTables(allTables.map((table: any) => String(typeof table === 'string' ? table : table.value || table.table_name || table.name || table.label)).filter(Boolean));
     } catch (err) {
       console.error('Failed to load Superset tables:', err);
       setTables([]);
