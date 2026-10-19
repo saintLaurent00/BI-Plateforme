@@ -24,6 +24,20 @@ export const dataCatalogService = {
     const response = await supersetRequest<ListResponse<SupersetDatabase>>(`/api/v1/database/${listQuery()}`);
     return Array.isArray(response?.result) ? response.result : [];
   },
+  async listDatabaseTables(databaseId: string | number, schema?: string): Promise<Array<Record<string, unknown>>> {
+    const query = schema ? `?schema=${encodeURIComponent(schema)}` : '';
+    const response = await supersetRequest<{ result?: Array<Record<string, unknown>> }>(
+      `/api/v1/database/${encodeURIComponent(String(databaseId))}/tables/${query}`,
+    );
+    return Array.isArray(response?.result) ? response.result : [];
+  },
+
+  async getDatabaseTable(databaseId: string | number, tableName: string, schema = ''): Promise<Record<string, unknown>> {
+    const path = `/api/v1/database/${encodeURIComponent(String(databaseId))}/table/${encodeURIComponent(tableName)}/${encodeURIComponent(schema)}`;
+    const response = await supersetRequest<{ result?: Record<string, unknown> }>(path);
+    return response.result ?? (response as Record<string, unknown>);
+  },
+
   async listDatasets(): Promise<SupersetDataset[]> {
     const response = await supersetRequest<ListResponse<SupersetDataset>>(`/api/v1/dataset/${listQuery()}`);
     return Array.isArray(response?.result) ? response.result : [];
