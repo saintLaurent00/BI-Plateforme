@@ -29,7 +29,6 @@ import {
   FormButtonGroup
 } from '@/ui/components/FormElements';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { saveQuery, getSavedQueries } from '@/platform/persistence/local/db';
 import { sqlLabService } from '@/features/exploration/application/SqlLabService';
 import { dataCatalogService } from '@/features/datasets';
 import { cn } from '@/platform/runtime/utils';
@@ -164,10 +163,16 @@ export const SqlLab = () => {
 
   const loadSavedQueries = async () => {
     try {
-      const q = await getSavedQueries();
-      setSavedQueries(q);
+      const queries = await sqlLabService.listSavedQueries();
+      setSavedQueries(queries.map((query: any) => ({
+        ...query,
+        name: query.label || query.name || 'Requête sans titre',
+        description: query.description || '',
+        sql: query.sql || '',
+      })));
     } catch (err) {
-      console.error('Failed to load saved queries:', err);
+      console.error('Failed to load saved queries from Superset:', err);
+      setSavedQueries([]);
     }
   };
 
@@ -277,12 +282,17 @@ export const SqlLab = () => {
               kind: 'virtual'
           });
       } else {
-          await saveQuery({
-            id,
+          if (!selectedDatabase?.id || !Number.isFinite(Number(selectedDatabase.id))) {
+            throw new Error('Sélectionnez une base Superset avant d’enregistrer la requête.');
+          }
+          const saved = await sqlLabService.saveQuery({
+            id: activeQueryId || undefined,
+            databaseId: Number(selectedDatabase.id),
             name: queryInfo.name,
             description: queryInfo.description,
-            sql
+            sql,
           });
+          if (saved.id !== undefined) setActiveQueryId(String(saved.id));
       }
       setSavedQueries(prev => {
         const index = prev.findIndex(q => q.id === id);
@@ -299,8 +309,8 @@ export const SqlLab = () => {
           toast.success("Dataset envoyé à Apache Superset");
           navigate('/datasets');
       } else {
-          toast.success("Requête enregistrée avec succès");
-          setActiveQueryId(id);
+          toast.success("Requête enregistrée dans Apache Superset");
+          await loadSavedQueries();
       }
     } catch (err: any) {
       console.error('Failed to save query:', err);
