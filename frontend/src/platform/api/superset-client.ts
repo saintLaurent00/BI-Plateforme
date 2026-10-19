@@ -23,14 +23,15 @@ export class SupersetApiError extends Error {
 const TOKEN_KEY = 'hifadih.superset.access_token';
 const REFRESH_TOKEN_KEY = 'hifadih.superset.refresh_token';
 let csrfToken: string | null = null;
+let refreshInFlight: Promise<boolean> | null = null;
 
 export const supersetAuth = {
-  getAccessToken: () => window.localStorage.getItem(TOKEN_KEY),
-  getRefreshToken: () => window.localStorage.getItem(REFRESH_TOKEN_KEY),
+  getAccessToken: () => window.sessionStorage.getItem(TOKEN_KEY),
+  getRefreshToken: () => window.sessionStorage.getItem(REFRESH_TOKEN_KEY),
   isAuthenticated: () => Boolean(window.localStorage.getItem(TOKEN_KEY)),
   clear() {
-    window.localStorage.removeItem(TOKEN_KEY);
-    window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+    window.sessionStorage.removeItem(TOKEN_KEY);
+    window.sessionStorage.removeItem(REFRESH_TOKEN_KEY);
     csrfToken = null;
   },
   async login(username: string, password: string, provider: SupersetLoginProvider = 'db') {
@@ -52,11 +53,39 @@ export const supersetAuth = {
     const refreshToken = (payload as { refresh_token?: string }).refresh_token;
     if (!accessToken) throw new Error('Superset n’a pas renvoyé de jeton d’accès.');
 
-    window.localStorage.setItem(TOKEN_KEY, accessToken);
-    if (refreshToken) window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    window.sessionStorage.setItem(TOKEN_KEY, accessToken);
+    if (refreshToken) window.sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
     return payload;
   },
 };
+
+async function refreshAccessToken(): Promise<boolean> {
+  const refreshToken = supersetAuth.getRefreshToken();
+  if (!refreshToken || !supersetBaseUrl) return false;
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    try {
+      const response = await fetch(`${supersetBaseUrl}${API_PREFIX}/security/refresh`, {
+        method: 'POST',
+        headers: { Accept: 'application/json', Authorization: `Bearer ${refreshToken}` },
+        credentials: 'include',
+      });
+      const payload = await parseResponse(response);
+      if (!response.ok || !payload?.access_token) {
+        supersetAuth.clear();
+        return false;
+      }
+      window.sessionStorage.setItem(TOKEN_KEY, payload.access_token);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
 
 async function parseResponse(response: Response): Promise<any> {
   const contentType = response.headers.get('content-type') ?? '';
@@ -107,13 +136,16 @@ export async function supersetRequest<T>(path: string, options: SupersetRequestO
     if (csrfToken) headers.set('X-CSRFToken', csrfToken);
   }
 
-  const response = await fetch(`${supersetBaseUrl}${path.startsWith('/') ? path : `/${path}`}`, {
-    ...init,
-    headers,
-    credentials: 'include',
-  });
-  const payload = await parseResponse(response);
+  const url = `${supersetBaseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  let response = await fetch(url, { ...init, headers, credentials: 'include' });
 
+  if (response.status === 401 && authenticated && await refreshAccessToken()) {
+    headers.set('Authorization', `Bearer ${supersetAuth.getAccessToken()}`);
+    csrfToken = null;
+    response = await fetch(url, { ...init, headers, credentials: 'include' });
+  }
+
+  const payload = await parseResponse(response);
   if (response.status === 401) supersetAuth.clear();
   if (!response.ok) {
     throw new SupersetApiError(readErrorMessage(payload, `Erreur API Superset (${response.status}).`), response.status, payload);
