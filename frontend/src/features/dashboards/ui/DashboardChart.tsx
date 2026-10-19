@@ -1,108 +1,108 @@
 import React, { useState, useEffect } from 'react';
-import { executeQuery } from '@/platform/persistence/local/db';
 import { EChartsChart, PivotTable } from '@/features/charts/ui';
 import { DataTable } from '@/ui/components/DataTable';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { ChartSkeleton } from '@/ui/components/Skeleton';
+import { visualizationService } from '@/features/charts/application/VisualizationService';
 
 interface DashboardChartProps {
   chart: any;
 }
 
+const VIZ_TYPE_MAP: Record<string, string> = {
+  echarts_timeseries_bar: 'Bar',
+  echarts_timeseries_line: 'Line',
+  echarts_area: 'Area',
+  echarts_timeseries_area: 'Area',
+  echarts_pie: 'Pie',
+  table: 'Table',
+  pivot_table_v2: 'PivotTable',
+  echarts_scatter: 'Scatter',
+  echarts_radar: 'Radar',
+};
+
 export const DashboardChart: React.FC<DashboardChartProps> = ({ chart }) => {
   const [data, setData] = useState<any[]>([]);
+  const [chartConfig, setChartConfig] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, [chart]);
-
-  const loadData = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Charts are executed through the local query runtime.
-      const x = Array.isArray(chart.x_axis) ? chart.x_axis[0] : (chart.x_axis || 'id');
-      let metrics = [];
-      if (Array.isArray(chart.y_axis)) {
-        metrics = chart.y_axis.filter((m: any) => m && m.toString().length > 0);
-      } else if (chart.y_axis) {
-        metrics = [chart.y_axis];
+    let active = true;
+    const loadData = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        if (!chart?.id) throw new Error('Aucun identifiant de graphique Superset n’est associé à ce composant.');
+        const [details, response] = await Promise.all([
+          visualizationService.getChart(chart.id),
+          visualizationService.getChartData(chart.id),
+        ]);
+        const params: Record<string, any> = typeof details.params === 'string'
+          ? JSON.parse(details.params || '{}')
+          : ((details.params || {}) as Record<string, any>);
+        const payload: any = response;
+        const result = Array.isArray(payload?.result) ? payload.result[0] : (payload?.result ?? payload);
+        const rows = Array.isArray(result?.data) ? result.data : Array.isArray(payload?.data) ? payload.data : [];
+        if (active) {
+          setData(rows);
+          setChartConfig({
+            type: VIZ_TYPE_MAP[details.viz_type || ''] || details.viz_type || 'Bar',
+            xAxis: Array.isArray(params.groupby) ? params.groupby : params.x_axis ? [params.x_axis] : [],
+            yAxis: Array.isArray(params.metrics) ? params.metrics.map((metric: any) =>
+              typeof metric === 'string' ? metric : metric.label || metric.column?.column_name || '',
+            ).filter(Boolean) : [],
+            config: params,
+          });
+          if (!rows.length) setError('Superset n’a renvoyé aucune donnée pour ce graphique.');
+        }
+      } catch (err) {
+        if (active) {
+          setData([]);
+          setError(err instanceof Error ? err.message : 'Impossible de charger les données du graphique Superset.');
+        }
+      } finally {
+        if (active) setIsLoading(false);
       }
-
-      
-      if (metrics.length === 0) {
-        const sql = `SELECT "${x}" FROM "${chart.table_name || 'charts'}" LIMIT 100;`;
-        const res = await executeQuery(sql);
-        setData(res);
-      } else {
-        const y = metrics.map((col: any) => {
-          const colName = typeof col === 'object' && col !== null ? col.column : col;
-          const aggNum = typeof col === 'object' && col !== null ? col.agg : 'SUM';
-          const aliasName = typeof col === 'object' && col !== null ? col.alias : col;
-          if (aggNum === 'NONE') return `"${colName}" as "${aliasName}"`;
-          return `${aggNum || 'SUM'}("${colName}") as "${aliasName}"`;
-        }).join(', ');
-        const sql = `SELECT "${x}", ${y} FROM "${chart.table_name || 'charts'}" GROUP BY "${x}" LIMIT 100;`;
-        const res = await executeQuery(sql);
-        setData(res);
-      }
-    } catch (err: any) {
-      console.error('Failed to load chart data:', err);
-      // Quietly set empty data if error
-      setData([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+    void loadData();
+    return () => { active = false; };
+  }, [chart?.id]);
 
   if (isLoading) {
     return (
       <div className="w-full h-full min-h-[220px] flex items-center justify-center">
-        <ChartSkeleton 
-          type={chart.chart_type || chart.viz_type} 
-          showHeader={false} 
-          className="p-2 bg-transparent"
-        />
+        <ChartSkeleton type={chart?.viz_type || chart?.chart_type} showHeader={false} className="p-2 bg-transparent" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center bg-rose-50/30 rounded-none p-8 text-center border border-rose-100/50">
-        <div className="w-12 h-12 rounded-none bg-rose-50 flex items-center justify-center mb-4">
-          <AlertCircle className="w-6 h-6 text-rose-500" />
-        </div>
-        <p className="text-xs font-bold text-rose-900 tracking-tight">Intelligence Interrupted</p>
-        <p className="text-[10px] text-rose-500 mt-2 font-serif italic leading-relaxed max-w-[200px] mx-auto">{error}</p>
+      <div role="alert" className="w-full h-full min-h-[180px] flex flex-col items-center justify-center bg-rose-50/30 p-8 text-center border border-rose-100/50">
+        <AlertCircle className="w-6 h-6 text-rose-500 mb-3" />
+        <p className="text-xs font-bold text-rose-900">Graphique indisponible</p>
+        <p className="text-[10px] text-rose-600 mt-2 leading-relaxed max-w-xs">{error}</p>
       </div>
     );
   }
 
-  if (chart.chart_type === 'Table') {
-    return <DataTable data={data} columns={[chart.x_axis, ...chart.y_axis]} />;
+  if (chartConfig?.type === 'Table') {
+    const columns = Object.keys(data[0] || {}).map(key => ({ key, label: key }));
+    return <DataTable data={data} columns={columns} />;
   }
 
-  if (chart.chart_type === 'PivotTable') {
-    return (
-      <PivotTable 
-        data={data} 
-        rowDimension={chart.x_axis} 
-        colDimension={chart.y_axis[0]} 
-        valueMetric={chart.y_axis[1] || chart.y_axis[0]} 
-      />
-    );
+  if (chartConfig?.type === 'PivotTable') {
+    return <PivotTable data={data} rowDimension={chartConfig.xAxis[0]} colDimension={chartConfig.yAxis[0]} valueMetric={chartConfig.yAxis[1] || chartConfig.yAxis[0]} />;
   }
 
   return (
-    <EChartsChart 
+    <EChartsChart
       data={data}
-      type={chart.chart_type}
-      xAxis={chart.x_axis}
-      yAxis={chart.y_axis}
-      config={chart.config}
+      type={chartConfig?.type || 'Bar'}
+      xAxis={chartConfig?.xAxis || []}
+      yAxis={chartConfig?.yAxis || []}
+      config={chartConfig?.config || {}}
     />
   );
 };
