@@ -126,7 +126,7 @@ export const SqlLab = () => {
     }
     try {
       const tableRows = await dataCatalogService.listDatabaseTables(dbObj.id);
-      setTables(tableRows.map((table: any) => table.value || table.table_name || table.name || table.label).filter(Boolean).map(String));
+      setTables(tableRows.map((table: any) => typeof table === 'string' ? table : table.value || table.table_name || table.name || table.label).filter(Boolean).map(String));
     } catch (err) {
       console.error('Failed to load Superset dataset metadata:', err);
       setTables([]);
