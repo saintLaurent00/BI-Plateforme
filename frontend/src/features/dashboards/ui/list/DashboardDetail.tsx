@@ -55,7 +55,7 @@ const BACKGROUNDS = [
   { name: 'Muted', value: 'bg-muted' },
 ];
 
-import { getDashboard as getLocalDashboard, executeQuery } from '@/platform/persistence/local/db';
+import { supersetBaseUrl } from '@/platform/api/superset-client';
 import { dashboardService } from '@/features/dashboards/application/DashboardService';
 import { DashboardChart } from '@/features/dashboards/ui/DashboardChart';
 import ReactMarkdown from 'react-markdown';
@@ -512,37 +512,23 @@ export const DashboardDetail = () => {
     setIsLoading(true);
     
     try {
-      // Try Hifadih Service first
-      const d = await dashboardService.get(dashboardId);
-      
-      if (d) {
-        // Handle layout transformation if it's from a external source (like our former legacy platform)
-        if (d.position_json) {
-          const position = typeof d.position_json === 'string' ? JSON.parse(d.position_json) : d.position_json;
-          const normalized = mapLegacyToHifadihLayout(position);
-          setDashboard({
-            ...d,
-            layout: denormalizeLayout(normalized)
-          });
-        } else {
-          setDashboard(d);
-        }
+      const dashboard = await dashboardService.get(dashboardId);
+      if (dashboard.position_json) {
+        const position = typeof dashboard.position_json === 'string'
+          ? JSON.parse(dashboard.position_json)
+          : dashboard.position_json;
+        const normalized = mapLegacyToHifadihLayout(position);
+        setDashboard({ ...dashboard, layout: denormalizeLayout(normalized) });
       } else {
-        // Fallback to local
-        const local = await getLocalDashboard(dashboardId);
-        setDashboard(local);
+        setDashboard(dashboard);
       }
     } catch (err) {
-      console.error('Failed to load dashboard:', err);
-      try {
-        const local = await getLocalDashboard(dashboardId);
-        setDashboard(local);
-      } catch (localErr) {
-        console.error('Failed to load local dashboard:', localErr);
-      }
+      console.error('Failed to load dashboard from Apache Superset:', err);
+      setDashboard(null);
+      toast.error(err instanceof Error ? err.message : 'Impossible de charger ce tableau de bord Superset.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   if (isLoading) {
