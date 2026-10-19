@@ -69,7 +69,12 @@ export const Charts = () => {
     try {
       setIsLoading(true);
       const result = await visualizationService.listCharts();
-      setCharts(result);
+      setCharts(result.map((chart: any) => ({
+        ...chart,
+        name: chart.slice_name || 'Graphique sans titre',
+        chart_type: chart.viz_type || 'echarts_timeseries_bar',
+        table_name: chart.datasource_name || chart.datasource_name_text || 'Dataset Superset',
+      })));
     } catch (err) {
       console.error('Failed to load charts from Apache Superset:', err);
       setCharts([]);
